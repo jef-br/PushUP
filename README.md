@@ -32,8 +32,10 @@ time, because each one already uses every CPU core.
 1. Real-ESRGAN `realesr-general-wdn-x4v3` (4.9 MB ONNX) upscales the whole
    image 4x in one pass, so there are no tile seams.
 2. sharp's Lanczos resize takes that down to the target size.
-3. Optionally, a small share of a plain Lanczos upscale is mixed in (see
-   `DEFAULT_LANCZOS_MIX` in `src/index.js`).
+3. 20% of a plain Lanczos upscale is mixed in (`DEFAULT_LANCZOS_MIX` in
+   `src/index.js`). Both images agree on the coarse shapes, so the mix only
+   brings back some real fine texture that the model smooths away. It takes
+   a few ms.
 
 ### Why the weak-denoise model
 
@@ -83,7 +85,7 @@ python bench/build_testset.py abo.parquet lamoda.parquet bench/out/set
 node bench/bench.js bench/out/set --methods lanczos,sr-full
 ```
 
-Results on a 4-core CPU, with no Lanczos mix. Higher PSNR/SSIM is better;
+Results on a 4-core CPU. Higher PSNR/SSIM is better;
 lower GMSD is better (GMSD compares edges, which tracks perceived
 sharpness).
 
@@ -91,13 +93,16 @@ sharpness).
 |---|---|---|---|---|---|
 | 400 px | Lanczos | 28.71 | 0.883 | 0.132 | 0.03 s |
 | | stock x4v3 | 28.57 | 0.892 | 0.132 | 0.9 s |
-| | **wdn-x4v3 (shipped)** | **29.92** | **0.892** | **0.119** | 1.0 s |
+| | wdn-x4v3 | 29.92 | 0.892 | 0.119 | 1.0 s |
+| | **wdn-x4v3 + 20% Lanczos (shipped)** | **30.61** | **0.897** | **0.117** | 1.0 s |
 | 600 px | Lanczos | 30.30 | 0.917 | 0.098 | 0.03 s |
 | | stock x4v3 | 29.96 | 0.920 | 0.105 | 2.2 s |
-| | **wdn-x4v3 (shipped)** | **31.61** | **0.922** | **0.093** | 2.2 s |
+| | wdn-x4v3 | 31.61 | 0.922 | 0.093 | 2.2 s |
+| | **wdn-x4v3 + 20% Lanczos (shipped)** | **32.64** | **0.928** | **0.086** | 2.2 s |
 | 800 px | Lanczos | 30.38 | 0.929 | 0.090 | 0.03 s |
 | | stock x4v3 | 32.38 | 0.947 | 0.074 | 3.9 s |
-| | **wdn-x4v3 (shipped)** | **34.68** | **0.953** | **0.060** | 4.0 s |
+| | wdn-x4v3 | 34.68 | 0.953 | 0.060 | 4.0 s |
+| | **wdn-x4v3 + 20% Lanczos (shipped)** | **35.87** | **0.957** | **0.054** | 3.9 s |
 
 Feeding the model a shrunken input to save time made results worse in every
 case, so the model always gets the full-size input.
