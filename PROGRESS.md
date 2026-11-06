@@ -6,6 +6,17 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-06 (overnight) — I1: CI workflow
+
+- Added `.github/workflows/ci.yml`: `npm ci` + `npm test` on push to `main` and on PRs,
+  Node 20 and 22 matrix, npm cache, `contents: read` permissions. See D6.
+- Local: `npm ci` OK, `npm test` 7/7 pass. Workflow YAML parses; first real CI run happens on
+  the draft PR. Benchmark not run (no change to output quality).
+
+**Next:** I4 (contract-edge tests). Check the CI result on the I1 PR first.
+
+---
+
 ## 2026-11-06 — Consolidated onto `main`
 
 - Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the

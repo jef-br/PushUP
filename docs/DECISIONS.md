@@ -33,3 +33,10 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
   stride, async, one call at a time.
 - **Why:** library embeds in a pipeline without touching disk; each call already saturates
   all cores, so serialising calls avoids oversubscription.
+
+## D6 — CI scope: Node tests only, Node 20 and 22
+- **Decision:** `.github/workflows/ci.yml` runs `npm ci` + `npm test` on pushes to `main` and
+  on all PRs, on Node 20 and 22, with npm caching and read-only token permissions.
+- **Why:** covers the runtime package (the only thing published). Python bench/model tooling
+  needs large downloads and is out of scope. Node 18 is allowed by `engines` but is EOL, so it
+  isn't in the matrix.
