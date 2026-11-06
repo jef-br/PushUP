@@ -17,7 +17,7 @@ const DEFAULT_MODEL_INPUT_MAX = Infinity;
 // Share of a plain Lanczos upscale mixed into the model output (0 = model only).
 const DEFAULT_LANCZOS_MIX = 0;
 
-const MODEL_PATH = path.join(__dirname, '..', 'models', 'realesr-general-x4v3.onnx');
+const MODEL_PATH = path.join(__dirname, '..', 'models', 'realesr-general-wdn-x4v3.onnx');
 
 const sessions = new Map();
 function getSession(modelPath = MODEL_PATH) {
