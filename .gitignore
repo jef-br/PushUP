@@ -1,3 +1,4 @@
 node_modules/
 *.parquet
 /bench/out/
+__pycache__/
