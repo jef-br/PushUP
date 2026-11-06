@@ -29,39 +29,59 @@ time, because each one already uses every CPU core.
 
 ## How it works
 
-1. Real-ESRGAN `realesr-general-wdn-x4v3` (4.9 MB ONNX) upscales the whole
-   image 4x in one pass, so there are no tile seams.
+1. [4xLSDIRCompactC3](https://openmodeldb.info/models/4x-LSDIRCompactC3)
+   (2.5 MB ONNX) upscales the whole image 4x in one pass, so there are no
+   tile seams. It's a community model by Philip Hofmann (helaman), trained
+   on real photos with JPEG damage. License: CC BY 4.0.
 2. sharp's Lanczos resize takes that down to the target size.
 3. 20% of a plain Lanczos upscale is mixed in (`DEFAULT_LANCZOS_MIX` in
    `src/index.js`). Both images agree on the coarse shapes, so the mix only
    brings back some real fine texture that the model smooths away. It takes
    a few ms.
 
-### Why the weak-denoise model
+### Model choice
 
-The stock `realesr-general-x4v3` removes noise aggressively. On product
-photos it erased small details: shirt buttons disappeared and fabric looked
-painted. Real-ESRGAN also publishes a weak-denoise version of the same
-network, meant for exactly this. We use it at 100% (Real-ESRGAN's "denoise
-strength 0"). It costs nothing extra in speed.
+Compared on the same 20 e-commerce photos (13 Amazon, 7 Lamoda; protocol
+below), 4-core CPU:
 
-### Where the model file comes from
+| Model (design, license) | 400 px: PSNR / GMSD / time | 600 px: PSNR / GMSD / time |
+|---|---|---|
+| realesr-general-wdn-x4v3 + 20% (previous default) | 30.96 / 0.114 / 1.0 s | 32.96 / 0.085 / 2.2 s |
+| **4xLSDIRCompactC3 + 20% (default)** | **31.51 / 0.108 / 0.55 s** | **34.05 / 0.075 / 1.3 s** |
+| 4x_foolhardy_Remacri (ESRGAN, CC BY-NC-SA 4.0) | 31.12 / 0.102 / 16 s | 33.47 / 0.070 / 36 s |
 
-Hugging Face has no ONNX export of the weak-denoise weights, so the shipped
-ONNX file is built from official files without PyTorch:
+At 800 px, LSDIRCompactC3 + 20% scores PSNR 36.28 and GMSD 0.049 in 2.3 s;
+the previous default scored 35.13 and 0.059 in 3.9 s.
 
-1. Download the stock ONNX graph from Hugging Face
-   (`tamnvcc/Real-ESRGAN-General-x4v3_float`).
-2. Make its height and width accept any size. Only the size settings
-   change: `python tools/make_dynamic.py model.onnx base.onnx`.
-3. Get the official `realesr-general-x4v3.pth` and
-   `realesr-general-wdn-x4v3.pth` from the
-   [Real-ESRGAN releases](https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0).
-4. Run `python tools/blend_denoise.py base.onnx realesr-general-x4v3.pth realesr-general-wdn-x4v3.pth 0 models/realesr-general-wdn-x4v3.onnx`.
-   The tool first checks that every weight in `base.onnx` equals the stock
-   checkpoint, then writes the blended weights. The `.pth` files are read
-   with a restricted unpickler (`tools/pth_weights.py`), which only rebuilds
-   tensors and refuses to run any other code in the file.
+The large ESRGAN community models (Remacri, NMKD-Siax, 4x-UltraSharp) keep
+the most fabric texture, but on CPU they are 15-30x slower and need tiled
+inference to fit in memory. The stock Real-ESRGAN general model erased small
+details such as shirt buttons, which is why it was replaced.
+
+### Where the model files come from
+
+Community models are published as PyTorch weights. `tools/` converts them
+to ONNX without PyTorch:
+
+- `tools/build_compact_onnx.py`: compact models (realesr-general-x4v3,
+  LSDIRCompact, Rybu).
+- `tools/build_rrdb_onnx.py`: ESRGAN models (Remacri, UltraSharp, Siax,
+  RealESRGAN_x4plus).
+- `tools/pth_weights.py`: reads `.pth` (zip and legacy formats) and
+  `.safetensors`. Its restricted unpickler only rebuilds tensors and
+  refuses to run any other code in the file.
+
+Both builders were checked against reference ONNX exports of the official
+Real-ESRGAN models: max difference 0.0 (compact) and 3e-7 (ESRGAN).
+
+```bash
+python tools/build_compact_onnx.py 4xLSDIRCompactC3.pth models/4xLSDIRCompactC3.onnx
+```
+
+Download sources and SHA-256 hashes are listed in
+[OpenModelDB](https://openmodeldb.info/models/4x-LSDIRCompactC3). The
+`4xLSDIRCompactC3.pth` used here has SHA-256 `a330cac38d95...` and comes
+from [Phhofm/models](https://github.com/Phhofm/models).
 
 At runtime only the ONNX file is used.
 
@@ -85,7 +105,7 @@ python bench/build_testset.py abo.parquet lamoda.parquet bench/out/set
 node bench/bench.js bench/out/set --methods lanczos,sr-full
 ```
 
-Results on a 4-core CPU. Higher PSNR/SSIM is better;
+Results on a 4-core CPU for the earlier realesr-general models (60 images). Higher PSNR/SSIM is better;
 lower GMSD is better (GMSD compares edges, which tracks perceived
 sharpness).
 
@@ -94,15 +114,15 @@ sharpness).
 | 400 px | Lanczos | 28.71 | 0.883 | 0.132 | 0.03 s |
 | | stock x4v3 | 28.57 | 0.892 | 0.132 | 0.9 s |
 | | wdn-x4v3 | 29.92 | 0.892 | 0.119 | 1.0 s |
-| | **wdn-x4v3 + 20% Lanczos (shipped)** | **30.61** | **0.897** | **0.117** | 1.0 s |
+| | wdn-x4v3 + 20% Lanczos (previous default) | 30.61 | 0.897 | 0.117 | 1.0 s |
 | 600 px | Lanczos | 30.30 | 0.917 | 0.098 | 0.03 s |
 | | stock x4v3 | 29.96 | 0.920 | 0.105 | 2.2 s |
 | | wdn-x4v3 | 31.61 | 0.922 | 0.093 | 2.2 s |
-| | **wdn-x4v3 + 20% Lanczos (shipped)** | **32.64** | **0.928** | **0.086** | 2.2 s |
+| | wdn-x4v3 + 20% Lanczos (previous default) | 32.64 | 0.928 | 0.086 | 2.2 s |
 | 800 px | Lanczos | 30.38 | 0.929 | 0.090 | 0.03 s |
 | | stock x4v3 | 32.38 | 0.947 | 0.074 | 3.9 s |
 | | wdn-x4v3 | 34.68 | 0.953 | 0.060 | 4.0 s |
-| | **wdn-x4v3 + 20% Lanczos (shipped)** | **35.87** | **0.957** | **0.054** | 3.9 s |
+| | wdn-x4v3 + 20% Lanczos (previous default) | 35.87 | 0.957 | 0.054 | 3.9 s |
 
 Feeding the model a shrunken input to save time made results worse in every
 case, so the model always gets the full-size input.

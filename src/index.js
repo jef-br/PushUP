@@ -22,7 +22,7 @@ const DEFAULT_LANCZOS_MIX = 0.2;
 const DEFAULT_TILE = Infinity;
 const DEFAULT_TILE_PAD = 16;
 
-const MODEL_PATH = path.join(__dirname, '..', 'models', 'realesr-general-wdn-x4v3.onnx');
+const MODEL_PATH = path.join(__dirname, '..', 'models', '4xLSDIRCompactC3.onnx');
 
 const sessions = new Map();
 function getSession(modelPath = MODEL_PATH) {
