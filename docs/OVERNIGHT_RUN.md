@@ -38,9 +38,13 @@ be conservative: finish and verify one thing rather than start many.
 
 ## 4. Budget and wrap-up
 
-- Target about **4 hours**, then stop cleanly even mid-task so you don't overlap the next
-  window: commit WIP, write the exact next steps in `PROGRESS.md`, push.
-- Prefer finishing one task well over leaving several half-done.
+- Aim for about **3 hours**, and never run past the night's hard stop (Europe/Brussels):
+  **05:45** on Mon–Fri mornings, **09:00** on Sat/Sun mornings. The scheduled-run prompt
+  restates these limits — they override any other figure.
+- As you approach the limit or ~3 hours, stop cleanly even mid-task so you don't overlap the
+  next window: commit WIP, write the exact next steps in `PROGRESS.md`, push.
+- Prefer finishing one task well over leaving several half-done; don't start work you can't
+  finish before the stop time.
 
 ## Stop conditions (record the reason in `PROGRESS.md`, push, then stop)
 
