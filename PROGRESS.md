@@ -6,6 +6,20 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-06 (overnight) — I1: CI workflow
+
+- Added `.github/workflows/ci.yml`: `npm ci` + `npm test` on push to `main` and on PRs,
+  Node 20 and 22 matrix, npm cache, `contents: read` permissions. See D6.
+- Local: `npm ci` OK, `npm test` 7/7 pass. Workflow YAML parses; first real CI run happens on
+  the draft PR. Benchmark not run (no change to output quality).
+
+- Also resynced `package-lock.json` with `package.json` (version 0.1.0, MIT, `engines`); it was stale and `npm ci` needs them to match.
+- Reviewer notes: Node 18 (in `engines`, EOL) isn't in the CI matrix; I1 is marked done before its first green CI run is confirmed.
+
+**Next:** I4 (contract-edge tests). Confirm the first CI run is green on the I1 PR, then check the CI result on the I1 PR first.
+
+---
+
 ## 2026-11-06 — Consolidated onto `main`
 
 - Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the
