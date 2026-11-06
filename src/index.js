@@ -17,7 +17,12 @@ const DEFAULT_MODEL_INPUT_MAX = Infinity;
 // Share of a plain Lanczos upscale mixed into the model output (0 = model only).
 const DEFAULT_LANCZOS_MIX = 0.2;
 
-const MODEL_PATH = path.join(__dirname, '..', 'models', 'realesr-general-wdn-x4v3.onnx');
+// Tile size (input px) and context padding for inference. The small default
+// model fits in memory whole; large RRDBNet models need tiles.
+const DEFAULT_TILE = Infinity;
+const DEFAULT_TILE_PAD = 16;
+
+const MODEL_PATH = path.join(__dirname, '..', 'models', '4xLSDIRCompactC3.onnx');
 
 const sessions = new Map();
 function getSession(modelPath = MODEL_PATH) {
@@ -64,28 +69,65 @@ function packRows(arr, stride, width, height, rowBytes) {
   return out;
 }
 
-function toTensor(rgb, w, h) {
-  const plane = w * h;
+// Region (x0, y0, cw, ch) of a packed RGB image -> NCHW float tensor in [0, 1].
+function toTensor(rgb, w, x0, y0, cw, ch) {
+  const plane = cw * ch;
   const data = new Float32Array(3 * plane);
-  for (let i = 0, j = 0; i < plane; i++, j += 3) {
-    data[i] = rgb[j] / 255;
-    data[plane + i] = rgb[j + 1] / 255;
-    data[2 * plane + i] = rgb[j + 2] / 255;
+  for (let y = 0, i = 0; y < ch; y++) {
+    for (let x = 0, j = ((y0 + y) * w + x0) * 3; x < cw; x++, i++, j += 3) {
+      data[i] = rgb[j] / 255;
+      data[plane + i] = rgb[j + 1] / 255;
+      data[2 * plane + i] = rgb[j + 2] / 255;
+    }
   }
-  return new ort.Tensor('float32', data, [1, 3, h, w]);
+  return new ort.Tensor('float32', data, [1, 3, ch, cw]);
 }
 
-function fromTensor(tensor) {
-  const [, , h, w] = tensor.dims;
+// Copy region (sx, sy, cw, ch) of an NCHW output tensor into a packed RGB
+// buffer of width outW at (dx, dy).
+function copyFromTensor(tensor, sx, sy, cw, ch, out, outW, dx, dy) {
+  const [, , th, tw] = tensor.dims;
   const src = tensor.data;
-  const plane = w * h;
-  const out = Buffer.allocUnsafe(plane * 3);
-  for (let i = 0, j = 0; i < plane; i++, j += 3) {
-    out[j] = clampByte(src[i]);
-    out[j + 1] = clampByte(src[plane + i]);
-    out[j + 2] = clampByte(src[2 * plane + i]);
+  const plane = tw * th;
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      const i = (sy + y) * tw + sx + x;
+      const j = ((dy + y) * outW + dx + x) * 3;
+      out[j] = clampByte(src[i]);
+      out[j + 1] = clampByte(src[plane + i]);
+      out[j + 2] = clampByte(src[2 * plane + i]);
+    }
   }
-  return { data: out, width: w, height: h };
+}
+
+// Run the model over the image in tiles of `tile` px (plus `pad` px of
+// context on each side, which is cut away again). Big models need this to
+// keep memory bounded; tile = Infinity runs the whole image in one pass.
+async function infer(session, rgb, w, h, tile, pad) {
+  const inName = session.inputNames[0];
+  const outName = session.outputNames[0];
+  const step = Math.min(tile, Math.max(w, h));
+  let out = null;
+  let scale = 0;
+  for (let ty = 0; ty < h; ty += step) {
+    for (let tx = 0; tx < w; tx += step) {
+      const x1 = Math.min(tx + step, w);
+      const y1 = Math.min(ty + step, h);
+      const px0 = Math.max(tx - pad, 0);
+      const py0 = Math.max(ty - pad, 0);
+      const px1 = Math.min(x1 + pad, w);
+      const py1 = Math.min(y1 + pad, h);
+      const result = await session.run({ [inName]: toTensor(rgb, w, px0, py0, px1 - px0, py1 - py0) });
+      const t = result[outName];
+      if (!out) {
+        scale = t.dims[3] / (px1 - px0);
+        out = Buffer.allocUnsafe(w * scale * h * scale * 3);
+      }
+      copyFromTensor(t, (tx - px0) * scale, (ty - py0) * scale, (x1 - tx) * scale, (y1 - ty) * scale,
+        out, w * scale, tx * scale, ty * scale);
+    }
+  }
+  return { data: out, width: w * scale, height: h * scale };
 }
 
 function clampByte(v) {
@@ -120,7 +162,13 @@ async function run(
   arr,
   stride,
   upscale_factor,
-  { modelInputMax = DEFAULT_MODEL_INPUT_MAX, modelPath, lanczosMix = DEFAULT_LANCZOS_MIX } = {},
+  {
+    modelInputMax = DEFAULT_MODEL_INPUT_MAX,
+    modelPath,
+    lanczosMix = DEFAULT_LANCZOS_MIX,
+    tile = DEFAULT_TILE,
+    tilePad = DEFAULT_TILE_PAD,
+  } = {},
 ) {
   if (upscale_factor === undefined) upscale_factor = 1.0;
   if (Array.isArray(arr)) arr = Uint8Array.from(arr);
@@ -153,10 +201,7 @@ async function run(
   }
 
   const session = await getSession(modelPath);
-  const result = await serialize(() =>
-    session.run({ [session.inputNames[0]]: toTensor(rgb, w, h) }),
-  );
-  const sr = fromTensor(result[session.outputNames[0]]);
+  const sr = await serialize(() => infer(session, rgb, w, h, tile, tilePad));
 
   const out =
     sr.width === outW && sr.height === outH
