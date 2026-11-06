@@ -6,6 +6,20 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-06 — Consolidated onto `main`
+
+- Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the
+  overnight-run setup are both on `main`. Activation steps 1 and 2 below are done.
+- All feature branches merged and deleted; `main` is the only branch.
+- `.claude/settings.json`: added `Bash(curl:*)` so runs can download models and test data
+  from Hugging Face.
+- Tests: 7/7 pass. Bench (60 e-commerce images, wdn-x4v3 + 20% Lanczos mix vs Lanczos):
+  PSNR 30.61 vs 28.71 @400 px, 32.64 vs 30.30 @600 px, 35.87 vs 30.38 @800 px.
+
+**Next:** enable the overnight schedule (human step 3), then work from `TASKS.md`.
+
+---
+
 ## 2026-11-06 — System setup (session: Overnight online-only schedules)
 
 Set up the autonomous-development **system**, not project features:
