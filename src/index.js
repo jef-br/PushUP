@@ -14,21 +14,23 @@ const MODEL_SCALE = 4;
 // of the input's detail. Tuned with bench/bench.js.
 const DEFAULT_MODEL_INPUT_MAX = Infinity;
 
+// Share of a plain Lanczos upscale mixed into the model output (0 = model only).
+const DEFAULT_LANCZOS_MIX = 0;
+
 const MODEL_PATH = path.join(__dirname, '..', 'models', 'realesr-general-x4v3.onnx');
 
-let sessionPromise = null;
-function getSession() {
-  if (!sessionPromise) {
-    sessionPromise = ort.InferenceSession.create(MODEL_PATH, {
+const sessions = new Map();
+function getSession(modelPath = MODEL_PATH) {
+  if (!sessions.has(modelPath)) {
+    const p = ort.InferenceSession.create(modelPath, {
       graphOptimizationLevel: 'all',
       intraOpNumThreads: os.availableParallelism(),
       executionMode: 'sequential',
-    }).catch((err) => {
-      sessionPromise = null;
-      throw err;
     });
+    p.catch(() => sessions.delete(modelPath));
+    sessions.set(modelPath, p);
   }
-  return sessionPromise;
+  return sessions.get(modelPath);
 }
 
 // One inference at a time: each run already uses every core, so running two
@@ -110,11 +112,16 @@ function resizeRaw(data, width, height, outW, outH) {
  * @returns {Promise<[Buffer, number]>}  [arr_out, stride_out], tightly packed RGB.
  */
 async function upscale(arr, stride, upscale_factor = 1.0) {
-  return run(arr, stride, upscale_factor, DEFAULT_MODEL_INPUT_MAX);
+  return run(arr, stride, upscale_factor);
 }
 
 // Internal entry point; the bench uses it to compare settings.
-async function run(arr, stride, upscale_factor, modelInputMax) {
+async function run(
+  arr,
+  stride,
+  upscale_factor,
+  { modelInputMax = DEFAULT_MODEL_INPUT_MAX, modelPath, lanczosMix = DEFAULT_LANCZOS_MIX } = {},
+) {
   if (upscale_factor === undefined) upscale_factor = 1.0;
   if (Array.isArray(arr)) arr = Uint8Array.from(arr);
   if (!(arr instanceof Uint8Array)) throw new TypeError('arr must be a byte array');
@@ -145,7 +152,7 @@ async function run(arr, stride, upscale_factor, modelInputMax) {
     rgb = await resizeRaw(rgb, width, height, w, h);
   }
 
-  const session = await getSession();
+  const session = await getSession(modelPath);
   const result = await serialize(() =>
     session.run({ [session.inputNames[0]]: toTensor(rgb, w, h) }),
   );
@@ -155,6 +162,15 @@ async function run(arr, stride, upscale_factor, modelInputMax) {
     sr.width === outW && sr.height === outH
       ? sr.data
       : await resizeRaw(sr.data, sr.width, sr.height, outW, outH);
+
+  // Mix in a plain Lanczos upscale of the original. The model's output and
+  // Lanczos agree on coarse shapes, so this only brings back fine real
+  // texture (fabric weave, print) that the model smooths away.
+  if (lanczosMix > 0) {
+    const plain = await resizeRaw(packRows(arr, stride, width, height, rowBytes), width, height, outW, outH);
+    const a = 1 - lanczosMix;
+    for (let i = 0; i < out.length; i++) out[i] = Math.round(a * out[i] + lanczosMix * plain[i]);
+  }
 
   return [out, outW * 3];
 }

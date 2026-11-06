@@ -32,8 +32,13 @@ async function method(name, inp, w, h) {
     const L = Math.max(w, h), ow = Math.round((w * 1000) / L), oh = Math.round((h * 1000) / L);
     return sharp(inp, { raw: { width: w, height: h, channels: 3 } }).resize(ow, oh, { kernel: 'lanczos3', fit: 'fill' }).raw().toBuffer();
   }
-  const cap = name === 'sr-full' ? Infinity : Number(name.split('-')[1]);
-  const [out] = await _run(inp, w * 3, 1000 / Math.max(w, h), cap);
+  // sr-full | sr-<maxInputPx> | sr:<path/to/model.onnx>, each with optional @<lanczosMix>
+  const opts = {};
+  const at = name.indexOf('@');
+  if (at > 0) { opts.lanczosMix = Number(name.slice(at + 1)); name = name.slice(0, at); }
+  if (name.startsWith('sr:')) opts.modelPath = path.resolve(name.slice(3));
+  else if (name !== 'sr-full') opts.modelInputMax = Number(name.split('-')[1]);
+  const [out] = await _run(inp, w * 3, 1000 / Math.max(w, h), opts);
   return out;
 }
 
@@ -66,7 +71,7 @@ async function method(name, inp, w, h) {
         (agg[key] ||= []).push(r);
         if (saveDir) {
           fs.mkdirSync(saveDir, { recursive: true });
-          await sharp(out, { raw: { width: cw, height: ch, channels: 3 } }).png().toFile(path.join(saveDir, `${path.parse(f).name}_${s}_${m}.png`));
+          await sharp(out, { raw: { width: cw, height: ch, channels: 3 } }).png().toFile(path.join(saveDir, `${path.parse(f).name}_${s}_${path.basename(m).replace(/[^\w.@-]/g, '_')}.png`));
         }
       }
     }
