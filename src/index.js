@@ -7,7 +7,7 @@ const sharp = require('sharp');
 
 const MIN_INPUT = 400;
 const MAX_INPUT = 800;
-const BASE_OUTPUT = 1000;
+const MAX_OUTPUT = 1000; // hard cap on the output's largest side
 const MODEL_SCALE = 4;
 
 // Largest side (px) fed to the model. Smaller = faster, larger = keeps more
@@ -102,8 +102,11 @@ function resizeRaw(data, width, height, outW, outH) {
  * Upscale an 8-bit RGB image.
  *
  * @param {Uint8Array|Buffer|number[]} arr  RGB bytes, row by row.
- * @param {number} stride  Bytes per row (width * 3, plus any row padding).
- * @param {number} [upscale_factor=1.0]  Output largest side = round(1000 * factor).
+ * @param {number} stride  Bytes per row: width * 3, plus 0-2 padding bytes
+ *   (width is read as floor(stride / 3), so 3+ padding bytes would look like pixels).
+ * @param {number} [upscale_factor=1.0]  Output largest side =
+ *   min(round(input largest side * factor), 1000). 1.0 keeps the size but
+ *   still runs the model (cleans compression artifacts, sharpens edges).
  * @returns {Promise<[Buffer, number]>}  [arr_out, stride_out], tightly packed RGB.
  */
 async function upscale(arr, stride, upscale_factor = 1.0) {
@@ -115,8 +118,8 @@ async function run(arr, stride, upscale_factor, modelInputMax) {
   if (upscale_factor === undefined) upscale_factor = 1.0;
   if (Array.isArray(arr)) arr = Uint8Array.from(arr);
   if (!(arr instanceof Uint8Array)) throw new TypeError('arr must be a byte array');
-  if (!Number.isFinite(upscale_factor) || upscale_factor <= 0 || upscale_factor > 4) {
-    throw new RangeError('upscale_factor must be in (0, 4]');
+  if (typeof upscale_factor !== 'number' || !Number.isFinite(upscale_factor) || upscale_factor <= 0) {
+    throw new RangeError('upscale_factor must be a number > 0');
   }
 
   const { width, height, rowBytes } = readDims(arr, stride);
@@ -125,7 +128,7 @@ async function run(arr, stride, upscale_factor, modelInputMax) {
     throw new RangeError(`largest input side must be ${MIN_INPUT}-${MAX_INPUT}px, got ${longest}px`);
   }
 
-  const target = Math.round(BASE_OUTPUT * upscale_factor);
+  const target = Math.max(1, Math.min(Math.round(longest * upscale_factor), MAX_OUTPUT));
   const outW = Math.max(1, Math.round((width * target) / longest));
   const outH = Math.max(1, Math.round((height * target) / longest));
 

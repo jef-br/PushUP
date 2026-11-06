@@ -19,13 +19,21 @@ async function rawOf(img) {
   return { data, w: info.width, h: info.height };
 }
 
+// Crop a packed RGB buffer to cw x ch (top-left).
+function crop(buf, w, cw, ch) {
+  if (cw === w && buf.length === cw * ch * 3) return buf;
+  const out = Buffer.allocUnsafe(cw * ch * 3);
+  for (let y = 0; y < ch; y++) buf.copy(out, y * cw * 3, y * w * 3, y * w * 3 + cw * 3);
+  return out;
+}
+
 async function method(name, inp, w, h) {
   if (name === 'lanczos') {
     const L = Math.max(w, h), ow = Math.round((w * 1000) / L), oh = Math.round((h * 1000) / L);
     return sharp(inp, { raw: { width: w, height: h, channels: 3 } }).resize(ow, oh, { kernel: 'lanczos3', fit: 'fill' }).raw().toBuffer();
   }
   const cap = name === 'sr-full' ? Infinity : Number(name.split('-')[1]);
-  const [out] = await _run(inp, w * 3, 1.0, cap);
+  const [out] = await _run(inp, w * 3, 1000 / Math.max(w, h), cap);
   return out;
 }
 
@@ -46,14 +54,19 @@ async function method(name, inp, w, h) {
       const inp = await rawOf(sharp(jpg));
       for (const m of methods) {
         const t = performance.now();
-        const out = await method(m, inp.data, inp.w, inp.h);
+        const raw = await method(m, inp.data, inp.w, inp.h);
         const ms = performance.now() - t;
-        const r = { psnr: psnr(out, gt.data, gw, gh), ssim: ssim(out, gt.data, gw, gh), gmsd: gmsd(out, gt.data, gw, gh), ms };
+        // Output size follows the input's aspect ratio, which can differ from
+        // the reference by 1px after rounding: score the shared area.
+        const L = Math.max(inp.w, inp.h), ow = Math.round((inp.w * 1000) / L), oh = Math.round((inp.h * 1000) / L);
+        const cw = Math.min(ow, gw), ch = Math.min(oh, gh);
+        const out = crop(raw, ow, cw, ch), ref = crop(gt.data, gw, cw, ch);
+        const r = { psnr: psnr(out, ref, cw, ch), ssim: ssim(out, ref, cw, ch), gmsd: gmsd(out, ref, cw, ch), ms };
         const key = `${s}px ${m}`;
         (agg[key] ||= []).push(r);
         if (saveDir) {
           fs.mkdirSync(saveDir, { recursive: true });
-          await sharp(out, { raw: { width: gw, height: gh, channels: 3 } }).png().toFile(path.join(saveDir, `${path.parse(f).name}_${s}_${m}.png`));
+          await sharp(out, { raw: { width: cw, height: ch, channels: 3 } }).png().toFile(path.join(saveDir, `${path.parse(f).name}_${s}_${m}.png`));
         }
       }
     }

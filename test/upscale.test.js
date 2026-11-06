@@ -16,46 +16,45 @@ function makeImage(w, h, pad = 0) {
   return { arr, stride };
 }
 
-test('landscape 800x600 -> 1000x750', async () => {
-  const { arr, stride } = makeImage(800, 600);
-  const [out, strideOut] = await upscale(arr, stride);
-  assert.strictEqual(strideOut, 1000 * 3);
-  assert.strictEqual(out.length, 1000 * 750 * 3);
+async function outSize(w, h, factor) {
+  const { arr, stride } = makeImage(w, h);
+  const [out, strideOut] = await upscale(arr, stride, factor);
+  assert.strictEqual(strideOut % 3, 0);
+  const ow = strideOut / 3;
+  assert.strictEqual(out.length % strideOut, 0);
+  return [ow, out.length / strideOut];
+}
+
+test('default factor 1.0 keeps the size', async () => {
+  assert.deepStrictEqual(await outSize(800, 600), [800, 600]);
 });
 
-test('portrait 300x400 -> 750x1000', async () => {
-  const { arr, stride } = makeImage(300, 400);
-  const [out, strideOut] = await upscale(arr, stride, 1.0);
-  assert.strictEqual(strideOut, 750 * 3);
-  assert.strictEqual(out.length, 750 * 1000 * 3);
-});
-
-test('upscale_factor scales the 1000px target', async () => {
-  const { arr, stride } = makeImage(500, 500);
-  const [out, strideOut] = await upscale(arr, stride, 1.5);
-  assert.strictEqual(strideOut, 1500 * 3);
-  assert.strictEqual(out.length, 1500 * 1500 * 3);
+test('factor scales the input, capped at 1000px', async () => {
+  assert.deepStrictEqual(await outSize(800, 600, 1.5), [1000, 750]); // 1200 -> clamped
+  assert.deepStrictEqual(await outSize(300, 400, 1.5), [450, 600]);
+  assert.deepStrictEqual(await outSize(400, 300, 2.5), [1000, 750]);
+  assert.deepStrictEqual(await outSize(400, 300, 3), [1000, 750]); // 1200 -> clamped
 });
 
 test('row padding in stride is handled', async () => {
-  const { arr, stride } = makeImage(401, 300, 5);
-  const [out, strideOut] = await upscale(arr, stride);
-  assert.strictEqual(strideOut, 1000 * 3);
-  assert.strictEqual(out.length, 1000 * Math.round((300 * 1000) / 401) * 3);
+  const { arr, stride } = makeImage(401, 300, 2);
+  const [out, strideOut] = await upscale(arr, stride, 2);
+  assert.strictEqual(strideOut, 802 * 3);
+  assert.strictEqual(out.length, 802 * 600 * 3);
 });
 
 test('output colours stay close to input (no shift)', async () => {
   const { arr, stride } = makeImage(400, 400);
-  const [out] = await upscale(arr, stride);
+  const [out] = await upscale(arr, stride, 2.5);
   const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
   assert.ok(Math.abs(mean(arr) - mean(out)) < 2);
 });
 
 test('concurrent calls resolve', async () => {
   const a = makeImage(400, 300), b = makeImage(600, 450);
-  const [r1, r2] = await Promise.all([upscale(a.arr, a.stride), upscale(b.arr, b.stride)]);
-  assert.strictEqual(r1[1], 3000);
-  assert.strictEqual(r2[1], 3000);
+  const [r1, r2] = await Promise.all([upscale(a.arr, a.stride, 2), upscale(b.arr, b.stride, 2)]);
+  assert.strictEqual(r1[1], 800 * 3);
+  assert.strictEqual(r2[1], 1000 * 3);
 });
 
 test('rejects out-of-range input sizes', async () => {
