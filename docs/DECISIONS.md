@@ -33,3 +33,9 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
   stride, async, one call at a time.
 - **Why:** library embeds in a pipeline without touching disk; each call already saturates
   all cores, so serialising calls avoids oversubscription.
+
+## 2026-11-07 — CI matrix is Node 20 and 22 (task I1)
+
+`package.json` says `engines.node >=18.14`, but the installed `sharp` requires Node >=20.9,
+so Node 18 can't run the package in practice. CI uses `npm ci` (lockfile present) and tests
+Node 20 and 22. Follow-up for a human: raise `engines.node` to `>=20.9`, or drop the mismatch.
