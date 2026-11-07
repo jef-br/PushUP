@@ -30,6 +30,8 @@ function synth(longest) {
   return { b, w, h };
 }
 
+// NOTE: stage code below is a copy of the helpers in src/index.js (not exported);
+// update it if the pipeline changes, or timings will silently drift.
 async function stages(rgb, w, h, outW, outH) {
   const t = {};
   let t0 = now();

@@ -49,11 +49,14 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [ ] T5 — Faster `fromTensor` (byte-identical output)
 - **Goal:** Replace the per-pixel `Math.round` + clamp loop in `src/index.js` `fromTensor`
-  with a `Uint8ClampedArray`-based write (see `docs/PERF.md`; ~4% of latency at 800 px).
+  with a `Uint8ClampedArray`-based write (see `docs/PERF.md`).
 - **Accept:** Output bytes identical to the old implementation on test images (add a test
   comparing against a reference clamp); `bench/profile.js` shows the `fromTensor` drop.
-- **Notes:** Beware `Uint8ClampedArray` rounds half-to-even while `Math.round` rounds
-  half-up; if outputs differ, keep exactness (e.g. add 0.5 before the write) or drop it.
+- **Notes:** `Uint8ClampedArray` rounds ties to even, `Math.round` rounds half-up, and
+  adding 0.5 before the write would double-round (off by one). Byte-identical output may
+  not be achievable with the native clamp; if the test shows any difference, drop the idea
+  and record the negative result. The `fromTensor` stage is ~6.6% of latency at 800 px;
+  the expected saving is smaller (estimate, unmeasured).
 
 ### [blocked] T3 — Quality comparison vs a SaaS upscaler (e.g. Claid.ai)
 - **Goal:** Score a SaaS upscaler's output against PushUP on the standard set.

@@ -15,13 +15,13 @@
 
 Factor 1.5 (800 px input is capped to a 1000 px output):
 
-| Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix |
+| Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix (incl. plain resize) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | 400×300 | 823 | 1 | 737 | 50 | 6 | 17 |
 | 600×450 | 1933 | 2 | 1708 | 136 | 11 | 35 |
 | 800×600 | 3513 | 2 | 3190 | 233 | 18 | 44 |
 
-Factor 1.0 totals: 861 / 2034 / 3450 ms (same sizes) — the model always runs at 4×, so the
+Factor 1.0 totals (`--factor 1.0`): 861 / 2034 / 3450 ms (same sizes) — the model always runs at 4×, so the
 factor barely matters.
 
 ## Findings
@@ -35,7 +35,7 @@ factor barely matters.
 ## Follow-up ideas (not implemented)
 
 See `TASKS.md` T5: replace the per-pixel `Math.round`/clamp loop in `fromTensor` with a
-`Uint8ClampedArray` write (native round+clamp), expected to save ~100–150 ms at 800 px
-(~4%). Output must stay byte-identical; verify with a test and the benchmark. Larger wins
+`Uint8ClampedArray` write (native round+clamp), estimated (not measured) to save ~100–150 ms
+at 800 px (~4%). Output must stay byte-identical; verify with a test and the benchmark. Larger wins
 (fp16/int8 quantisation, thread tuning) change output quality or are hardware-dependent
 and need a human decision first.
