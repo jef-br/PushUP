@@ -6,6 +6,18 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-07 — I1: CI workflow (overnight run)
+
+- Added `.github/workflows/ci.yml`: runs `npm ci` + `npm test` on push to `main` and on PRs,
+  Node 20 and 22, npm cache enabled, read-only permissions.
+- Local: `npm install` + `npm test` 7/7 pass. Workflow YAML parses; it has not run on GitHub
+  yet — confirm it is green on this PR. No output-quality change, so no benchmark.
+- Found: `engines.node >=18.14` conflicts with sharp (>=20.9); see `docs/DECISIONS.md`.
+
+**Next:** I4 (contract-edge tests), then T2/T4/I3. Verify I1 is green on the PR.
+
+---
+
 ## 2026-11-06 — Consolidated onto `main`
 
 - Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the
