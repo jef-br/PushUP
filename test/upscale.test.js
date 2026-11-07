@@ -69,3 +69,53 @@ test('rejects bad arguments', async () => {
   await assert.rejects(upscale(arr, stride, 0), RangeError);
   await assert.rejects(upscale('nope', stride), TypeError);
 });
+
+// ---- Contract edges (I4) ----
+
+test('largest-side bounds: 399 and 801 rejected, 400 and 800 accepted', async () => {
+  for (const [w, h] of [[399, 399], [399, 100], [100, 399], [801, 100], [100, 801]]) {
+    const { arr, stride } = makeImage(w, h);
+    await assert.rejects(upscale(arr, stride), RangeError, `${w}x${h}`);
+  }
+  assert.deepStrictEqual(await outSize(400, 100), [400, 100]);
+  assert.deepStrictEqual(await outSize(100, 400), [100, 400]); // portrait: height is the largest side
+  assert.deepStrictEqual(await outSize(800, 100), [800, 100]);
+});
+
+test('stride padding of 0, 1 and 2 bytes works for odd and even widths', async () => {
+  for (const w of [400, 401, 402]) {
+    const base = makeImage(w, 120);
+    const [ref] = await upscale(base.arr, base.stride, 1);
+    for (const pad of [1, 2]) {
+      const p = makeImage(w, 120, pad);
+      const [out, strideOut] = await upscale(p.arr, p.stride, 1);
+      assert.strictEqual(strideOut, w * 3, `w=${w} pad=${pad}`);
+      assert.strictEqual(out.length, w * 3 * 120);
+      assert.ok(Buffer.compare(out, ref) === 0, `padding must not change pixels (w=${w} pad=${pad})`);
+    }
+  }
+});
+
+test('output is tightly packed: stride_out = out_width * 3', async () => {
+  const { arr, stride } = makeImage(500, 333);
+  const [out, strideOut] = await upscale(arr, stride, 1.3);
+  assert.strictEqual(strideOut, 650 * 3); // 500 * 1.3 = 650 wide
+  assert.strictEqual(out.length % strideOut, 0);
+});
+
+test('output cap: largest side never exceeds 1000px', async () => {
+  assert.deepStrictEqual(await outSize(800, 400, 1.5), [1000, 500]); // 1200 -> 1000
+  assert.deepStrictEqual(await outSize(800, 800, 10), [1000, 1000]);
+  assert.deepStrictEqual(await outSize(400, 600, 1.5), [600, 900]); // under the cap, untouched
+});
+
+test('upscale_factor below 1 downsizes: min(round(largest * factor), 1000)', async () => {
+  assert.deepStrictEqual(await outSize(800, 600, 0.5), [400, 300]);
+});
+
+test('invalid upscale_factor values are rejected', async () => {
+  const { arr, stride } = makeImage(400, 300);
+  for (const f of [0, -1, NaN, Infinity, '2']) {
+    await assert.rejects(upscale(arr, stride, f), RangeError, String(f));
+  }
+});
