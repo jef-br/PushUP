@@ -6,6 +6,21 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-07 — I4: contract-edge tests (branch `overnight/2026-11-07-I4`)
+
+- Added 6 tests to `test/upscale.test.js`: 399/400/800/801 bounds (landscape + portrait),
+  stride padding 0–2 with odd/even widths (output matches unpadded within ±1), tight
+  `stride_out`, 1000 px cap, factor < 1, invalid factors (0, negative, NaN, Infinity, string).
+- `npm test`: 13/13 pass. No source/model change, so no benchmark.
+- Reviewer notes applied: reverted stray `package-lock.json` change (I1's PR #5 owns the
+  lockfile resync); padding comparison uses a ±1 tolerance instead of bit-exact.
+- Not covered (optional follow-up): 3-byte-padding trap (`stride = w*3+3`), missing final-row padding.
+- I1 is already in draft PR #5, awaiting human review.
+
+**Next:** T2 (profile latency) or I3 (publish readiness).
+
+---
+
 ## 2026-11-06 — Consolidated onto `main`
 
 - Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the

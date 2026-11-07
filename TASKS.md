@@ -24,7 +24,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Notes:** Keep it to the runtime package; the Python bench/model tooling is out of scope
   for CI unless cheap to add.
 
-### [ ] I4 — Harden tests around the contract edges
+### [x] I4 — Harden tests around the contract edges (done 2026-11-07, branch overnight/2026-11-07-I4)
 - **Goal:** Explicit tests for the `RangeError` bounds (399/400/800/801 px largest side),
   `stride` padding (0–2 bytes, odd widths), and the 1000 px output cap (e.g. 800 px @1.5).
 - **Accept:** New tests pass; each contract row in `CLAUDE.md` has at least one test.
