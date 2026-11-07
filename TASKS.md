@@ -29,7 +29,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `stride` padding (0–2 bytes, odd widths), and the 1000 px output cap (e.g. 800 px @1.5).
 - **Accept:** New tests pass; each contract row in `CLAUDE.md` has at least one test.
 
-### [ ] T2 — Profile and document upscale latency
+### [~] T2 — Profile and document upscale latency (claimed 2026-11-07, branch overnight/2026-11-07-T2)
 - **Goal:** Measure per-input-size latency on the standard set and find the dominant cost.
 - **Accept:** A short `docs/PERF.md` with a methodology + numbers; one concrete, low-risk
   speed idea written up as a follow-up task (don't implement risky changes unattended).
