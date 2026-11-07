@@ -18,7 +18,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 > This is a **seed** backlog derived from the README's "Known limits / next steps" plus the
 > infrastructure a continuable project needs. Re-prioritise freely; add detail as you learn.
 
-### [x] I1 — CI: run tests on every PR (done 2026-11-07, branch overnight/2026-11-07-I1)
+### [~] I1 — CI: run tests on every PR (implemented 2026-11-07, branch overnight/2026-11-07-I1; mark [x] once CI is green on the PR)
 - **Goal:** GitHub Actions workflow that runs `npm install` and `npm test` on push/PR.
 - **Accept:** `.github/workflows/ci.yml` present; green on a trivial PR; caches npm.
 - **Notes:** Keep it to the runtime package; the Python bench/model tooling is out of scope
