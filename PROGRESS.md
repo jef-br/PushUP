@@ -6,6 +6,21 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-08 — Overnight run: no work started (blocked)
+
+- Readiness gate passed. Every other ready task already has an open draft PR from earlier
+  runs, none merged: I1 (#9, also #5/#7), I4 (#6), T2 (#8), I3 (#10). Re-doing them would only
+  create duplicates; a claim push for I1 was rejected because `overnight/2026-11-08-I1` exists.
+- Only T4 (post-sharpen toggle) is unclaimed, but it needs the benchmark set
+  `bench/out/set`, which is missing here. Building it needs the ABO/Lamoda parquet files
+  (`bench/build_testset.py`), which this environment doesn't have.
+- No code changes, no tests run beyond a clean `npm test` (7/7).
+
+**Next (human):** merge or close the open draft PRs (#5-#10; #5/#7/#9 are duplicates of I1),
+and provide the parquet files or a prebuilt `bench/out/set` so T4 can run.
+
+---
+
 ## 2026-11-06 — Consolidated onto `main`
 
 - Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the
