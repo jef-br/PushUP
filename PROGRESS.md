@@ -18,7 +18,9 @@ overnight runs hand off to each other.
 
 - Reviewer follow-ups applied: least-privilege `permissions`, concurrency cancel, 15 min timeout. I1 left `[~]` until CI is observed green.
 
-**Next:** confirm CI is green on the PR, then mark I1 `[x]`; then I4 (contract-edge tests).
+- CI observed green on PR #9 (test 20 and test 22 both passed); I1 marked `[x]`.
+
+**Next:** then I4 (contract-edge tests).
 
 ---
 
