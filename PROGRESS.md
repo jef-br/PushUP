@@ -6,6 +6,20 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-08 — I1: CI workflow
+
+- Added `.github/workflows/ci.yml`: runs `npm ci` + `npm test` on push to `main` and on every
+  PR, Node 20 and 22 matrix, npm cache via `actions/setup-node`.
+- Local: `npm ci` clean, tests 7/7 pass. Workflow itself not yet observed running on GitHub
+  (check the draft PR's checks). No quality-affecting change, so no benchmark.
+- Synced stale `package-lock.json` root metadata (version, license, engines) with `package.json`.
+- Choice: `npm ci` (lockfile exists) rather than `npm install`; Node 18 omitted from the
+  matrix though `engines` allows >=18.14 (untested).
+
+**Next:** confirm CI is green on the PR; then I4 (contract-edge tests).
+
+---
+
 ## 2026-11-06 — Consolidated onto `main`
 
 - Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the
