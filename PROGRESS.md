@@ -16,7 +16,9 @@ overnight runs hand off to each other.
 - Choice: `npm ci` (lockfile exists) rather than `npm install`; Node 18 omitted from the
   matrix though `engines` allows >=18.14 (untested).
 
-**Next:** confirm CI is green on the PR; then I4 (contract-edge tests).
+- Reviewer follow-ups applied: least-privilege `permissions`, concurrency cancel, 15 min timeout. I1 left `[~]` until CI is observed green.
+
+**Next:** confirm CI is green on the PR, then mark I1 `[x]`; then I4 (contract-edge tests).
 
 ---
 
