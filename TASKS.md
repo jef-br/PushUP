@@ -41,7 +41,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Accept:** Benchmark comparison in `PROGRESS.md`; ship only if it's a clear win and
   default-off; otherwise record the negative result and close the task.
 
-### [~] I3 — Package publish readiness (claimed 2026-11-08, branch overnight/2026-11-08-I3)
+### [x] I3 — Package publish readiness (done 2026-11-08, branch overnight/2026-11-08-I3)
 - **Goal:** Make `package.json` metadata, `files`/`.npmignore`, and `README` ready for
   `npm publish` (dry run only — do not publish).
 - **Accept:** `npm pack` produces a tarball that includes `src/`, `models/*.onnx`, `README`;

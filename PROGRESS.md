@@ -6,6 +6,20 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-08 — I3 package publish readiness (branch overnight/2026-11-08-I3)
+
+- Found I1 (PRs #5/#7/#9 — three duplicates), I4 (#6) and T2 (#8) already done in open draft
+  PRs that were never merged to `main`, so earlier runs kept re-picking I1. Took I3 instead.
+  **Human: please merge/close those PRs; consider keeping only one I1 PR.**
+- `package.json`: added author/homepage/bugs, `prepublishOnly`, `files: [src, models/*.onnx]`,
+  `engines.node >=20.9` (sharp requirement). README gained an Install section.
+- New `test/package.test.js` checks `npm pack --dry-run` contents.
+- `npm pack`/`npm publish --dry-run`: 5 files (LICENSE, README, model, package.json,
+  src/index.js), 4.5 MB. Tests 8/8 pass. No quality change, so no benchmark.
+- **Next:** T4 (post-sharpen) or T5 (on the T2 branch) once PRs are merged.
+
+---
+
 ## 2026-11-06 — Consolidated onto `main`
 
 - Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the

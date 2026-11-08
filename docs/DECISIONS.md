@@ -33,3 +33,10 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
   stride, async, one call at a time.
 - **Why:** library embeds in a pipeline without touching disk; each call already saturates
   all cores, so serialising calls avoids oversubscription.
+
+## D7 — Publish tarball via `files` whitelist; Node >=20.9
+- **Decision:** keep the `files` whitelist (`src`, `models/*.onnx`) instead of a `.npmignore`;
+  add `prepublishOnly: npm test`; raise `engines.node` from `>=18.14` to `>=20.9`.
+- **Why:** a whitelist can't leak `bench/`, `tools/`, or fixtures by accident, and
+  `test/package.test.js` asserts the contents. `sharp@0.35` requires Node >=20.9, so the old
+  `engines` claim was wrong. Publishing itself is left to a human.
