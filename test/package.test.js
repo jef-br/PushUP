@@ -16,7 +16,9 @@ test('npm pack tarball has runtime files and no dev tooling', () => {
     'models/realesr-general-wdn-x4v3.onnx']) {
     assert.ok(files.includes(must), `missing ${must}`);
   }
+  const rootAllowed = new Set(['package.json', 'README.md', 'LICENSE']);
   for (const f of files) {
-    assert.ok(!/^(bench|tools|test|docs|\.claude)\//.test(f), `unexpected ${f}`);
+    assert.ok(rootAllowed.has(f) || /^src\//.test(f) || /^models\/[^/]+\.onnx$/.test(f),
+      `unexpected ${f}`);
   }
 });
