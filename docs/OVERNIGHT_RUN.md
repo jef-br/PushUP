@@ -47,6 +47,27 @@ requests are the claim registry.**
 - Record any non-obvious choice in `docs/DECISIONS.md`.
 - Push the branch and update your **draft** PR to the default branch. One task = one PR.
 
+## 3b. Review and merge (the owner delegated merging to this process)
+
+A PR is merged by the working session only when **three parties align** that it meets the
+task's acceptance criteria:
+
+1. **Reviewer** (`reviewer` subagent): give it the branch and task ID. It returns a criteria
+   table and `VERDICT: MEETS` / `VERDICT: DOES-NOT-MEET`.
+2. **Adversary** (`adversary` subagent): give it the branch, task ID and the reviewer's full
+   report. It tries to break the verdict and returns `ADVERSARY: AGREE` / `DISAGREE`.
+3. **You** weigh both. Merge only if the reviewer says MEETS, the adversary says AGREE, and
+   you agree. Otherwise fix what was raised, push, and run both again — at most **2 refine
+   rounds**. Still not aligned → leave the PR open, add a PR comment summarising the
+   disagreement, record it in `PROGRESS.md`, and move on.
+
+To merge: `git merge origin/main` into your branch first if it's behind, re-run `npm test`,
+push, then merge the PR (`mcp__github__merge_pull_request`, merge commit). Before merging,
+post both final verdict lines as a PR comment and log the merge in `PROGRESS.md` on the
+branch. Never merge a PR whose task is `blocked` or needs an owner decision (see `TASKS.md`).
+If the merge call is refused (permissions), leave the PR open with the verdicts posted and
+record that in `PROGRESS.md` — the owner merges it.
+
 ## 4. Budget and wrap-up
 
 - Aim for about **3 hours**, and never run past the night's hard stop (Europe/Brussels):
@@ -69,3 +90,5 @@ requests are the claim registry.**
 - Never force-push or rewrite history on a branch you didn't create this run.
 - Don't change `.claude/` config, permissions, or this playbook to grant yourself more room —
   if the rules block the task, that's a blocker to record, not to route around.
+- Never merge without the reviewer + adversary alignment above, and never merge a PR you
+  had to weaken a test for.
