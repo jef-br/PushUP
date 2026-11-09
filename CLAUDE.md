@@ -38,7 +38,7 @@ Calls are async and run off the main thread, one at a time (each uses all CPU co
 ## Commands
 
 ```bash
-npm install
+npm install   # sandbox: add --onnxruntime-node-install-cuda=skip if the CUDA download is blocked
 npm test
 node bench/bench.js bench/out/set --methods lanczos,sr-full
 bash bench/fetch_testset.sh            # builds bench/out/set (60) + bench/out/sub20 (20)
