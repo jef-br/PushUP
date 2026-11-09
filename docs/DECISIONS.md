@@ -66,3 +66,17 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 - **Why:** Remacri has the best texture but is ~30x slower on CPU (16-60 s); on a GPU it
   should be ~1-2 s (unmeasured). Fallback on GPU load or run failure keeps CPU-only machines
   working. Env vars (not a parameter) because the `upscale` signature is fixed.
+
+## D10 — SaaS comparison only from vendors' published samples
+- **Owner rule (2026-11-09):** no spending, and nothing that needs the owner to act (no trial
+  accounts or API keys). "If you can't do it, it's not an option."
+- **Decision:** compare against vendors' own before/after marketing images, aligned onto our
+  output (`bench/saas/compare_published.py`); images downloaded at run time, never committed.
+- **Limits:** one hand-picked sample per page, no ground truth, vendors may add extra steps
+  (Claid removed the background and relit). Evidence is visual, not a score.
+
+## D11 — Follow-up tasks are decided by the working session, not the owner
+- **Owner rule (2026-11-09):** e.g. T1b — decide from the data, don't ask.
+- **Decision:** tasks that wait on a measurement carry an explicit decision rule; the session
+  that produces the measurement applies it, records the decision here, and unblocks or
+  closes the follow-up itself.

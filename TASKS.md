@@ -77,34 +77,37 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   - Benchmark numbers for both modes recorded; README/CLAUDE.md document the modes.
 - **Note:** no GPU in the cloud container; GPU paths are verified only by their fallback.
 
-### [ ] T3a — Score externally produced upscales (harness for the SaaS comparison)
-- **Goal:** `bench/bench.js` can score a folder of upscaled images produced elsewhere (e.g. by
-  a SaaS), using the same inputs and references as every other method.
-- **Accept:**
-  - `node bench/bench.js <set> --sizes 400,600 --export-inputs <dir>` writes the exact
-    degraded inputs the bench feeds every method (downscaled, JPEG q85, *decoded* RGB saved as
-    lossless PNG) to `<dir>/<size>/<image-name>.png`.
-  - `--external <name>=<dir>` scores `<dir>/<size>/<image-name>.png` as method `<name>`
-    (reported as `<size>px <name>`, like built-in methods). Expected output size is the
-    bench's own: `round(w*1000/L) x round(h*1000/L)` of the exported input (w, h, L = its
-    width, height, largest side). Files of exactly that size are used as-is and scored like
-    every other method (cropped to the area shared with the reference); files of another
-    size are resized to the expected size (sharp, `lanczos3`, `fit: 'fill'`) and flagged in
-    the output. Missing files are reported and skipped, never silently scored.
-  - Check: export inputs, upscale each to the expected size in a separate script with sharp
-    (`lanczos3`, `fit: 'fill'`, same as the built-in method), score with `--external`:
-    PSNR/SSIM/GMSD must equal the built-in `lanczos` method **exactly**, on all images.
-  - Test for the name/size matching and the missing-file report. No network calls.
+### [x] T3 — Compare with a SaaS upscaler, without spending (done 2026-11-09, see docs/SAAS.md)
+- Owner rule: no accounts or credits; only what a session can do itself.
+- Method: the vendor's own published before/after pair, aligned onto PushUP's output
+  (`bench/saas/compare_published.py`). Claid.ai: PushUP is clean and faithful but behind on
+  fine texture (suede fibres). Follow-up: T7.
 
-### [blocked] T3b — Run the comparison against Claid.ai (free trial only, no spending)
-- **Plan:** Claid.ai's free trial includes 50 API credits; an upscale costs 2–8 credits, so
-  the 20-image subset at one input size (≤1000 px output) may fit (20 × 2 = 40) — or not, if
-  Claid charges more. Upscale the T3a inputs (400 px first) through Claid's API, then score
-  with `--external claid=<dir>`. If credits run out, score the images that were done and
-  report N; compare PushUP on the same N images.
-- **Blocked on:** the owner creating a free Claid trial account and saving the API key as a
-  network secret for `api.claid.ai` (environment settings). Never buy credits; stop if the
-  trial balance would run out mid-set.
+### [blocked] T3c — Repeat the published-sample comparison for more vendors
+- **Goal:** add Let's Enhance, Pixelcut, Picsart, Topaz, Upscale.media samples to
+  `docs/SAAS.md` with `bench/saas/compare_published.py` (one entry per vendor).
+- **Blocked on:** each vendor's site and image CDN must be added to the environment's
+  network allowlist, which needs an interactive session (owner approves host additions).
+
+### [ ] T7 — Close the texture gap (research, no product code)
+- **Goal:** find a model that produces Claid-like material texture (suede, knit, leather)
+  without inventing wrong detail, that runs on CPU (any speed) and is worthwhile on a GPU.
+- **Accept:**
+  - Candidates from Hugging Face / OpenModelDB with a published ONNX export or a format our
+    converters handle (`tools/build_*_onnx.py`), plus at least one generative / one-step
+    diffusion SR model if an ONNX export exists. Record license, size, source and SHA-256.
+  - For each: CPU time on the Claid sample (640×428 → 1000 px) and on one sub20 image,
+    peak memory, and the crop comparison from `bench/saas/compare_published.py` (add the
+    model as a column). Score on `bench/out/sub20` at 400 px with `bench/bench.js`.
+  - `docs/TEXTURE.md`: table, crops (outside git), and a recommendation: which model (if
+    any) should become the GPU `high` mode, with the evidence.
+- **Notes:** CC BY-NC-SA licenses are acceptable (non-commercial project). Models that
+  can't produce an ONNX file without PyTorch are out of scope — record them as such.
+  Network available unattended: Hugging Face (models + datasets), PyPI/npm, GitHub release
+  downloads and `git clone` (OpenModelDB data: `git clone --depth 1 --filter=blob:none
+  --sparse https://github.com/OpenModelDB/open-model-database`), and `claid.ai` for the
+  Claid sample. `github.com/<repo>/raw/...` and other sites are blocked — a model only
+  available elsewhere is recorded as unreachable, not worked around.
 
 ### [ ] T1a — Measure how well text on packaging survives (research, no product code)
 - **Goal:** Decide with data whether text needs special handling. Text on labels
@@ -133,8 +136,11 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [blocked] T1b — Text-aware upscaling
 - **Goal:** detect text regions, upscale them with a text-specialised path, blend back.
-- **Blocked on:** T1a's result and an owner go-ahead — this adds models and complexity.
+- **Blocked on:** T1a's result only. The decision is the working session's, not the
+  owner's: if T1a's decision rule recommends T1b, the session that finishes T1a sets T1b to
+  `[ ]`, splits it into sub-tasks here (detector, text model, compositing, tests, benchmark)
+  and records the decision in `docs/DECISIONS.md`. If the rule says no, set T1b to `[x]`
+  closed with the evidence.
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [split] T3 — Quality comparison vs a SaaS upscaler → see T3a (harness) and T3b (run).
