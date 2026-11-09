@@ -40,7 +40,8 @@ Calls are async and run off the main thread, one at a time (each uses all CPU co
 npm install
 npm test
 node bench/bench.js bench/out/set --methods lanczos,sr-full
-python bench/build_testset.py abo.parquet lamoda.parquet bench/out/set
+bash bench/fetch_testset.sh            # builds bench/out/set (60) + bench/out/sub20 (20)
+node bench/profile.js                  # per-stage latency
 ```
 
 ## Model

@@ -6,6 +6,30 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-09 — Unblocked the overnight runs (interactive session)
+
+**Why runs were stopping after ~30 s:** overnight work sat in unmerged draft PRs, so `main`
+kept showing every task as ready; runs (correctly) refused to duplicate open PRs, and T4
+needed benchmark images that only existed in an old session. Net: nothing to do.
+
+**Fixed:**
+- Merged into `main`: #3 (playbook timing), #4 (community-model converters, tiling,
+  4xLSDIRCompactC3 default), #6 (I4 contract tests), #8 (T2 profiling), #9 (I1 CI),
+  #10 (I3 publish readiness). Closed duplicates #5, #7 and the log-only #11.
+- `docs/OVERNIGHT_RUN.md`: open PRs are now the claim registry — a task with an open
+  overnight PR is taken; open the draft PR right after claiming; no log-only PRs.
+- `bench/fetch_testset.sh`: downloads the HF sources and builds `bench/out/set` (60) and
+  `bench/out/sub20` (20) in ~2 min. Verified byte-identical to the published benchmark set.
+- Stale references to the old model fixed in `bench/profile.js`, `test/package.test.js`
+  and the `bench-runner` / `model-builder` subagents.
+- Tests: 14/14 pass. Profile (4 cores, factor 1.5): 400 px 0.56 s, 600 px 1.18 s,
+  800 px 2.19 s end to end. `docs/PERF.md` numbers predate the model switch.
+
+**Next:** T4 is unblocked (data available). T5 ready. T6 (high-quality mode) waits on the
+owner's hardware decision.
+
+---
+
 ## 2026-11-06 — Community models; new default 4xLSDIRCompactC3
 
 - Added converters: `tools/build_rrdb_onnx.py` (ESRGAN: Remacri, UltraSharp, Siax, x4plus)

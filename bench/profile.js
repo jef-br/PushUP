@@ -65,7 +65,7 @@ async function stages(rgb, w, h, outW, outH) {
 let session;
 (async () => {
   session = await ort.InferenceSession.create(
-    path.join(__dirname, '..', 'models', 'realesr-general-wdn-x4v3.onnx'),
+    path.join(__dirname, '..', 'models', '4xLSDIRCompactC3.onnx'),
     { graphOptimizationLevel: 'all', intraOpNumThreads: os.availableParallelism(), executionMode: 'sequential' });
   console.log(`cpus=${os.availableParallelism()} node=${process.version} factor=${factor} runs=${runs} (median ms)`);
   console.log('size      total(upscale)  toTensor  inference  fromTensor  resizeDown  lanczosMix');

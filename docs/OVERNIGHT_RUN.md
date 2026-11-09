@@ -11,14 +11,25 @@ be conservative: finish and verify one thing rather than start many.
    scaffold code or invent a project.
 2. Read `CLAUDE.md`, `PROGRESS.md`, and `TASKS.md`. The last `PROGRESS.md` entry tells you
    where the previous run stopped.
+3. Benchmark images are not in git. If a task needs them and `bench/out/set` is missing,
+   run `bash bench/fetch_testset.sh` (downloads ~1.9 GB from Hugging Face, ~5 min).
 
 ## 1. Pick one task
 
-- Take the highest-priority task in `TASKS.md` marked ready (`[ ]`), not `blocked` and not
-  already `[~]` in-progress.
-- Immediately mark it `[~]` with today's date and your branch, commit that single change, and
-  push it as your **claim** — so a concurrent window doesn't take the same task.
-- Branch name: `overnight/<YYYY-MM-DD>-<task-id>` off the default branch.
+Overnight work lands on branches; only the owner merges to `main`. So `main`'s `TASKS.md`
+can be behind: a task can look ready there while a run is already doing it. **Open pull
+requests are the claim registry.**
+
+- List open PRs (`mcp__github__list_pull_requests`, state `open`). Any task whose ID
+  appears in an open PR's branch (`overnight/<date>-<task-id>`) or title is **taken**, even
+  if `main` shows it as `[ ]`. Never start a task that already has an open PR.
+- Take the highest-priority remaining task marked ready (`[ ]`), not `blocked`, not `[~]`.
+- Branch `overnight/<YYYY-MM-DD>-<task-id>` off the default branch. Mark the task `[~]`
+  with today's date, commit that single change, push, and **immediately open the draft PR**
+  (title starts with the task ID). The open PR is your claim.
+- If no task is free: do not open a new PR just to log that. Append the reason to
+  `PROGRESS.md` on the most recent open overnight PR's branch (or skip logging if the
+  previous run already recorded the same reason), then stop.
 
 ## 2. Do the work
 
@@ -34,7 +45,7 @@ be conservative: finish and verify one thing rather than start many.
 - Update `TASKS.md` (mark the task `[x]`, or back to `[ ]` with notes if unfinished) and
   append a `PROGRESS.md` entry: what you did, test/bench results, what's next, any blocker.
 - Record any non-obvious choice in `docs/DECISIONS.md`.
-- Push the branch and open (or update) a **draft** PR to the default branch. One task = one PR.
+- Push the branch and update your **draft** PR to the default branch. One task = one PR.
 
 ## 4. Budget and wrap-up
 

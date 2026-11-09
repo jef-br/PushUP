@@ -17,7 +17,7 @@ You run PushUP's benchmark and report numbers. You do not change source code.
 2. Run the benchmark for the methods you were asked about, e.g.:
    `node bench/bench.js bench/out/set --methods lanczos,sr-full`
    Method strings: `lanczos`, `sr-full`, `sr-<maxInputPx>`, `sr:<path/to/model.onnx>`, each
-   optionally with `@<lanczosMix>` (e.g. `sr:models/realesr-general-wdn-x4v3.onnx@0.1`).
+   optionally with `@<lanczosMix>` (e.g. `sr:models/4xLSDIRCompactC3.onnx@0.1`; large models need tiles, e.g. `sr:path/remacri.onnx#192@0`).
 
 ## Report back
 

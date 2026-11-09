@@ -48,7 +48,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   excludes `bench/`, `tools/`, test fixtures. `npm publish --dry-run` clean.
 
 ### [ ] T5 — Faster `fromTensor` (byte-identical output)
-- **Goal:** Replace the per-pixel `Math.round` + clamp loop in `src/index.js` `fromTensor`
+- **Goal:** Replace the per-pixel `Math.round` + clamp loop in `src/index.js`
+  (`copyFromTensor` since tiling landed; it was `fromTensor`)
   with a `Uint8ClampedArray`-based write (see `docs/PERF.md`).
 - **Accept:** Output bytes identical to the old implementation on test images (add a test
   comparing against a reference clamp); `bench/profile.js` shows the `fromTensor` drop.
@@ -57,6 +58,13 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   not be achievable with the native clamp; if the test shows any difference, drop the idea
   and record the negative result. The `fromTensor` stage is ~6.6% of latency at 800 px;
   the expected saving is smaller (estimate, unmeasured).
+
+### [blocked] T6 — Optional high-quality mode (Remacri, ESRGAN)
+- **Goal:** Let callers opt into `4x_foolhardy_Remacri` (best fabric texture) without
+  changing the `upscale` signature, e.g. via `PUSHUP_QUALITY=high`.
+- **Blocked on:** owner decision. On a 4-core CPU it takes ~16 s @400 px and ~60 s @800 px
+  (vs 0.55 s / 2.3 s default); worthwhile only on a GPU. See D7 in `docs/DECISIONS.md`.
+  Converter (`tools/build_rrdb_onnx.py`) and tiling (`tile` option) already exist.
 
 ### [blocked] T3 — Quality comparison vs a SaaS upscaler (e.g. Claid.ai)
 - **Goal:** Score a SaaS upscaler's output against PushUP on the standard set.

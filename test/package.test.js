@@ -13,7 +13,7 @@ test('npm pack tarball has runtime files and no dev tooling', () => {
   });
   const files = JSON.parse(out)[0].files.map((f) => f.path);
   for (const must of ['package.json', 'README.md', 'LICENSE', 'src/index.js',
-    'models/realesr-general-wdn-x4v3.onnx']) {
+    'models/4xLSDIRCompactC3.onnx']) {
     assert.ok(files.includes(must), `missing ${must}`);
   }
   const rootAllowed = new Set(['package.json', 'README.md', 'LICENSE']);

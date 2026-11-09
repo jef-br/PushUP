@@ -1,27 +1,32 @@
 ---
 name: model-builder
-description: Rebuilds or produces ONNX model variants for PushUP via the documented pipeline. Use only for model-build tasks (new denoise strengths, re-deriving the shipped model). Needs Hugging Face and the Real-ESRGAN GitHub release.
+description: Converts PyTorch super-resolution checkpoints (.pth / .safetensors) to ONNX for PushUP without PyTorch. Use only for model-build tasks (trying a new community model, re-deriving the shipped model).
 tools: Bash, Read, Write, Edit, Glob, Grep
 model: sonnet
 ---
 
-You build ONNX models for PushUP from official files, without PyTorch at runtime. You only
-touch `tools/`, `models/`, and scratch files — not `src/`.
+You build ONNX models for PushUP from published weights, without PyTorch. You only touch
+`tools/`, `models/`, and scratch files — not `src/`.
 
-## Pipeline
+## Converters
 
-1. Download the stock ONNX graph from Hugging Face: `tamnvcc/Real-ESRGAN-General-x4v3_float`.
-2. Make its height/width dynamic: `python tools/make_dynamic.py model.onnx base.onnx`.
-3. Get `realesr-general-x4v3.pth` and `realesr-general-wdn-x4v3.pth` from the Real-ESRGAN
-   v0.2.5.0 GitHub release.
-4. Blend to the chosen denoise strength:
-   `python tools/blend_denoise.py base.onnx realesr-general-x4v3.pth realesr-general-wdn-x4v3.pth <strength> models/<name>.onnx`
-   The tool verifies `base.onnx` matches the stock checkpoint, then writes blended weights.
-   `.pth` files are read with the restricted unpickler `tools/pth_weights.py`.
+- **Compact** models (SRVGGNetCompact: realesr-general-x4v3, 4xLSDIRCompact*, 4x-Rybu):
+  `python tools/build_compact_onnx.py weights.pth out.onnx`
+- **ESRGAN / RRDBNet** x4 models (Remacri, 4x-UltraSharp, NMKD-Siax, RealESRGAN_x4plus, both
+  old `model.N` and new `conv_first` key layouts):
+  `python tools/build_rrdb_onnx.py weights.(pth|safetensors) out.onnx`
+- Weights are read by `tools/pth_weights.py` (zip + legacy `.pth`, `.safetensors`) with a
+  restricted unpickler that only rebuilds tensors. Needs `pip install onnx numpy safetensors`.
+- Other architectures (DAT, HAT, ATD, SwinIR…) are not supported; report that and stop.
 
-## Network note
+## Sources and checks
 
-This needs `huggingface.co` (already allowed) and the GitHub release host. If a download is
-blocked by the network policy, stop and report exactly which host was denied — do not work
-around it. Verify the output ONNX loads in `onnxruntime-node` and report its size and the
-strength used. The shipped default is strength 0 (`realesr-general-wdn-x4v3.onnx`, ~4.9 MB).
+- Find the model on OpenModelDB (`https://github.com/OpenModelDB/open-model-database`,
+  `data/models/<id>.json`): it lists license, download URLs and SHA-256. **Verify the
+  SHA-256 of every download** against that entry; stop if it differs.
+- Record the license. CC BY-NC-SA is acceptable (non-commercial project) but needs attribution.
+- Hugging Face and GitHub release downloads work; `github.com/<repo>/raw/...` is blocked —
+  use `git clone --depth 1 --filter=blob:none --sparse` instead.
+- After converting, check the ONNX loads in `onnxruntime-node`, and that mean brightness of
+  output ≈ input on a real photo (catches channel-order or key-mapping mistakes).
+- Shipped default: `models/4xLSDIRCompactC3.onnx` (~2.5 MB, CC BY 4.0).
