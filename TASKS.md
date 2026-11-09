@@ -115,9 +115,13 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   - Text test set: run that OCR on the 1000 px references from `bench/out/set`; keep text
     lines with recognition confidence ≥ 0.90 and ≥ 4 characters, as crops of the line box
     padded by 8 px (≥15 crops; list them in `docs/TEXT.md` with image name + box).
-  - Protocol: upscale the **whole image** from its 400 px and 600 px degraded input (as the
-    bench does), then cut the same box from the 1000 px output. Score = character accuracy
-    (1 − normalised edit distance) of OCR on that crop vs. OCR on the reference crop.
+  - References are built exactly as `bench/bench.js` builds them (set image resized to
+    1000 px on its largest side). Protocol: upscale the **whole image** from its 400 px and
+    600 px degraded input (as the bench does), then cut the same box (top-left coordinates)
+    from the output; if output and reference differ by 1 px after rounding, clip the box to
+    the area both share, as the bench does. Score per crop = character accuracy
+    `max(0, 1 − editDistance(ocr(out), ocr(ref)) / len(ocr(ref)))`; crops whose reference
+    OCR text is empty are excluded. "Mean" = unweighted mean over crops.
   - Methods: Lanczos (baseline), `fast` and `high` (via `PUSHUP_QUALITY` in a small script;
     `high` takes ~15 s per 400 px image on CPU, so budget ~30 min for 15 images × 2 sizes).
   - Decision rule, applied at 400 px and written into `docs/TEXT.md`: recommend T1b if
