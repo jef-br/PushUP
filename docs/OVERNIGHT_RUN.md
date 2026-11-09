@@ -17,8 +17,11 @@ next. Keep going until the stop time: a blocker on one task never ends the run.
    run `bash bench/fetch_testset.sh` (downloads ~1.9 GB from Hugging Face, ~5 min).
 4. `npm install`, then `npm test` on `main`. If the install fails downloading the CUDA
    binaries (e.g. a blocked NuGet host), use `npm install --onnxruntime-node-install-cuda=skip`
-   (the sandbox has no GPU anyway). If tests already fail on `main`, fixing that is your first
-   task: add it to `TASKS.md` as `F-<date>` and do it like any other (never weaken a test).
+   (the sandbox has no GPU anyway). If tests already fail on `main`: when the cause is the
+   environment (network, missing download, no GPU), record it as a blocker in `PROGRESS.md`
+   and carry on with tasks that don't depend on it. When it's a real regression, fixing it
+   is your first task: add it to `TASKS.md` as `F-<date>-<HHMM>` and do it like any other
+   (never weaken a test). While `main` is red, nothing else can be merged.
 5. Work out your stop time (Europe/Brussels, `TZ=Europe/Brussels date`), so runs never
    overlap the next scheduled window:
 
@@ -52,9 +55,13 @@ registry.**
 - `npm install`, then `npm test`. Add or extend tests for what you changed.
 - If the change can affect output quality, run the benchmark (use the `bench-runner`
   subagent) and record the metrics in `PROGRESS.md`.
-- **Quality gate:** a change to default behaviour must not lower PSNR, SSIM or GMSD (GMSD:
-  lower is better) on `bench/out/sub20` at 400 and 800 px. If it does, ship it off by default
-  or not at all, and record the negative result.
+- **Quality gate:** a change to default behaviour must not lower quality on
+  `node bench/bench.js bench/out/sub20 --sizes 400,800` (CPU, `fast` mode): PSNR may drop
+  at most 0.02 dB, SSIM at most 0.001, GMSD may rise at most 0.001 (lower GMSD is better),
+  at each size. If it does, ship it off by default or not at all, and record the negative
+  result. If the benchmark can't be run, a default-changing PR is not merged: mark the task
+  `[blocked]` with the reason. Changes only `high` mode on a GPU would use can't be measured
+  here; benchmark them with `PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu` instead.
 - Keep the public API contract in `CLAUDE.md` intact unless the task explicitly changes it.
 
 ## 3. Land it
@@ -93,6 +100,8 @@ record that in `PROGRESS.md` — the owner merges it.
 
 - After a task is merged (or left open after 2 refine rounds), go back to section 1 if at
   least 60 minutes remain before your hard stop. Don't start work you can't finish in time.
+- Don't start a 3b review or a merge within 15 minutes of the hard stop; leave the PR open
+  with its status in `PROGRESS.md` for the next run.
 - At ~30 minutes before the hard stop, stop cleanly even mid-task: push WIP to the task
   branch (only if tests pass; otherwise revert it), write exact next steps and any blocker
   in `PROGRESS.md` on that branch, and update the PR.
@@ -102,20 +111,22 @@ record that in `PROGRESS.md` — the owner merges it.
 A blocked task is not a reason to stop. In order:
 
 1. Try to unblock a `[blocked]` task from inside the sandbox (download a dataset, write a
-   missing script). If it has an open PR, continue on that PR's branch — that's not taking
-   someone else's claim. Only an owner action (credential, account, network-host approval) is
+   missing script). If it has an open PR, continue on that PR's branch (only if its last push
+   is older than 3 hours, so no other run is still on it); set the task back to `[~]` there. Only an owner action (credential, account, network-host approval) is
    a real blocker; record exactly what's needed in `PROGRESS.md` and the task.
 2. Find work: `PROGRESS.md` follow-ups, `docs/PERF.md` ideas, README "Known limits",
    untested code paths in `src/`, benchmark gaps (product types or sizes the set misses).
 3. Add 3–5 new tasks to `TASKS.md` (goal, acceptance criteria, notes; each small enough for
-   one run). Land that as its own PR (task ID `BACKLOG-<date>`) through 3b — the reviewer
+   one run). Land that as its own PR (task ID `BACKLOG-<date>-<HHMM>`) through 3b. At most
+   one BACKLOG PR may be open at a time; if one is open, work on its tasks instead — the reviewer
    checks each new task has a goal, verifiable acceptance criteria, one-run scope, and stays
    inside the limits below — then continue with the first new task.
 
 Only work on tasks that are in `TASKS.md`. Self-made tasks may cover speed, quality,
-robustness, tests, docs and packaging — never changing the public contract, changing the
-default model, or adding a runtime dependency that needs Python or a GPU (those need an
-owner-written task).
+robustness, tests, docs and packaging. Never as a self-made task (these need an
+owner-written task): changing the public contract, changing the default model or a default
+setting (mode choice, Lanczos mix), adding a model or any new dependency, or editing
+`CLAUDE.md`, this playbook or `.claude/`.
 
 ## Per-task blockers (record, then move on)
 

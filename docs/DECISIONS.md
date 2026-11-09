@@ -91,3 +91,7 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
   gate on default changes, precise stop times, and the CUDA-skip install flag. Its
   self-building benchmark set duplicates `bench/fetch_testset.sh`. `dev` holds no code newer
   than `main` (verified file by file), so it is deleted after this merges.
+- **Behaviour change to note:** runs now use their whole window (until the hard stop)
+  instead of aiming for ~3 hours, and refill the backlog themselves within tight limits
+  (playbook section 5): one BACKLOG PR at a time, no new models, dependencies, default
+  changes or edits to CLAUDE.md / playbook / `.claude/`.
