@@ -34,8 +34,11 @@ async function method(name, inp, w, h) {
   }
   // sr-full | sr-<maxInputPx> | sr:<path/to/model.onnx>, each with optional @<lanczosMix>
   const opts = {};
+  // optional #<tile> suffix, then @<lanczosMix>
   const at = name.indexOf('@');
   if (at > 0) { opts.lanczosMix = Number(name.slice(at + 1)); name = name.slice(0, at); }
+  const hash = name.indexOf('#');
+  if (hash > 0) { opts.tile = Number(name.slice(hash + 1)); name = name.slice(0, hash); }
   if (name.startsWith('sr:')) opts.modelPath = path.resolve(name.slice(3));
   else if (name !== 'sr-full') opts.modelInputMax = Number(name.split('-')[1]);
   const [out] = await _run(inp, w * 3, 1000 / Math.max(w, h), opts);

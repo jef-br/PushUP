@@ -6,6 +6,23 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-06 — Community models; new default 4xLSDIRCompactC3
+
+- Added converters: `tools/build_rrdb_onnx.py` (ESRGAN: Remacri, UltraSharp, Siax, x4plus)
+  and `tools/build_compact_onnx.py` (compact: LSDIRCompact, Rybu, general-x4v3). Both match
+  reference ONNX exports exactly. `tools/pth_weights.py` now reads legacy .pth + safetensors.
+- Added tiled inference (`tile` option) — ESRGAN models OOM'd (>14 GB) at 800 px whole-frame;
+  tiled 192 px uses ~1.6 GB.
+- New default: `models/4xLSDIRCompactC3.onnx` + 20% Lanczos. 20-image subset vs previous
+  default: PSNR 31.51 vs 30.96 @400, 34.05 vs 32.96 @600, 36.28 vs 35.13 @800; ~1.75x faster.
+- Remacri looks best on fabric (GMSD 0.102 @400, 0.070 @600) but takes 16-60 s on 4-core CPU.
+- Licenses: owner confirmed non-commercial use, so CC BY-NC-SA models are allowed.
+
+**Open decision (owner):** ship a slower high-quality ESRGAN mode? Depends on target
+hardware (CPU vs GPU). See D7 in `docs/DECISIONS.md`.
+
+---
+
 ## 2026-11-06 — Consolidated onto `main`
 
 - Upscaler code (`package.json`, `src/`, `models/`, `test/`, `bench/`, `tools/`) and the

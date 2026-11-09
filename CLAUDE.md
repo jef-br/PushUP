@@ -45,16 +45,19 @@ python bench/build_testset.py abo.parquet lamoda.parquet bench/out/set
 
 ## Model
 
-- Ships `models/realesr-general-wdn-x4v3.onnx` (~4.9 MB), the weak-denoise Real-ESRGAN
-  variant at denoise strength 0 (chosen because stock x4v3 erased small detail like shirt
-  buttons). At runtime only this ONNX file is used.
-- Rebuilding the model (rare) needs Hugging Face (`tamnvcc/Real-ESRGAN-General-x4v3_float`)
-  and the `.pth` weights from the Real-ESRGAN v0.2.5.0 GitHub release, then
-  `tools/make_dynamic.py` → `tools/blend_denoise.py`. See `docs/DECISIONS.md`.
+- Ships `models/4xLSDIRCompactC3.onnx` (~2.5 MB): a compact community model (CC BY 4.0,
+  by helaman), converted with `tools/build_compact_onnx.py`. It beat the previous
+  realesr-general-wdn-x4v3 at every size and runs ~1.75x faster. At runtime only this
+  ONNX file is used.
+- `tools/build_rrdb_onnx.py` converts ESRGAN community models (Remacri, UltraSharp,
+  Siax). They look better on fabric but are 15-30x slower on CPU and need tiled
+  inference (`tile` option in `src/index.js`). See `docs/DECISIONS.md`.
+- Licenses: the project is non-commercial, so CC BY-NC-SA models (Remacri, UltraSharp)
+  are allowed; keep attribution and the same license for converted files.
 
 ## Pipeline
 
-1. Real-ESRGAN upscales the whole image 4× in one pass (no tile seams).
+1. The model upscales the whole image 4× in one pass (no tile seams; large models tile).
 2. `sharp` Lanczos-resizes down to target size.
 3. Optional: mix in a share of plain Lanczos (`DEFAULT_LANCZOS_MIX` in `src/index.js`).
 

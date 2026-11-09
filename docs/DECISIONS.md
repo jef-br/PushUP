@@ -33,3 +33,16 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
   stride, async, one call at a time.
 - **Why:** library embeds in a pipeline without touching disk; each call already saturates
   all cores, so serialising calls avoids oversubscription.
+
+## D6 — Default model: 4xLSDIRCompactC3 (+20% Lanczos mix)
+- **Decision:** replace realesr-general-wdn-x4v3 with the community compact model
+  4xLSDIRCompactC3 (CC BY 4.0), converted by `tools/build_compact_onnx.py`.
+- **Why:** on the same 20 e-commerce photos it scored better on PSNR, SSIM and GMSD at
+  400/600/800 px and ran ~1.75x faster (half the layers). Sharper pleats; buttons kept.
+
+## D7 — Large ESRGAN community models are optional, not default (pending)
+- **Context:** Remacri / NMKD-Siax / 4x-UltraSharp keep the most fabric texture, but cost
+  16 s (400 px) to ~60 s (800 px) on a 4-core CPU and need tiling to fit in memory.
+- **Status:** awaiting the owner's call on speed vs quality and target hardware (GPU would
+  make them ~1-2 s).
+- **Licenses:** project is non-commercial; CC BY-NC-SA models are allowed with attribution.
