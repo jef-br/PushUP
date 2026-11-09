@@ -6,6 +6,23 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-09 — T6 GPU when available, CPU always; high-quality mode
+
+- Owner rule: every path runs on CPU; a GPU is used when present. `auto` = Remacri on a GPU,
+  4xLSDIRCompactC3 on CPU. Overrides: `PUSHUP_QUALITY=auto|fast|high`,
+  `PUSHUP_DEVICE=auto|cpu|gpu` (signature unchanged).
+- GPU providers: DirectML (Windows), CUDA (Linux x64; onnxruntime-node 1.31 needs CUDA 13
+  libs), CoreML (macOS arm64). Load or run failure → CPU (and `fast` in auto). Verified on this
+  CPU-only container: real CUDA load fails cleanly; run-time failure simulated with a stub.
+- `models/4x_foolhardy_Remacri.onnx` built from the official .pth (SHA-256 e1a73bd8…, matches
+  OpenModelDB; weights identical to the earlier safetensors copy). `models/LICENSES.md` added.
+- Benchmark, shipped high mode (`PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`, sub20, 4 cores):
+  400 px 31.12 / 0.8994 / 0.1018 in 14.6 s; 800 px 36.32 / 0.9595 / 0.0388 in 59.9 s.
+  Fast mode for comparison: 31.51 / 0.8941 / 0.1076 (0.5 s); 36.28 / 0.9543 / 0.0492 (2.0 s).
+- Tests: 25/25 (new `test/device.test.js`). GPU speed unmeasured (no GPU here).
+
+---
+
 ## 2026-11-09 — T5 faster tensor-to-bytes conversion (byte-identical)
 
 - `copyFromTensor` in `src/index.js` now uses `floor(v * 255 + 0.5)` inline instead of a

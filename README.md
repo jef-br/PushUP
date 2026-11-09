@@ -44,9 +44,11 @@ Two modes, picked automatically; the function signature never changes.
 | Mode | Model | 4-core CPU (400 / 800 px input) | Used when |
 |---|---|---|---|
 | `fast` | 4xLSDIRCompactC3 (2.5 MB) | ~0.5 s / ~2 s | No GPU (default on CPU) |
-| `high` | 4x_foolhardy_Remacri (67 MB) | ~16 s / ~60 s | A GPU is available |
+| `high` | 4x_foolhardy_Remacri (67 MB) | ~15 s / ~60 s | A GPU is available |
 
-`high` keeps the most fabric texture and the roundest buttons; see the Model choice table.
+`high` keeps the most fabric texture and the roundest buttons. On the 20-image subset
+(PSNR / SSIM / GMSD, lower GMSD is better): 400 px 31.12 / 0.899 / 0.102 vs fast
+31.51 / 0.894 / 0.108; 800 px 36.32 / 0.960 / 0.039 vs fast 36.28 / 0.954 / 0.049.
 
 GPU support (whatever onnxruntime-node ships for the platform):
 

@@ -61,7 +61,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   and record the negative result. The `fromTensor` stage is ~6.6% of latency at 800 px;
   the expected saving is smaller (estimate, unmeasured).
 
-### [~] T6 — GPU when available, CPU always; high-quality mode (claimed 2026-11-09, branch claude/keen-cannon-poefe2)
+### [x] T6 — GPU when available, CPU always; high-quality mode (done 2026-11-09, PR #13)
 - **Owner decision (2026-11-09):** every path must run on CPU only; use a GPU when present.
 - **Goal:** pick the execution device and model automatically, without changing the `upscale`
   signature: GPU present → Remacri (best texture); CPU → 4xLSDIRCompactC3 (fast).
