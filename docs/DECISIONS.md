@@ -43,8 +43,7 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 ## D7 — Large ESRGAN community models are optional, not default (superseded by D9)
 - **Context:** Remacri / NMKD-Siax / 4x-UltraSharp keep the most fabric texture, but cost
   16 s (400 px) to ~60 s (800 px) on a 4-core CPU and need tiling to fit in memory.
-- **Status:** awaiting the owner's call on speed vs quality and target hardware (GPU would
-  make them ~1-2 s).
+- **Status:** resolved by D9 (owner: CPU always, GPU when present; Remacri is `high` mode).
 - **Licenses:** project is non-commercial; CC BY-NC-SA models are allowed with attribution.
 ## D8 — No post-sharpening
 - **Decision:** don't sharpen the output (T4).

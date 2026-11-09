@@ -39,7 +39,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 ### [x] T4 — Optional post-sharpen toggle for fine texture (closed 2026-11-09: negative result, not shipped; see D8)
 - **Goal:** Evaluate whether a small, optional sharpening step improves perceived fabric
   texture without hurting PSNR/SSIM/GMSD.
-- **Accept:** Benchmark comparison in `PROGRESS.md`; ship only if it's a clear win and
+- **Accept:** Benchmark comparison (then in `PROGRESS.md`, now in D8); ship only if it's a clear win and
   default-off; otherwise record the negative result and close the task.
 
 ### [x] I3 — Package publish readiness (done 2026-11-08, branch overnight/2026-11-08-I3)

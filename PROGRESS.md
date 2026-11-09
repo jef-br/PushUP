@@ -25,7 +25,10 @@ new block on Monday).
 - **Runs:** per-task PRs (not a `dev` branch); several tasks per run until the hard stop;
   refill the backlog within limits; quality gate on default changes. — D12, playbook §0–5
 - **Benchmark data** is rebuilt by `bench/fetch_testset.sh`, not stored in git. — playbook §0
-- **Branches:** GitHub auto-deletes merged branches; `main` is the only long-lived branch.
+- **Branches:** repo setting "Automatically delete head branches" is on (owner, Nov 9);
+  `main` is the only long-lived branch.
+- **Network / permissions:** PushUP environment allows Hugging Face and `claid.ai`;
+  `Bash(curl:*)` and `mcp__github__merge_pull_request` are allowed in `.claude/settings.json`.
 
 ## 2026-W45 (Nov 2–8)
 
@@ -41,7 +44,8 @@ new block on Monday).
   attribution. — `models/LICENSES.md`
 - **Self-running project:** overnight runs follow `docs/OVERNIGHT_RUN.md`, backlog in
   `TASKS.md`, decisions in `docs/DECISIONS.md`, helpers in `.claude/agents/`.
-- **CI:** `npm ci` + `npm test` on push to `main` and every PR, Node 20 and 22. — I1
+- **CI:** `npm ci` + `npm test` on push to `main` and every PR, Node 20 and 22 (Node 18
+  untested, so not in the matrix). — I1, `.github/workflows/ci.yml`
 - **Publishing:** `files` whitelist, `prepublishOnly: npm test`, Node >=20.9. — D13
 - **Latency:** inference is ~90% of the time; speed has to come from the model runtime. —
   `docs/PERF.md`

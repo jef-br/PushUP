@@ -23,6 +23,10 @@ separate timed passes, so stages don't sum exactly to `total`; small stages are 
 | 600×450 | 1039 | 2 | 955 | 32 | 11 | 36 |
 | 800×600 | 1792 | 3 | 1784 | 48 | 17 | 46 |
 
+Conversion stage before → after T5 (same machine, median of 5): 63 → 13 ms @400,
+148 → 32 ms @600, 250 → 48 ms @800. Same-session end-to-end totals: 493 → 468 ms @400,
+1999 → 1921 ms @800 (the gain is about the stage saving; inference dominates).
+
 Earlier (2026-11-07, realesr-general-wdn-x4v3, old conversion): 823 / 1933 / 3513 ms total.
 Totals vary run to run by ±100-200 ms (inference); compare stages, or totals measured in
 the same session (T5 same-session: 1999 → 1921 ms @800 px).
