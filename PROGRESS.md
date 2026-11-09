@@ -42,6 +42,21 @@ hardware (CPU vs GPU). See D7 in `docs/DECISIONS.md`.
   `overnight/2026-11-07-*` branches by earlier runs, so I took T2. Merge those PRs.
 
 **Next:** T4 or I3 (or T5); review/merge the open PRs first.
+## 2026-11-08 — I1: CI workflow
+
+- Added `.github/workflows/ci.yml`: runs `npm ci` + `npm test` on push to `main` and on every
+  PR, Node 20 and 22 matrix, npm cache via `actions/setup-node`.
+- Local: `npm ci` clean, tests 7/7 pass. Workflow itself not yet observed running on GitHub
+  (check the draft PR's checks). No quality-affecting change, so no benchmark.
+- Synced stale `package-lock.json` root metadata (version, license, engines) with `package.json`.
+- Choice: `npm ci` (lockfile exists) rather than `npm install`; Node 18 omitted from the
+  matrix though `engines` allows >=18.14 (untested).
+
+- Reviewer follow-ups applied: least-privilege `permissions`, concurrency cancel, 15 min timeout. I1 left `[~]` until CI is observed green.
+
+- CI observed green on PR #9 (test 20 and test 22 both passed); I1 marked `[x]`.
+
+**Next:** then I4 (contract-edge tests).
 
 ---
 
