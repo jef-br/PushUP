@@ -35,7 +35,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   speed idea written up as a follow-up task (don't implement risky changes unattended).
 - **Notes:** README baseline: ~1 s @400 px, ~4 s @800 px on 4 cores.
 
-### [~] T4 — Optional post-sharpen toggle for fine texture (claimed 2026-11-09, branch claude/keen-cannon-poefe2)
+### [x] T4 — Optional post-sharpen toggle for fine texture (closed 2026-11-09: negative result, not shipped; see PROGRESS.md)
 - **Goal:** Evaluate whether a small, optional sharpening step improves perceived fabric
   texture without hurting PSNR/SSIM/GMSD.
 - **Accept:** Benchmark comparison in `PROGRESS.md`; ship only if it's a clear win and

@@ -52,3 +52,9 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 - **Why:** a whitelist can't leak `bench/`, `tools/`, or fixtures by accident, and
   `test/package.test.js` asserts the contents. `sharp@0.35` requires Node >=20.9, so the old
   `engines` claim was wrong. Publishing itself is left to a human.
+
+## D8 — No post-sharpening
+- **Decision:** don't sharpen the output (T4).
+- **Why:** an unsharp mask lowered PSNR/SSIM at every strength on the 20-image subset and
+  added no fabric texture, only edge contrast and halos. Missing texture is lost
+  information; only a stronger model (e.g. Remacri, T6) restores it.
