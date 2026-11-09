@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const ort = require('onnxruntime-node');
 const sharp = require('sharp');
-const { upscale } = require('../src/index.js');
+const { upscale, _copyFromTensor } = require('../src/index.js');
 
 const arg = (n, d) => {
   const i = process.argv.indexOf('--' + n);
@@ -46,9 +46,8 @@ async function stages(rgb, w, h, outW, outH) {
   t.inference = now() - t0;
   const out = res[session.outputNames[0]];
   t0 = now();
-  const n = out.dims[2] * out.dims[3], src = out.data, buf = Buffer.allocUnsafe(n * 3);
-  const c = (v) => { const x = Math.round(v * 255); return x < 0 ? 0 : x > 255 ? 255 : x; };
-  for (let i = 0, j = 0; i < n; i++, j += 3) { buf[j] = c(src[i]); buf[j + 1] = c(src[n + i]); buf[j + 2] = c(src[2 * n + i]); }
+  const ow = out.dims[3], oh = out.dims[2], buf = Buffer.allocUnsafe(ow * oh * 3);
+  _copyFromTensor(out, 0, 0, ow, oh, buf, ow, 0, 0); // the function src/index.js ships
   t.fromTensor = now() - t0;
   t0 = now();
   const rs = (d, sw, sh) => sharp(d, { raw: { width: sw, height: sh, channels: 3 } })

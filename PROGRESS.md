@@ -6,6 +6,43 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-09 — T5 faster tensor-to-bytes conversion (byte-identical)
+
+- `copyFromTensor` in `src/index.js` now uses `floor(v * 255 + 0.5)` inline instead of a
+  `Math.round` + clamp helper. For float32 inputs `v * 255 + 0.5` is exact in float64, so the
+  bytes are identical; no `Uint8ClampedArray` (it rounds ties to even, which differs).
+- New `test/convert.test.js`: compares against the original rounding on 30,000 values,
+  incl. every .5 tie in range, near-ties, out-of-range, NaN, ±Infinity and -0; plus a
+  sub-region copy test, and an end-to-end tiling test (tiled = whole-frame, byte for byte).
+  17/17 tests pass.
+- `bench/profile.js` now times the shipped function. Conversion stage, 4 cores, factor 1.5,
+  median of 5: 63 → 13 ms @400, 148 → 32 ms @600, 250 → 48 ms @800 (~5x).
+- End-to-end gain is ~the stage saving: same-session totals (adversary rerun) 493 → 468 ms
+  @400 and 1999 → 1921 ms @800. Earlier totals from separate runs (559 → 452, 2193 → 1792)
+  overstated it — inference time varies run to run by more than the saving.
+- Benchmark unchanged (sub20 @400: 31.51 / 0.8941 / 0.1076). Inference is now ~95%+ of
+  latency; further speed needs a faster model runtime (GPU, int8/fp16), not JS changes.
+
+---
+
+## 2026-11-09 — T4 post-sharpen: negative result, not shipped
+
+Tested sharp's unsharp mask (`.sharpen({ sigma })`) on the final image, after the 20%
+Lanczos mix, on `bench/out/sub20` (default model 4xLSDIRCompactC3):
+
+| Setting | 400 px PSNR / SSIM / GMSD | 600 px | 800 px |
+|---|---|---|---|
+| default (no sharpen) | **31.51 / 0.894 / 0.108** | **34.05 / 0.930 / 0.075** | **36.28 / 0.954 / 0.049** |
+| sigma 0.5 | 30.75 / 0.887 / 0.107 | 32.99 / 0.926 / 0.075 | 34.88 / 0.953 / 0.050 |
+| sigma 1.0 | 28.97 / 0.873 / 0.110 | 30.39 / 0.913 / 0.087 | 31.43 / 0.940 / 0.071 |
+| sigma 1.5 | 28.21 / 0.868 / 0.116 | 29.35 / 0.906 / 0.097 | 30.16 / 0.932 / 0.084 |
+
+Every strength lowers PSNR and SSIM; GMSD is flat at best (sigma 0.5). Visually it raises
+edge contrast (button outlines, pleats) with faint halos but adds no fabric texture: the
+texture is missing information, not low contrast. Code removed; nothing shipped.
+
+---
+
 ## 2026-11-09 — Unblocked the overnight runs (interactive session)
 
 **Why runs were stopping after ~30 s:** overnight work sat in unmerged draft PRs, so `main`

@@ -35,7 +35,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   speed idea written up as a follow-up task (don't implement risky changes unattended).
 - **Notes:** README baseline: ~1 s @400 px, ~4 s @800 px on 4 cores.
 
-### [ ] T4 — Optional post-sharpen toggle for fine texture
+### [x] T4 — Optional post-sharpen toggle for fine texture (closed 2026-11-09: negative result, not shipped; see PROGRESS.md)
 - **Goal:** Evaluate whether a small, optional sharpening step improves perceived fabric
   texture without hurting PSNR/SSIM/GMSD.
 - **Accept:** Benchmark comparison in `PROGRESS.md`; ship only if it's a clear win and
@@ -47,7 +47,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Accept:** `npm pack` produces a tarball that includes `src/`, `models/*.onnx`, `README`;
   excludes `bench/`, `tools/`, test fixtures. `npm publish --dry-run` clean.
 
-### [ ] T5 — Faster `fromTensor` (byte-identical output)
+### [x] T5 — Faster `fromTensor` (byte-identical output) (done 2026-11-09: ~5x faster stage, see PROGRESS.md)
+- **Outcome:** done with an inline `floor(v * 255 + 0.5)` (exact for float32), not
+  `Uint8ClampedArray` (ties-to-even would change bytes). Original goal kept below.
 - **Goal:** Replace the per-pixel `Math.round` + clamp loop in `src/index.js`
   (`copyFromTensor` since tiling landed; it was `fromTensor`)
   with a `Uint8ClampedArray`-based write (see `docs/PERF.md`).
