@@ -47,6 +47,11 @@ registry.**
 - Branch `overnight/<YYYY-MM-DD>-<task-id>` off the default branch. Mark the task `[~]`
   with today's date, commit that single change, push, and **immediately open the draft PR**
   (title starts with the task ID). The open PR is your claim.
+- **Stalled work:** an open overnight PR whose task is `[~]` and whose branch has had no push
+  for more than 3 hours was left at a hard stop. Continue it on its own branch (its next
+  steps are in that branch's `TASKS.md`) before starting anything new.
+- Never open a PR that only edits `PROGRESS.md` or only logs status; decisions are added in
+  the PR of the task that made them.
 - If no task is free, go to section 5 (make work) instead of stopping.
 
 ## 2. Do the work
