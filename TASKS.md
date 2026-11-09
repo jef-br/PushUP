@@ -89,7 +89,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Blocked on:** each vendor's site and image CDN must be added to the environment's
   network allowlist, which needs an interactive session (owner approves host additions).
 
-### [ ] T7 — Close the texture gap (research, no product code)
+### [~] T7 — Close the texture gap (research, no product code) (started 2026-11-09, branch overnight/2026-11-09-T7)
 - **Goal:** find a model that produces Claid-like material texture (suede, knit, leather)
   without inventing wrong detail, that runs on CPU (any speed) and is worthwhile on a GPU.
 - **Accept:**
