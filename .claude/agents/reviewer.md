@@ -16,7 +16,7 @@ a throwaway worktree: `git worktree add <tmp-dir> origin/<branch>` … `git work
 ## What to check
 
 1. **Acceptance criteria:** find the task in `TASKS.md` and check each criterion, one by one,
-   against the diff and the evidence (tests, benchmark numbers in `PROGRESS.md`).
+   against the diff and the evidence (tests, benchmark numbers in the PR description).
 2. **Contract:** the public `upscale(arr, stride, factor)` behaviour still matches the table
    in `CLAUDE.md` (input bounds → `RangeError`, width from stride, 1000 px output cap, tightly
    packed output). Flag any silent change.
@@ -27,7 +27,7 @@ a throwaway worktree: `git worktree add <tmp-dir> origin/<branch>` … `git work
 5. **Scope:** the diff does only what the task asked; no stray changes to `models/`, config, or
    unrelated files.
 6. **Quality regressions:** if output quality could move, confirm a benchmark was run and the
-   numbers are in `PROGRESS.md`.
+   numbers are in the PR description.
 
 ## Report back
 

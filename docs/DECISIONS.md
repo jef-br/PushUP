@@ -5,7 +5,7 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 
 ---
 
-## D1 — Weak-denoise model at strength 0
+## D1 — Weak-denoise model at strength 0 (superseded by D6)
 - **Decision:** ship `realesr-general-wdn-x4v3.onnx` (denoise strength 0), not stock
   `realesr-general-x4v3`.
 - **Why:** stock x4v3 erased small detail — shirt buttons disappeared, fabric looked
@@ -43,21 +43,22 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 ## D7 — Large ESRGAN community models are optional, not default (superseded by D9)
 - **Context:** Remacri / NMKD-Siax / 4x-UltraSharp keep the most fabric texture, but cost
   16 s (400 px) to ~60 s (800 px) on a 4-core CPU and need tiling to fit in memory.
-- **Status:** awaiting the owner's call on speed vs quality and target hardware (GPU would
-  make them ~1-2 s).
+- **Status:** resolved by D9 (owner: CPU always, GPU when present; Remacri is `high` mode).
 - **Licenses:** project is non-commercial; CC BY-NC-SA models are allowed with attribution.
-## D7 — Publish tarball via `files` whitelist; Node >=20.9
-- **Decision:** keep the `files` whitelist (`src`, `models/*.onnx`) instead of a `.npmignore`;
-  add `prepublishOnly: npm test`; raise `engines.node` from `>=18.14` to `>=20.9`.
-- **Why:** a whitelist can't leak `bench/`, `tools/`, or fixtures by accident, and
-  `test/package.test.js` asserts the contents. `sharp@0.35` requires Node >=20.9, so the old
-  `engines` claim was wrong. Publishing itself is left to a human.
-
 ## D8 — No post-sharpening
 - **Decision:** don't sharpen the output (T4).
 - **Why:** an unsharp mask lowered PSNR/SSIM at every strength on the 20-image subset and
   added no fabric texture, only edge contrast and halos. Missing texture is lost
   information; only a stronger model (e.g. Remacri, T6) restores it.
+- **Evidence** (`bench/out/sub20`, `fast` mode, PSNR / SSIM / GMSD; lower GMSD is better):
+
+  | Setting | 400 px | 800 px |
+  |---|---|---|
+  | no sharpen | 31.51 / 0.894 / 0.108 | 36.28 / 0.954 / 0.049 |
+  | sigma 0.5 | 30.75 / 0.887 / 0.107 | 34.88 / 0.953 / 0.050 |
+  | sigma 1.0 | 28.97 / 0.873 / 0.110 | 31.43 / 0.940 / 0.071 |
+  | sigma 1.5 | 28.21 / 0.868 / 0.116 | 30.16 / 0.932 / 0.084 |
+
 
 ## D9 — CPU always, GPU when present; quality follows the device
 - **Owner rule (2026-11-09):** every path must run on CPU only; use a GPU when there is one.
@@ -95,3 +96,10 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
   instead of aiming for ~3 hours, and refill the backlog themselves within tight limits
   (playbook section 5): one BACKLOG PR at a time, no new models, dependencies, default
   changes or edits to CLAUDE.md / playbook / `.claude/`.
+
+## D13 — Publish tarball via `files` whitelist; Node >=20.9 (2026-11-08, I3)
+- **Decision:** keep the `files` whitelist (`src`, `models/*.onnx`, and since T6 `models/LICENSES.md`) instead of a `.npmignore`;
+  add `prepublishOnly: npm test`; raise `engines.node` from `>=18.14` to `>=20.9`.
+- **Why:** a whitelist can't leak `bench/`, `tools/`, or fixtures by accident, and
+  `test/package.test.js` asserts the contents. `sharp@0.35` requires Node >=20.9, so the old
+  `engines` claim was wrong. Publishing itself is left to a human.

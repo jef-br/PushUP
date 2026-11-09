@@ -25,7 +25,7 @@ a throwaway worktree: `git worktree add <tmp-dir> origin/<branch>` … `git work
   odd widths, stride padding, factor giving exactly 1000 px, portrait vs landscape,
   concurrent calls, a missing model file, a failing GPU provider. Write a throwaway script if
   needed.
-- **Claims vs reality:** docs, comments, PR text and `PROGRESS.md` must match what the code
+- **Claims vs reality:** docs, comments, PR text, `PROGRESS.md` and `TASKS.md` must match what the code
   does. Overstated claims ("byte-identical", "faster", "no quality change") need proof.
 - **Scope and risk:** unrelated changes, license/attribution of any added model, large files,
   anything that would surprise the owner.

@@ -72,7 +72,7 @@ safe lives in three files — treat them as the source of truth:
 
 - `docs/OVERNIGHT_RUN.md` — the operating playbook every autonomous run follows.
 - `TASKS.md` — the backlog and task conventions. Pick work from here.
-- `PROGRESS.md` — the run log / hand-off note. Append to it every run.
+- `PROGRESS.md` — decision log, one block per week, decisions only (links to `docs/`).
 
 Decisions and their rationale go in `docs/DECISIONS.md`. Reusable helpers (benchmark
 runner, model builder, reviewer) are defined as subagents in `.claude/agents/`.
@@ -83,6 +83,7 @@ runner, model builder, reviewer) are defined as subagents in `.claude/agents/`.
 - `npm test` must pass before you commit. Run the benchmark when a change can affect output
   quality, and record the numbers.
 - Never skip, disable, or weaken a test to go green.
-- Commit with a clear message, update `PROGRESS.md` and `TASKS.md`, then push.
-- Don't guess on ambiguity or a blocked dependency — record the blocker in `PROGRESS.md`
+- Commit with a clear message, update `TASKS.md` (and `PROGRESS.md` + `docs/DECISIONS.md`
+  when you made a decision), then push. Run details go in the PR description.
+- Don't guess on ambiguity or a blocked dependency — record the blocker on the task in `TASKS.md`
   and stop.
