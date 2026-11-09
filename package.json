@@ -2,24 +2,36 @@
   "name": "pushup",
   "version": "0.1.0",
   "description": "In-memory, async image upscaler for e-commerce photos (Real-ESRGAN via ONNX Runtime).",
-  "main": "src/index.js",
-  "files": [
-    "src",
-    "models"
-  ],
-  "engines": {
-    "node": ">=18.14"
-  },
-  "scripts": {
-    "test": "node --test test/*.test.js",
-    "bench": "node bench/bench.js"
+  "author": "JefBr",
+  "license": "MIT",
+  "homepage": "https://github.com/jef-br/PushUP#readme",
+  "bugs": {
+    "url": "https://github.com/jef-br/PushUP/issues"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jef-br/PushUP.git"
   },
-  "keywords": ["upscale", "super-resolution", "real-esrgan", "onnx", "ecommerce"],
-  "license": "MIT",
+  "keywords": [
+    "upscale",
+    "super-resolution",
+    "real-esrgan",
+    "onnx",
+    "ecommerce"
+  ],
+  "main": "src/index.js",
+  "files": [
+    "src",
+    "models/*.onnx"
+  ],
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "bench": "node bench/bench.js",
+    "prepublishOnly": "npm test"
+  },
   "dependencies": {
     "onnxruntime-node": "^1.31.1",
     "sharp": "^0.35.5"

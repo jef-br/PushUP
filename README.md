@@ -4,6 +4,15 @@ Async, in-memory image upscaler for e-commerce photos (on-model apparel,
 lifestyle shots, packaged goods, appliances, sports gear). It runs
 Real-ESRGAN through ONNX Runtime and needs no Python or GPU at runtime.
 
+## Install
+
+```bash
+npm install pushup
+```
+
+Requires Node.js >= 20.9 (a `sharp` requirement). The ONNX model ships in the
+package (~4.5 MB download); no Python or GPU is needed.
+
 ## Usage
 
 ```js
