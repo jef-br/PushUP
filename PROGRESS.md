@@ -13,7 +13,8 @@ overnight runs hand off to each other.
   bytes are identical; no `Uint8ClampedArray` (it rounds ties to even, which differs).
 - New `test/convert.test.js`: compares against the original rounding on 30,000 values,
   incl. every .5 tie in range, near-ties, out-of-range, NaN, ±Infinity and -0; plus a
-  sub-region copy test. 16/16 tests pass.
+  sub-region copy test, and an end-to-end tiling test (tiled = whole-frame, byte for byte).
+  17/17 tests pass.
 - `bench/profile.js` now times the shipped function. 4 cores, factor 1.5, median of 5:
 
 | Input | conversion stage (before → after) | total (before → after) |

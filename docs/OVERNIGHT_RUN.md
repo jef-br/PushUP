@@ -16,9 +16,10 @@ be conservative: finish and verify one thing rather than start many.
 
 ## 1. Pick one task
 
-Overnight work lands on branches; only the owner merges to `main`. So `main`'s `TASKS.md`
-can be behind: a task can look ready there while a run is already doing it. **Open pull
-requests are the claim registry.**
+Overnight work lands on branches and reaches `main` only when its PR is merged (by the
+review process in 3b, or by the owner). Until then `main`'s `TASKS.md` is behind: a task can
+look ready there while a run is already doing it. **Open pull requests are the claim
+registry.**
 
 - List open PRs (`mcp__github__list_pull_requests`, state `open`). Any task whose ID
   appears in an open PR's branch (`overnight/<date>-<task-id>`) or title is **taken**, even
