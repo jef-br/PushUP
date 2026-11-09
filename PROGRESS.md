@@ -32,6 +32,16 @@ hardware (CPU vs GPU). See D7 in `docs/DECISIONS.md`.
 - I1 is already in draft PR #5, awaiting human review.
 
 **Next:** T2 (profile latency) or I3 (publish readiness).
+## 2026-11-07 — T2: latency profile (branch `overnight/2026-11-07-T2`)
+
+- Added `bench/profile.js` and `docs/PERF.md`. Inference is ~90% of runtime
+  (823 / 1933 / 3513 ms at 400 / 600 / 800 px, factor 1.5, 4 vCPU); `fromTensor` is next at ~5–7%.
+- Added follow-up task T5 (faster `fromTensor`, byte-identical).
+- No library code changed, so no quality benchmark needed. `npm test`: 7/7 pass.
+- Note: I1 (CI, PR #7) and I4 (contract tests) were already done on their own unmerged
+  `overnight/2026-11-07-*` branches by earlier runs, so I took T2. Merge those PRs.
+
+**Next:** T4 or I3 (or T5); review/merge the open PRs first.
 
 ---
 

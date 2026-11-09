@@ -29,7 +29,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `stride` padding (0–2 bytes, odd widths), and the 1000 px output cap (e.g. 800 px @1.5).
 - **Accept:** New tests pass; each contract row in `CLAUDE.md` has at least one test.
 
-### [ ] T2 — Profile and document upscale latency
+### [x] T2 — Profile and document upscale latency (done 2026-11-07; see docs/PERF.md)
 - **Goal:** Measure per-input-size latency on the standard set and find the dominant cost.
 - **Accept:** A short `docs/PERF.md` with a methodology + numbers; one concrete, low-risk
   speed idea written up as a follow-up task (don't implement risky changes unattended).
@@ -46,6 +46,17 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `npm publish` (dry run only — do not publish).
 - **Accept:** `npm pack` produces a tarball that includes `src/`, `models/*.onnx`, `README`;
   excludes `bench/`, `tools/`, test fixtures. `npm publish --dry-run` clean.
+
+### [ ] T5 — Faster `fromTensor` (byte-identical output)
+- **Goal:** Replace the per-pixel `Math.round` + clamp loop in `src/index.js` `fromTensor`
+  with a `Uint8ClampedArray`-based write (see `docs/PERF.md`).
+- **Accept:** Output bytes identical to the old implementation on test images (add a test
+  comparing against a reference clamp); `bench/profile.js` shows the `fromTensor` drop.
+- **Notes:** `Uint8ClampedArray` rounds ties to even, `Math.round` rounds half-up, and
+  adding 0.5 before the write would double-round (off by one). Byte-identical output may
+  not be achievable with the native clamp; if the test shows any difference, drop the idea
+  and record the negative result. The `fromTensor` stage is ~6.6% of latency at 800 px;
+  the expected saving is smaller (estimate, unmeasured).
 
 ### [blocked] T3 — Quality comparison vs a SaaS upscaler (e.g. Claid.ai)
 - **Goal:** Score a SaaS upscaler's output against PushUP on the standard set.
