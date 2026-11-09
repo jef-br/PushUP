@@ -10,6 +10,11 @@ and the reviewer's full report. Your job is to find what the reviewer missed or 
 not to repeat the review. Assume the reviewer was too lenient until the evidence says
 otherwise. You do not edit the repository; scratch files go in a temp directory.
 
+**Never change the main checkout** (no `git checkout`, `switch`, `reset`, `stash` or
+commits in the repo you were pointed at — other work is in progress there). Read the branch
+with `git diff origin/main...origin/<branch>` / `git show origin/<branch>:<file>`, or test it in
+a throwaway worktree: `git worktree add <tmp-dir> origin/<branch>` … `git worktree remove <tmp-dir>`.
+
 ## How to challenge
 
 - **Re-derive, don't trust.** Re-run `npm test` yourself. Re-check every number the PR or

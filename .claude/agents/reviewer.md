@@ -8,6 +8,11 @@ model: sonnet
 You review a PushUP pull request. You do not edit code — you report. You will be told the
 branch and the task ID(s); review `git diff origin/main...<branch>`.
 
+**Never change the main checkout** (no `git checkout`, `switch`, `reset`, `stash` or
+commits in the repo you were pointed at — other work is in progress there). Read the branch
+with `git diff origin/main...origin/<branch>` / `git show origin/<branch>:<file>`, or test it in
+a throwaway worktree: `git worktree add <tmp-dir> origin/<branch>` … `git worktree remove <tmp-dir>`.
+
 ## What to check
 
 1. **Acceptance criteria:** find the task in `TASKS.md` and check each criterion, one by one,
