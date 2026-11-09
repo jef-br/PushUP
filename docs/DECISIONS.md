@@ -89,4 +89,5 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 - **Decision:** keep per-task PRs + 3b. From `dev`, keep the compatible ideas: several tasks
   per run, per-task blockers don't end the run, refill the backlog when empty, a quality
   gate on default changes, precise stop times, and the CUDA-skip install flag. Its
-  self-building benchmark set duplicates `bench/fetch_testset.sh`. `dev` itself is deleted.
+  self-building benchmark set duplicates `bench/fetch_testset.sh`. `dev` holds no code newer
+  than `main` (verified file by file), so it is deleted after this merges.

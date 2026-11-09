@@ -8,7 +8,7 @@ overnight runs hand off to each other.
 
 ## 2026-11-09 — Housekeeping: playbook absorbs `dev`'s ideas; obsolete branches pruned
 
-- All work branches are merged into `main`. Obsolete branches: duplicate CI attempts
+- All work branches are merged into `main`. To prune after this PR merges: duplicate CI attempts
   (`overnight/2026-11-06-I1`, `overnight/2026-11-07-I1`), the log-only
   `overnight/2026-11-08-T4`, fully merged `overnight/*` + `claude/*` branches, and `dev`.
 - `dev` (another session's single-branch model) conflicted with the owner's later 3b rule;

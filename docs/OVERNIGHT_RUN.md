@@ -8,8 +8,9 @@ next. Keep going until the stop time: a blocker on one task never ends the run.
 
 1. Check the repo is ready to work on: it must contain `package.json` **and** this file's
    siblings `CLAUDE.md` and `TASKS.md`. If any is missing, the project bootstrap hasn't
-   landed on this branch yet — **make no changes, create nothing, and end the run.** Do not
-   scaffold code or invent a project.
+   landed on this branch yet — **make no changes, create nothing, and end the run** (the
+   only early end besides the one under "Per-task blockers"). Do not scaffold code or
+   invent a project.
 2. Read `CLAUDE.md`, `PROGRESS.md`, and `TASKS.md`. The last `PROGRESS.md` entry tells you
    where the previous run stopped.
 3. Benchmark images are not in git. If a task needs them and `bench/out/set` is missing,
@@ -26,6 +27,8 @@ next. Keep going until the stop time: a blocker on one task never ends the run.
    | 22:00–00:59 | 02:15 |
    | 01:00–03:59 | 05:45 Mon–Fri, 05:15 Sat/Sun |
    | 04:00–07:59 (Sat/Sun) | 09:00 |
+
+   "Mon–Fri" / "Sat/Sun" means the calendar day of the morning the run ends in.
 
 ## 1. Pick a task
 
@@ -99,13 +102,15 @@ record that in `PROGRESS.md` — the owner merges it.
 A blocked task is not a reason to stop. In order:
 
 1. Try to unblock a `[blocked]` task from inside the sandbox (download a dataset, write a
-   missing script). Only an owner action (credential, account, network-host approval) is
+   missing script). If it has an open PR, continue on that PR's branch — that's not taking
+   someone else's claim. Only an owner action (credential, account, network-host approval) is
    a real blocker; record exactly what's needed in `PROGRESS.md` and the task.
 2. Find work: `PROGRESS.md` follow-ups, `docs/PERF.md` ideas, README "Known limits",
    untested code paths in `src/`, benchmark gaps (product types or sizes the set misses).
 3. Add 3–5 new tasks to `TASKS.md` (goal, acceptance criteria, notes; each small enough for
-   one run). Land that as its own PR (task ID `BACKLOG-<date>`) through 3b, then continue
-   with the first new task.
+   one run). Land that as its own PR (task ID `BACKLOG-<date>`) through 3b — the reviewer
+   checks each new task has a goal, verifiable acceptance criteria, one-run scope, and stays
+   inside the limits below — then continue with the first new task.
 
 Only work on tasks that are in `TASKS.md`. Self-made tasks may cover speed, quality,
 robustness, tests, docs and packaging — never changing the public contract, changing the
