@@ -6,6 +6,21 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-09 — Backlog: T1 and T3 split into ready + blocked parts; merge process live
+
+- PR #12 (T4, T5, review process) and PR #13 (T6) were merged by the new 3b process
+  (reviewer MEETS + adversary AGREE + working session).
+- Owner on T3: no spending. Plan: Claid.ai free trial (50 API credits) → T3a (ready: scoring
+  harness for external outputs) and T3b (blocked: owner creates the free trial account and
+  saves the API key as a network secret for `api.claid.ai`).
+- T1 → T1a (ready: measure text survival with OCR, research only) and T1b (blocked on T1a's
+  result + owner go-ahead).
+- Ready for overnight runs, in order: T3a, T1a.
+- Note for the owner: unattended merges need `mcp__github__merge_pull_request` in the
+  `.claude/settings.json` allowlist. Sessions may not add it themselves (self-modification).
+
+---
+
 ## 2026-11-09 — T6 GPU when available, CPU always; high-quality mode
 
 - Owner rule: every path runs on CPU; a GPU is used when present. `auto` = Remacri on a GPU,

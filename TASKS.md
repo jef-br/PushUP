@@ -76,14 +76,36 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   - Benchmark numbers for both modes recorded; README/CLAUDE.md document the modes.
 - **Note:** no GPU in the cloud container; GPU paths are verified only by their fallback.
 
-### [blocked] T3 — Quality comparison vs a SaaS upscaler (e.g. Claid.ai)
-- **Goal:** Score a SaaS upscaler's output against PushUP on the standard set.
-- **Blocked on:** a SaaS account + API credentials, and possibly an added network host.
-  Record what's needed in `PROGRESS.md`; a human must provide access before this starts.
+### [ ] T3a — Score externally produced upscales (harness for the SaaS comparison)
+- **Goal:** `bench/bench.js` can score a folder of upscaled images produced elsewhere (e.g. by
+  a SaaS), using the same inputs and references as every other method.
+- **Accept:** `node bench/bench.js bench/out/sub20 --export-inputs <dir>` writes the exact
+  degraded inputs (per size) as PNGs; `--external <name>=<dir>` scores files in `<dir>` that
+  match those inputs by name. Verified by exporting inputs, upscaling them with Lanczos via a
+  script, and getting the same scores as the built-in `lanczos` method. Test for the
+  name-matching. No network calls.
 
-### [blocked] T1 — Text-on-packaging upscaler
-- **Goal:** A text detector + text-specific upscaler for labels/ingredient lists, composited
-  with the general result.
-- **Blocked on:** design decision — this is large and research-heavy. Before coding, a run
-  may do a **research-only** spike (write findings to `docs/`, no code) if nothing else is
-  ready, but must not start implementation unattended. Split into sub-tasks here first.
+### [blocked] T3b — Run the comparison against Claid.ai (free trial only, no spending)
+- **Plan:** Claid.ai's free trial includes 50 API credits; an upscale costs 2–8 credits, so
+  the 20-image subset at one input size (≤1000 px output) should fit. Upscale the T3a inputs
+  through Claid's API, then score with `--external claid=<dir>`.
+- **Blocked on:** the owner creating a free Claid trial account and saving the API key as a
+  network secret for `api.claid.ai` (environment settings). Never buy credits; stop if the
+  trial balance would run out mid-set.
+
+### [ ] T1a — Measure how well text on packaging survives (research, no product code)
+- **Goal:** Decide with data whether text needs special handling. Text on labels
+  (ingredients, brand names, sizes) is where upscalers fail most visibly.
+- **Accept:** A text test set: crops from `bench/out/set` images that contain readable text
+  (find them with an OCR model; ≥15 crops, list in `docs/TEXT.md`). Score Lanczos, `fast` and
+  `high` by OCR character accuracy (OCR on the upscaled crop vs. OCR on the 1000 px
+  reference) at 400 and 600 px inputs. `docs/TEXT.md` reports the numbers, a few side-by-side
+  crops (kept out of git if large), and a recommendation: is T1b worth doing?
+- **Notes:** OCR via an ONNX text recognizer (e.g. PaddleOCR / RapidOCR exports on Hugging
+  Face) run in Python or Node, build-time only. Record model, license and hash.
+
+### [blocked] T1b — Text-aware upscaling
+- **Goal:** detect text regions, upscale them with a text-specialised path, blend back.
+- **Blocked on:** T1a's result and an owner go-ahead — this adds models and complexity.
+
+### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
