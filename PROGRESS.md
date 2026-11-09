@@ -6,6 +6,22 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-09 — T3 done via Claid's published sample; T7 added; T1b decided by rule
+
+- T3 (owner: no spending, nothing the owner must do): compared against Claid's own
+  before/after sample (sneakers, 640×428 before). `bench/saas/compare_published.py`
+  reproduces it (39 s). PushUP is clean and faithful but **behind Claid on fine texture**;
+  Siax / UltraSharp / Nomos8kSC don't close the gap either. Details: `docs/SAAS.md`.
+- Network: added `claid.ai`, `www.claid.ai`, `docs.claid.ai` to the PushUP environment.
+- Backlog: T3a/T3b removed (needed an owner-created account). New T3c (more vendors; blocked:
+  hosts need interactive approval). New T7 (texture gap research, ready). T1b is now
+  decided by the session that finishes T1a, using T1a's rule (D11).
+- Owner added `mcp__github__merge_pull_request` to `.claude/settings.json` — unattended runs
+  can merge after reviewer + adversary alignment.
+- Ready for overnight runs, in order: T7 (texture gap — the core goal), then T1a.
+
+---
+
 ## 2026-11-09 — Backlog: T1 and T3 split into ready + blocked parts; merge process live
 
 - PR #12 (T4, T5, review process) and PR #13 (T6) were merged by the new 3b process
