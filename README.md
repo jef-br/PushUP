@@ -62,6 +62,11 @@ If the GPU can't load the model, or fails while running, PushUP falls back to th
 (and to `fast` mode in auto) and keeps going. It never fails just because there is no
 GPU. GPU speeds were not measured (no GPU in the test environment).
 
+On Linux without CUDA, the first call logs one red onnxruntime error ("Failed to load
+library ... libonnxruntime_providers_cuda.so"). It is harmless: PushUP catches it and uses
+the CPU (the attempt costs ~nothing and happens once per process). Set
+`PUSHUP_DEVICE=cpu` on CPU-only servers to skip the attempt and the message.
+
 Override with environment variables, read on every call:
 
 | Variable | Values | Default |
