@@ -10,6 +10,7 @@
       "Bash(pip:*)",
       "Bash(pip3:*)",
       "Bash(curl:*)",
+      "mcp__github__merge_pull_request",
       "mcp__github__create_pull_request",
       "mcp__github__update_pull_request",
       "mcp__github__pull_request_read",
