@@ -5,7 +5,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ## Conventions
 
-- Status: `[ ]` ready · `[~]` in progress · `[x]` done · `[blocked]` waiting on something.
+- Status: `[ ]` ready · `[~]` in progress · `[x]` done · `[blocked]` waiting on something ·
+  `[split]` replaced by sub-tasks (never picked up).
 - Each task has an **ID** (stable, used in branch names), a goal, and acceptance criteria.
 - One task = one branch (`overnight/<date>-<id>`) = one draft PR.
 - Keep tasks small enough to finish and verify in a single ~4-hour window. If a task is
@@ -76,14 +77,64 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   - Benchmark numbers for both modes recorded; README/CLAUDE.md document the modes.
 - **Note:** no GPU in the cloud container; GPU paths are verified only by their fallback.
 
-### [blocked] T3 — Quality comparison vs a SaaS upscaler (e.g. Claid.ai)
-- **Goal:** Score a SaaS upscaler's output against PushUP on the standard set.
-- **Blocked on:** a SaaS account + API credentials, and possibly an added network host.
-  Record what's needed in `PROGRESS.md`; a human must provide access before this starts.
+### [ ] T3a — Score externally produced upscales (harness for the SaaS comparison)
+- **Goal:** `bench/bench.js` can score a folder of upscaled images produced elsewhere (e.g. by
+  a SaaS), using the same inputs and references as every other method.
+- **Accept:**
+  - `node bench/bench.js <set> --sizes 400,600 --export-inputs <dir>` writes the exact
+    degraded inputs the bench feeds every method (downscaled, JPEG q85, *decoded* RGB saved as
+    lossless PNG) to `<dir>/<size>/<image-name>.png`.
+  - `--external <name>=<dir>` scores `<dir>/<size>/<image-name>.png` as method `<name>`
+    (reported as `<size>px <name>`, like built-in methods). Expected output size is the
+    bench's own: `round(w*1000/L) x round(h*1000/L)` of the exported input (w, h, L = its
+    width, height, largest side). Files of exactly that size are used as-is and scored like
+    every other method (cropped to the area shared with the reference); files of another
+    size are resized to the expected size (sharp, `lanczos3`, `fit: 'fill'`) and flagged in
+    the output. Missing files are reported and skipped, never silently scored.
+  - Check: export inputs, upscale each to the expected size in a separate script with sharp
+    (`lanczos3`, `fit: 'fill'`, same as the built-in method), score with `--external`:
+    PSNR/SSIM/GMSD must equal the built-in `lanczos` method **exactly**, on all images.
+  - Test for the name/size matching and the missing-file report. No network calls.
 
-### [blocked] T1 — Text-on-packaging upscaler
-- **Goal:** A text detector + text-specific upscaler for labels/ingredient lists, composited
-  with the general result.
-- **Blocked on:** design decision — this is large and research-heavy. Before coding, a run
-  may do a **research-only** spike (write findings to `docs/`, no code) if nothing else is
-  ready, but must not start implementation unattended. Split into sub-tasks here first.
+### [blocked] T3b — Run the comparison against Claid.ai (free trial only, no spending)
+- **Plan:** Claid.ai's free trial includes 50 API credits; an upscale costs 2–8 credits, so
+  the 20-image subset at one input size (≤1000 px output) may fit (20 × 2 = 40) — or not, if
+  Claid charges more. Upscale the T3a inputs (400 px first) through Claid's API, then score
+  with `--external claid=<dir>`. If credits run out, score the images that were done and
+  report N; compare PushUP on the same N images.
+- **Blocked on:** the owner creating a free Claid trial account and saving the API key as a
+  network secret for `api.claid.ai` (environment settings). Never buy credits; stop if the
+  trial balance would run out mid-set.
+
+### [ ] T1a — Measure how well text on packaging survives (research, no product code)
+- **Goal:** Decide with data whether text needs special handling. Text on labels
+  (ingredients, brand names, sizes) is where upscalers fail most visibly.
+- **Accept:**
+  - OCR engine (fixed, so results can't be steered): `rapidocr-onnxruntime` from PyPI with
+    its bundled default models; record its version, model files, licenses and SHA-256.
+  - Text test set: run that OCR on the 1000 px references from `bench/out/set`; keep text
+    lines with recognition confidence ≥ 0.90 and ≥ 4 characters, as crops of the line box
+    padded by 8 px (≥15 crops; list them in `docs/TEXT.md` with image name + box).
+  - References are built exactly as `bench/bench.js` builds them (set image resized to
+    1000 px on its largest side). Protocol: upscale the **whole image** from its 400 px and
+    600 px degraded input (as the bench does), then cut the same box (top-left coordinates)
+    from the output; if output and reference differ by 1 px after rounding, clip the box to
+    the area both share, as the bench does. Score per crop = character accuracy
+    `max(0, 1 − editDistance(ocr(out), ocr(ref)) / len(ocr(ref)))`; crops whose reference
+    OCR text is empty are excluded. "Mean" = unweighted mean over crops.
+  - Methods: Lanczos (baseline), `fast` and `high` (via `PUSHUP_QUALITY` in a small script;
+    `high` takes ~15 s per 400 px image on CPU, so budget ~30 min for 15 images × 2 sizes).
+  - Decision rule, applied at 400 px and written into `docs/TEXT.md`: recommend T1b if
+    `fast`'s mean accuracy < 0.90, **or** ≥ 3 crops have `fast` accuracy < 0.50. Otherwise
+    recommend closing T1b. Also report `fast − Lanczos` and `high − fast`: if `high` already
+    fixes most failures, say so (text might only need `high` mode, not a new model).
+  - `docs/TEXT.md` has the numbers, ≤6 side-by-side crops (images outside git if large) and
+    the recommendation.
+
+### [blocked] T1b — Text-aware upscaling
+- **Goal:** detect text regions, upscale them with a text-specialised path, blend back.
+- **Blocked on:** T1a's result and an owner go-ahead — this adds models and complexity.
+
+### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
+
+### [split] T3 — Quality comparison vs a SaaS upscaler → see T3a (harness) and T3b (run).
