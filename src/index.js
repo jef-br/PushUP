@@ -94,7 +94,7 @@ function copyFromTensor(tensor, sx, sy, cw, ch, out, outW, dx, dy) {
     let i = (sy + y) * tw + sx;
     let j = ((dy + y) * outW + dx) * 3;
     for (const end = i + cw; i < end; i++, j += 3) {
-      // Same bytes as clampByte (Math.round, then clamp), ~6x faster: for float32 inputs,
+      // Same bytes as the original Math.round(v * 255) + clamp, ~5x faster: for float32 inputs,
       // v * 255 + 0.5 is exact in float64, so truncating it equals Math.round(v * 255).
       let t = src[i] * 255 + 0.5;
       out[j] = t <= 0 ? 0 : t >= 255 ? 255 : t | 0;

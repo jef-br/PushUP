@@ -54,3 +54,19 @@ test('copies a sub-region to the right place', () => {
   const idx = [5, 6, 9, 10];
   assert.deepStrictEqual([...out], idx.flatMap((i) => [i, 100 + i, 200 + i]));
 });
+
+test('tiled inference places every tile correctly (byte-identical to whole-frame)', async () => {
+  // With padding larger than the image, every tile's model input is the whole image, so
+  // each tile's output region must equal the whole-frame output exactly. Any offset error
+  // in tiling would show up as a mismatch.
+  const { _run } = require('../src');
+  const w = 400, h = 300, arr = new Uint8Array(w * h * 3);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = (y * w + x) * 3;
+    arr[i] = (x * 7 + y * 3) & 255; arr[i + 1] = (x ^ y) & 255; arr[i + 2] = (128 + 100 * Math.sin(x / 9 + y / 13)) | 0;
+  }
+  const opts = { lanczosMix: 0 };
+  const [whole] = await _run(arr, w * 3, 2, opts);
+  const [tiled] = await _run(arr, w * 3, 2, { ...opts, tile: 128, tilePad: 1000 });
+  assert.ok(whole.equals(tiled), 'tiled output differs from whole-frame output');
+});

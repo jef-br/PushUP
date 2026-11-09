@@ -48,6 +48,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   excludes `bench/`, `tools/`, test fixtures. `npm publish --dry-run` clean.
 
 ### [x] T5 — Faster `fromTensor` (byte-identical output) (done 2026-11-09: ~5x faster stage, see PROGRESS.md)
+- **Outcome:** done with an inline `floor(v * 255 + 0.5)` (exact for float32), not
+  `Uint8ClampedArray` (ties-to-even would change bytes). Original goal kept below.
 - **Goal:** Replace the per-pixel `Math.round` + clamp loop in `src/index.js`
   (`copyFromTensor` since tiling landed; it was `fromTensor`)
   with a `Uint8ClampedArray`-based write (see `docs/PERF.md`).

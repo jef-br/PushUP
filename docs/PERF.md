@@ -13,7 +13,9 @@
 
 ## Results (median ms)
 
-Current (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5:
+Current (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5
+(800 px input is capped to a 1000 px output). `total` and the stage columns come from
+separate timed passes, so stages don't sum exactly to `total`; small stages are noisy:
 
 | Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix (incl. plain resize) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -22,6 +24,7 @@ Current (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Facto
 | 800×600 | 1792 | 3 | 1784 | 48 | 17 | 46 |
 
 Earlier (2026-11-07, realesr-general-wdn-x4v3, old conversion): 823 / 1933 / 3513 ms total.
+The model always runs at 4×, so the factor barely changes latency.
 
 ## Findings
 
