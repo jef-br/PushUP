@@ -15,14 +15,11 @@ overnight runs hand off to each other.
   incl. every .5 tie in range, near-ties, out-of-range, NaN, ±Infinity and -0; plus a
   sub-region copy test, and an end-to-end tiling test (tiled = whole-frame, byte for byte).
   17/17 tests pass.
-- `bench/profile.js` now times the shipped function. 4 cores, factor 1.5, median of 5:
-
-| Input | conversion stage (before → after) | total (before → after) |
-|---|---|---|
-| 400x300 | 63 → 13 ms | 559 → 452 ms |
-| 600x450 | 148 → 32 ms | 1183 → 1039 ms |
-| 800x600 | 250 → 48 ms | 2193 → 1792 ms |
-
+- `bench/profile.js` now times the shipped function. Conversion stage, 4 cores, factor 1.5,
+  median of 5: 63 → 13 ms @400, 148 → 32 ms @600, 250 → 48 ms @800 (~5x).
+- End-to-end gain is ~the stage saving: same-session totals (adversary rerun) 493 → 468 ms
+  @400 and 1999 → 1921 ms @800. Earlier totals from separate runs (559 → 452, 2193 → 1792)
+  overstated it — inference time varies run to run by more than the saving.
 - Benchmark unchanged (sub20 @400: 31.51 / 0.8941 / 0.1076). Inference is now ~95%+ of
   latency; further speed needs a faster model runtime (GPU, int8/fp16), not JS changes.
 

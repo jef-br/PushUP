@@ -24,6 +24,8 @@ separate timed passes, so stages don't sum exactly to `total`; small stages are 
 | 800×600 | 1792 | 3 | 1784 | 48 | 17 | 46 |
 
 Earlier (2026-11-07, realesr-general-wdn-x4v3, old conversion): 823 / 1933 / 3513 ms total.
+Totals vary run to run by ±100-200 ms (inference); compare stages, or totals measured in
+the same session (T5 same-session: 1999 → 1921 ms @800 px).
 The model always runs at 4×, so the factor barely changes latency.
 
 ## Findings
