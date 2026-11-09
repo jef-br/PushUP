@@ -5,7 +5,8 @@ Guidance for any Claude session working in this repo. Read this first, every ses
 ## What PushUP is
 
 An async, in-memory **image upscaler for e-commerce photos**, published as a Node.js
-package. It runs **Real-ESRGAN through ONNX Runtime** — no Python and no GPU at runtime.
+package. It runs super-resolution models through **ONNX Runtime** — no Python at runtime.
+**Every path must run on CPU only; a GPU is used automatically when present** (owner rule).
 
 Public API (CommonJS):
 
@@ -46,19 +47,19 @@ node bench/profile.js                  # per-stage latency
 
 ## Model
 
-- Ships `models/4xLSDIRCompactC3.onnx` (~2.5 MB): a compact community model (CC BY 4.0,
-  by helaman), converted with `tools/build_compact_onnx.py`. It beat the previous
-  realesr-general-wdn-x4v3 at every size and runs ~1.75x faster. At runtime only this
-  ONNX file is used.
-- `tools/build_rrdb_onnx.py` converts ESRGAN community models (Remacri, UltraSharp,
-  Siax). They look better on fabric but are 15-30x slower on CPU and need tiled
-  inference (`tile` option in `src/index.js`). See `docs/DECISIONS.md`.
-- Licenses: the project is non-commercial, so CC BY-NC-SA models (Remacri, UltraSharp)
-  are allowed; keep attribution and the same license for converted files.
+- Two modes (`MODES` in `src/index.js`), chosen per call from `PUSHUP_QUALITY`
+  (`auto|fast|high`) and `PUSHUP_DEVICE` (`auto|cpu|gpu`):
+  - `fast`: `models/4xLSDIRCompactC3.onnx` (~2.5 MB, CC BY 4.0), whole image, 20% Lanczos mix.
+  - `high`: `models/4x_foolhardy_Remacri.onnx` (~67 MB, **CC BY-NC-SA 4.0, non-commercial**),
+    192 px tiles, no mix. ~30x slower on CPU.
+  - `auto` = `high` on a GPU, `fast` on CPU. GPU providers: DirectML (Windows), CUDA
+    (Linux x64), CoreML (macOS arm64). Any GPU load or run failure falls back to CPU.
+- Converters: `tools/build_compact_onnx.py`, `tools/build_rrdb_onnx.py`; attribution and
+  source hashes in `models/LICENSES.md`. See `docs/DECISIONS.md`.
 
 ## Pipeline
 
-1. The model upscales the whole image 4× in one pass (no tile seams; large models tile).
+1. The model upscales the image 4× (`fast`: one pass, no seams; `high`: 192 px tiles).
 2. `sharp` Lanczos-resizes down to target size.
 3. Optional: mix in a share of plain Lanczos (`DEFAULT_LANCZOS_MIX` in `src/index.js`).
 

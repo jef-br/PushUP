@@ -2,7 +2,8 @@
 
 Async, in-memory image upscaler for e-commerce photos (on-model apparel,
 lifestyle shots, packaged goods, appliances, sports gear). It runs
-Real-ESRGAN through ONNX Runtime and needs no Python or GPU at runtime.
+Real-ESRGAN-style models through ONNX Runtime. It runs on any CPU and uses a GPU
+automatically when one is available. No Python at runtime.
 
 ## Install
 
@@ -10,8 +11,8 @@ Real-ESRGAN through ONNX Runtime and needs no Python or GPU at runtime.
 npm install pushup
 ```
 
-Requires Node.js >= 20.9 (a `sharp` requirement). The ONNX model ships in the
-package (~4.5 MB download); no Python or GPU is needed.
+Requires Node.js >= 20.9 (a `sharp` requirement). Both ONNX models ship in the
+package (~70 MB download, mostly the high-quality model). No Python or GPU is needed.
 
 ## Usage
 
@@ -36,11 +37,55 @@ model still runs, so JPEG blocks are removed and edges get sharper.
 Calls are async; the model runs off the main thread. Calls run one at a
 time, because each one already uses every CPU core.
 
+## Quality modes and GPU
+
+Two modes, picked automatically; the function signature never changes.
+
+| Mode | Model | 4-core CPU (400 / 800 px input) | Used when |
+|---|---|---|---|
+| `fast` | 4xLSDIRCompactC3 (2.5 MB) | ~0.5 s / ~2 s | No GPU (default on CPU) |
+| `high` | 4x_foolhardy_Remacri (67 MB) | ~15 s / ~60 s | A GPU is available |
+
+`high` keeps the most fabric texture and the roundest buttons. On the 20-image subset
+(PSNR / SSIM / GMSD, lower GMSD is better): 400 px 31.12 / 0.899 / 0.102 vs fast
+31.51 / 0.894 / 0.108; 800 px 36.32 / 0.960 / 0.039 vs fast 36.28 / 0.954 / 0.049.
+
+GPU support (whatever onnxruntime-node ships for the platform):
+
+| Platform | GPU provider | Needs |
+|---|---|---|
+| Windows x64/arm64 | DirectML | Any DirectX 12 GPU (NVIDIA, AMD, Intel) |
+| Linux x64 | CUDA | NVIDIA GPU + CUDA 13 runtime libraries (cuBLAS, cuDNN) |
+| macOS arm64 | CoreML | Apple silicon |
+
+If the GPU can't load the model, or fails while running, PushUP falls back to the CPU
+(and to `fast` mode in auto) and keeps going. It never fails just because there is no
+GPU. GPU speeds were not measured (no GPU in the test environment).
+
+On Linux without CUDA, the first call logs one red onnxruntime error ("Failed to load
+library ... libonnxruntime_providers_cuda.so"). It is harmless: PushUP catches it and uses
+the CPU (the attempt costs ~nothing and happens once per process). Set
+`PUSHUP_DEVICE=cpu` on CPU-only servers to skip the attempt and the message.
+
+Override with environment variables, read on every call:
+
+| Variable | Values | Default |
+|---|---|---|
+| `PUSHUP_QUALITY` | `auto` (high on GPU, fast on CPU), `fast`, `high` | `auto` |
+| `PUSHUP_DEVICE` | `auto`, `cpu`, `gpu` (falls back to CPU with a warning) | `auto` |
+
+Any other value throws a `RangeError`. `PUSHUP_QUALITY=high` works on CPU, just slowly.
+
+Licenses: `fast` is CC BY 4.0. `high` (Remacri) is **CC BY-NC-SA 4.0, non-commercial
+only**; see `models/LICENSES.md`.
+
 ## How it works
 
-1. [4xLSDIRCompactC3](https://openmodeldb.info/models/4x-LSDIRCompactC3)
-   (2.5 MB ONNX) upscales the whole image 4x in one pass, so there are no
-   tile seams. It's a community model by Philip Hofmann (helaman), trained
+1. The model upscales the image 4x. In `fast` mode,
+   [4xLSDIRCompactC3](https://openmodeldb.info/models/4x-LSDIRCompactC3)
+   (2.5 MB ONNX) does the whole image in one pass, so there are no tile seams.
+   In `high` mode, Remacri runs in 192 px tiles with 16 px of overlap to keep
+   memory around 1.6 GB. It's a community model by Philip Hofmann (helaman), trained
    on real photos with JPEG damage. License: CC BY 4.0.
 2. sharp's Lanczos resize takes that down to the target size.
 3. 20% of a plain Lanczos upscale is mixed in (`DEFAULT_LANCZOS_MIX` in

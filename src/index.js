@@ -15,28 +15,99 @@ const MODEL_SCALE = 4;
 const DEFAULT_MODEL_INPUT_MAX = Infinity;
 
 // Share of a plain Lanczos upscale mixed into the model output (0 = model only).
+// Used only when a caller passes an explicit modelPath (bench); modes set their own.
 const DEFAULT_LANCZOS_MIX = 0.2;
 
-// Tile size (input px) and context padding for inference. The small default
-// model fits in memory whole; large RRDBNet models need tiles.
+// Tile size (input px) and context padding for inference. The small model fits
+// in memory whole; large RRDBNet models need tiles.
 const DEFAULT_TILE = Infinity;
 const DEFAULT_TILE_PAD = 16;
 
-const MODEL_PATH = path.join(__dirname, '..', 'models', '4xLSDIRCompactC3.onnx');
+const MODELS_DIR = path.join(__dirname, '..', 'models');
+const MODEL_PATH = path.join(MODELS_DIR, '4xLSDIRCompactC3.onnx');
 
-const sessions = new Map();
-function getSession(modelPath = MODEL_PATH) {
-  if (!sessions.has(modelPath)) {
-    const p = ort.InferenceSession.create(modelPath, {
-      graphOptimizationLevel: 'all',
-      intraOpNumThreads: os.availableParallelism(),
-      executionMode: 'sequential',
-    });
-    p.catch(() => sessions.delete(modelPath));
-    sessions.set(modelPath, p);
-  }
-  return sessions.get(modelPath);
+// Quality modes. `fast` runs anywhere in ~0.5-2 s on a 4-core CPU; `high` (Remacri) keeps
+// the most fabric texture but is ~30x slower on CPU, so `auto` uses it only on a GPU.
+const MODES = {
+  fast: { modelPath: MODEL_PATH, tile: Infinity, lanczosMix: 0.2 },
+  high: { modelPath: path.join(MODELS_DIR, '4x_foolhardy_Remacri.onnx'), tile: 192, lanczosMix: 0 },
+};
+
+// GPU execution providers that onnxruntime-node ships per platform.
+function gpuProviders(platform = process.platform, arch = process.arch) {
+  if (platform === 'win32') return ['dml']; // DirectML: NVIDIA, AMD and Intel GPUs
+  if (platform === 'linux' && arch === 'x64') return ['cuda']; // needs the CUDA runtime libraries
+  if (platform === 'darwin' && arch === 'arm64') return ['coreml'];
+  return [];
 }
+
+// PUSHUP_QUALITY = auto | fast | high, PUSHUP_DEVICE = auto | cpu | gpu (read on every call).
+function readSetting(name, allowed) {
+  const raw = process.env[name];
+  const v = raw === undefined || raw === '' ? 'auto' : String(raw).trim().toLowerCase();
+  if (!allowed.includes(v)) {
+    throw new RangeError(`${name} must be one of ${allowed.join(', ')}; got "${raw}"`);
+  }
+  return v;
+}
+
+function sessionOptions(providers) {
+  return {
+    executionProviders: providers,
+    graphOptimizationLevel: 'all',
+    intraOpNumThreads: os.availableParallelism(),
+    executionMode: 'sequential',
+  };
+}
+
+const cpuSessions = new Map();
+function getSession(modelPath = MODEL_PATH) {
+  if (!cpuSessions.has(modelPath)) {
+    const p = ort.InferenceSession.create(modelPath, sessionOptions(['cpu']));
+    p.catch(() => cpuSessions.delete(modelPath));
+    cpuSessions.set(modelPath, p);
+  }
+  return cpuSessions.get(modelPath);
+}
+
+// Try each GPU provider in turn; null if none can load this model here.
+let gpuBroken = false; // set after a GPU fails at run time; stays on CPU from then on
+const gpuSessions = new Map();
+function getGpuSession(modelPath) {
+  if (gpuBroken) return Promise.resolve(null);
+  if (!gpuSessions.has(modelPath)) {
+    const p = (async () => {
+      for (const ep of gpuProviders()) {
+        try {
+          return await ort.InferenceSession.create(modelPath, sessionOptions([ep]));
+        } catch {
+          // provider missing or failed to load: try the next one, then CPU
+        }
+      }
+      return null;
+    })();
+    gpuSessions.set(modelPath, p);
+  }
+  return gpuSessions.get(modelPath);
+}
+
+// Decide mode + device. A GPU is never required: every path ends on CPU if needed.
+async function resolveEngine() {
+  const quality = readSetting('PUSHUP_QUALITY', ['auto', 'fast', 'high']);
+  const device = readSetting('PUSHUP_DEVICE', ['auto', 'cpu', 'gpu']);
+  const wanted = quality === 'auto' ? 'high' : quality;
+  if (device !== 'cpu') {
+    const gpu = await getGpuSession(MODES[wanted].modelPath);
+    if (gpu) return { mode: wanted, session: gpu, onGpu: true, quality };
+    if (device === 'gpu' && !warnedNoGpu) {
+      warnedNoGpu = true;
+      process.emitWarning('PUSHUP_DEVICE=gpu but no GPU provider could load; using CPU', 'PushupWarning');
+    }
+  }
+  const mode = quality === 'auto' ? 'fast' : quality;
+  return { mode, session: await getSession(MODES[mode].modelPath), onGpu: false, quality };
+}
+let warnedNoGpu = false;
 
 // One inference at a time: each run already uses every core, so running two
 // in parallel only makes both slower.
@@ -163,14 +234,10 @@ async function run(
   arr,
   stride,
   upscale_factor,
-  {
-    modelInputMax = DEFAULT_MODEL_INPUT_MAX,
-    modelPath,
-    lanczosMix = DEFAULT_LANCZOS_MIX,
-    tile = DEFAULT_TILE,
-    tilePad = DEFAULT_TILE_PAD,
-  } = {},
+  opts = {},
 ) {
+  const { modelInputMax = DEFAULT_MODEL_INPUT_MAX, modelPath, tilePad = DEFAULT_TILE_PAD } = opts;
+  let { lanczosMix = DEFAULT_LANCZOS_MIX, tile = DEFAULT_TILE } = opts;
   if (upscale_factor === undefined) upscale_factor = 1.0;
   if (Array.isArray(arr)) arr = Uint8Array.from(arr);
   if (!(arr instanceof Uint8Array)) throw new TypeError('arr must be a byte array');
@@ -201,8 +268,30 @@ async function run(
     rgb = await resizeRaw(rgb, width, height, w, h);
   }
 
-  const session = await getSession(modelPath);
-  const sr = await serialize(() => infer(session, rgb, w, h, tile, tilePad));
+  let engine;
+  if (modelPath) {
+    engine = { session: await getSession(modelPath), onGpu: false };
+  } else {
+    engine = await resolveEngine();
+    const m = MODES[engine.mode];
+    if (opts.tile === undefined) tile = m.tile;
+    if (opts.lanczosMix === undefined) lanczosMix = m.lanczosMix;
+  }
+  let sr;
+  try {
+    sr = await serialize(() => infer(engine.session, rgb, w, h, tile, tilePad));
+  } catch (err) {
+    if (!engine.onGpu) throw err;
+    // GPU failed while running: stay on CPU from now on and retry this image once.
+    gpuBroken = true;
+    process.emitWarning(`GPU inference failed (${err.message}); falling back to CPU`, 'PushupWarning');
+    const mode = engine.quality === 'auto' ? 'fast' : engine.mode;
+    const m = MODES[mode];
+    if (opts.tile === undefined) tile = m.tile;
+    if (opts.lanczosMix === undefined) lanczosMix = m.lanczosMix;
+    const cpu = await getSession(m.modelPath);
+    sr = await serialize(() => infer(cpu, rgb, w, h, tile, tilePad));
+  }
 
   const out =
     sr.width === outW && sr.height === outH
@@ -225,3 +314,12 @@ module.exports = { upscale };
 module.exports.default = upscale;
 module.exports._run = run;
 module.exports._copyFromTensor = copyFromTensor;
+module.exports._gpuProviders = gpuProviders;
+module.exports._MODES = MODES;
+// Tests only: forget cached sessions and GPU state.
+module.exports._reset = () => {
+  cpuSessions.clear();
+  gpuSessions.clear();
+  gpuBroken = false;
+  warnedNoGpu = false;
+};

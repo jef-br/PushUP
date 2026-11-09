@@ -61,12 +61,20 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   and record the negative result. The `fromTensor` stage is ~6.6% of latency at 800 px;
   the expected saving is smaller (estimate, unmeasured).
 
-### [blocked] T6 — Optional high-quality mode (Remacri, ESRGAN)
-- **Goal:** Let callers opt into `4x_foolhardy_Remacri` (best fabric texture) without
-  changing the `upscale` signature, e.g. via `PUSHUP_QUALITY=high`.
-- **Blocked on:** owner decision. On a 4-core CPU it takes ~16 s @400 px and ~60 s @800 px
-  (vs 0.55 s / 2.3 s default); worthwhile only on a GPU. See D7 in `docs/DECISIONS.md`.
-  Converter (`tools/build_rrdb_onnx.py`) and tiling (`tile` option) already exist.
+### [x] T6 — GPU when available, CPU always; high-quality mode (done 2026-11-09, PR #13)
+- **Owner decision (2026-11-09):** every path must run on CPU only; use a GPU when present.
+- **Goal:** pick the execution device and model automatically, without changing the `upscale`
+  signature: GPU present → Remacri (best texture); CPU → 4xLSDIRCompactC3 (fast).
+  Overrides via env: `PUSHUP_QUALITY=auto|fast|high`, `PUSHUP_DEVICE=auto|cpu|gpu`.
+- **Accept:**
+  - GPU provider per platform (Windows DirectML, Linux x64 CUDA, macOS arm64 CoreML); any
+    GPU failure (load or run) falls back to CPU with identical-quality semantics, never an error.
+  - `PUSHUP_QUALITY=high` works on CPU (tiled, slow) — tested.
+  - Default on a CPU-only machine is byte-identical to before (fast model) — tested.
+  - Invalid env values throw a clear error — tested.
+  - Remacri ONNX shipped with license/attribution (CC BY-NC-SA 4.0).
+  - Benchmark numbers for both modes recorded; README/CLAUDE.md document the modes.
+- **Note:** no GPU in the cloud container; GPU paths are verified only by their fallback.
 
 ### [blocked] T3 — Quality comparison vs a SaaS upscaler (e.g. Claid.ai)
 - **Goal:** Score a SaaS upscaler's output against PushUP on the standard set.

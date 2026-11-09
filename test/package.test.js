@@ -13,12 +13,12 @@ test('npm pack tarball has runtime files and no dev tooling', () => {
   });
   const files = JSON.parse(out)[0].files.map((f) => f.path);
   for (const must of ['package.json', 'README.md', 'LICENSE', 'src/index.js',
-    'models/4xLSDIRCompactC3.onnx']) {
+    'models/4xLSDIRCompactC3.onnx', 'models/4x_foolhardy_Remacri.onnx', 'models/LICENSES.md']) {
     assert.ok(files.includes(must), `missing ${must}`);
   }
   const rootAllowed = new Set(['package.json', 'README.md', 'LICENSE']);
   for (const f of files) {
-    assert.ok(rootAllowed.has(f) || /^src\//.test(f) || /^models\/[^/]+\.onnx$/.test(f),
+    assert.ok(rootAllowed.has(f) || /^src\//.test(f) || /^models\/[^/]+\.onnx$/.test(f) || f === 'models/LICENSES.md',
       `unexpected ${f}`);
   }
 });
