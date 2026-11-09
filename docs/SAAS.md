@@ -24,8 +24,9 @@ downloaded into `bench/out/saas/`, never committed — they're the vendor's copy
 | Laces, logo | soft | crisp edges | crisp edges | crisp, "NIKE" sharper |
 | Faithfulness | — | follows the input | follows the input | adds texture, relights |
 
-Also tried on the same image, all converted ESRGAN-type community models: NMKD-Siax,
-4x-UltraSharp, 4x-Nomos8kSC. None reaches Claid's suede texture; Siax comes closest.
+Also tried on the same image (one-off check, not in the script yet — T7 adds model columns):
+the converted ESRGAN-type community models NMKD-Siax, 4x-UltraSharp and 4x-Nomos8kSC.
+None reaches Claid's suede texture; Siax comes closest.
 
 **Verdict:** on Claid's showcase image, PushUP is clean and faithful but **behind on fine
 texture**. The look of Claid's result is typical of generative (diffusion-style) upscalers,

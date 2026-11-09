@@ -103,6 +103,11 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
     any) should become the GPU `high` mode, with the evidence.
 - **Notes:** CC BY-NC-SA licenses are acceptable (non-commercial project). Models that
   can't produce an ONNX file without PyTorch are out of scope — record them as such.
+  Network available unattended: Hugging Face (models + datasets), PyPI/npm, GitHub release
+  downloads and `git clone` (OpenModelDB data: `git clone --depth 1 --filter=blob:none
+  --sparse https://github.com/OpenModelDB/open-model-database`), and `claid.ai` for the
+  Claid sample. `github.com/<repo>/raw/...` and other sites are blocked — a model only
+  available elsewhere is recorded as unreachable, not worked around.
 
 ### [ ] T1a — Measure how well text on packaging survives (research, no product code)
 - **Goal:** Decide with data whether text needs special handling. Text on labels
