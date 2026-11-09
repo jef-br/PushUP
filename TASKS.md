@@ -84,11 +84,16 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   - `node bench/bench.js <set> --sizes 400,600 --export-inputs <dir>` writes the exact
     degraded inputs the bench feeds every method (downscaled, JPEG q85, *decoded* RGB saved as
     lossless PNG) to `<dir>/<size>/<image-name>.png`.
-  - `--external <name>=<dir>` scores `<dir>/<size>/<image-name>.png` as method `<name>`.
-    External outputs are resized to the reference size (largest side 1000 px) with Lanczos
-    if they differ; missing files are reported and skipped, never silently scored.
-  - Check: export inputs, upscale them to 1000 px with Lanczos in a separate script, score
-    with `--external`: PSNR/SSIM/GMSD must equal the built-in `lanczos` method **exactly**.
+  - `--external <name>=<dir>` scores `<dir>/<size>/<image-name>.png` as method `<name>`
+    (reported as `<size>px <name>`, like built-in methods). Expected output size is the
+    bench's own: `round(w*1000/L) x round(h*1000/L)` of the exported input (w, h, L = its
+    width, height, largest side). Files of exactly that size are used as-is and scored like
+    every other method (cropped to the area shared with the reference); files of another
+    size are resized to the expected size (sharp, `lanczos3`, `fit: 'fill'`) and flagged in
+    the output. Missing files are reported and skipped, never silently scored.
+  - Check: export inputs, upscale each to the expected size in a separate script with sharp
+    (`lanczos3`, `fit: 'fill'`, same as the built-in method), score with `--external`:
+    PSNR/SSIM/GMSD must equal the built-in `lanczos` method **exactly**, on all images.
   - Test for the name/size matching and the missing-file report. No network calls.
 
 ### [blocked] T3b — Run the comparison against Claid.ai (free trial only, no spending)
@@ -105,19 +110,22 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Goal:** Decide with data whether text needs special handling. Text on labels
   (ingredients, brand names, sizes) is where upscalers fail most visibly.
 - **Accept:**
-  - Text test set: run OCR on the 1000 px references from `bench/out/set`; keep crops of
-    ≥64 px around detected text lines whose OCR confidence is high (≥15 crops; list them in
-    `docs/TEXT.md` with image name + box).
+  - OCR engine (fixed, so results can't be steered): `rapidocr-onnxruntime` from PyPI with
+    its bundled default models; record its version, model files, licenses and SHA-256.
+  - Text test set: run that OCR on the 1000 px references from `bench/out/set`; keep text
+    lines with recognition confidence ≥ 0.90 and ≥ 4 characters, as crops of the line box
+    padded by 8 px (≥15 crops; list them in `docs/TEXT.md` with image name + box).
   - Protocol: upscale the **whole image** from its 400 px and 600 px degraded input (as the
-    bench does), then cut the same box from the 1000 px output. Score = OCR character
-    accuracy (1 − normalised edit distance) against the text OCR reads on the reference crop.
-  - Methods: Lanczos, `fast` and `high` (via `PUSHUP_QUALITY`; `high` takes ~15 s per 400 px
-    image on CPU, so budget ~30 min for 15 images × 2 sizes).
-  - Decision rule, stated in `docs/TEXT.md`: recommend T1b only if `fast`'s mean character
-    accuracy is ≥5 points below the reference-OCR ceiling **and** visibly garbled crops exist;
-    otherwise recommend closing T1b.
-  - `docs/TEXT.md` has the numbers, ≤6 side-by-side crops (images outside git if large), the
-    OCR model used with its license and hash, and the recommendation.
+    bench does), then cut the same box from the 1000 px output. Score = character accuracy
+    (1 − normalised edit distance) of OCR on that crop vs. OCR on the reference crop.
+  - Methods: Lanczos (baseline), `fast` and `high` (via `PUSHUP_QUALITY` in a small script;
+    `high` takes ~15 s per 400 px image on CPU, so budget ~30 min for 15 images × 2 sizes).
+  - Decision rule, applied at 400 px and written into `docs/TEXT.md`: recommend T1b if
+    `fast`'s mean accuracy < 0.90, **or** ≥ 3 crops have `fast` accuracy < 0.50. Otherwise
+    recommend closing T1b. Also report `fast − Lanczos` and `high − fast`: if `high` already
+    fixes most failures, say so (text might only need `high` mode, not a new model).
+  - `docs/TEXT.md` has the numbers, ≤6 side-by-side crops (images outside git if large) and
+    the recommendation.
 
 ### [blocked] T1b — Text-aware upscaling
 - **Goal:** detect text regions, upscale them with a text-specialised path, blend back.
