@@ -40,7 +40,7 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 - **Why:** on the same 20 e-commerce photos it scored better on PSNR, SSIM and GMSD at
   400/600/800 px and ran ~1.75x faster (half the layers). Sharper pleats; buttons kept.
 
-## D7 — Large ESRGAN community models are optional, not default (pending)
+## D7 — Large ESRGAN community models are optional, not default (superseded by D9)
 - **Context:** Remacri / NMKD-Siax / 4x-UltraSharp keep the most fabric texture, but cost
   16 s (400 px) to ~60 s (800 px) on a 4-core CPU and need tiling to fit in memory.
 - **Status:** awaiting the owner's call on speed vs quality and target hardware (GPU would
@@ -58,3 +58,11 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 - **Why:** an unsharp mask lowered PSNR/SSIM at every strength on the 20-image subset and
   added no fabric texture, only edge contrast and halos. Missing texture is lost
   information; only a stronger model (e.g. Remacri, T6) restores it.
+
+## D9 — CPU always, GPU when present; quality follows the device
+- **Owner rule (2026-11-09):** every path must run on CPU only; use a GPU when there is one.
+- **Decision:** `auto` picks Remacri (`high`) when a GPU provider loads, else 4xLSDIRCompactC3
+  (`fast`) on CPU. Env overrides `PUSHUP_QUALITY` / `PUSHUP_DEVICE`; signature unchanged.
+- **Why:** Remacri has the best texture but is ~30x slower on CPU (16-60 s); on a GPU it
+  should be ~1-2 s (unmeasured). Fallback on GPU load or run failure keeps CPU-only machines
+  working. Env vars (not a parameter) because the `upscale` signature is fixed.

@@ -22,7 +22,8 @@
   "main": "src/index.js",
   "files": [
     "src",
-    "models/*.onnx"
+    "models/*.onnx",
+    "models/LICENSES.md"
   ],
   "engines": {
     "node": ">=20.9"
