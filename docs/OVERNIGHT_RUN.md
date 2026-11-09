@@ -66,6 +66,9 @@ To merge: `git merge origin/main` into your branch first if it's behind, re-run 
 push, then merge the PR (`mcp__github__merge_pull_request`, merge commit). Before merging,
 post both final verdict lines as a PR comment and log the merge in `PROGRESS.md` on the
 branch. Never merge a PR whose task is `blocked` or needs an owner decision (see `TASKS.md`).
+Follow-up decisions that a task defines with an explicit decision rule (e.g. T1a → T1b) are
+**not** owner decisions: the session that produces the measurement applies the rule and
+unblocks or closes the follow-up itself (D11).
 If the merge call is refused (permissions), leave the PR open with the verdicts posted and
 record that in `PROGRESS.md` — the owner merges it.
 

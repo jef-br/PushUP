@@ -20,7 +20,7 @@ downloaded into `bench/out/saas/`, never committed — they're the vendor's copy
 
 | | Lanczos | PushUP `fast` (1.2 s) | PushUP `high` (35 s, CPU) | Claid |
 |---|---|---|---|---|
-| Suede texture | blurry | clean, smooth | clean, slightly more grain | **dense fibre-level texture** |
+| Suede texture | blurry | clean, smooth | clean, slightly more grain | dense, high-contrast grain |
 | Laces, logo | soft | crisp edges | crisp edges | crisp, "NIKE" sharper |
 | Faithfulness | — | follows the input | follows the input | adds texture, relights |
 
@@ -28,9 +28,15 @@ Also tried on the same image (one-off check, not in the script yet — T7 adds m
 the converted ESRGAN-type community models NMKD-Siax, 4x-UltraSharp and 4x-Nomos8kSC.
 None reaches Claid's suede texture; Siax comes closest.
 
-**Verdict:** on Claid's showcase image, PushUP is clean and faithful but **behind on fine
-texture**. The look of Claid's result is typical of generative (diffusion-style) upscalers,
-which invent plausible material texture. Closing this gap is task T7.
+**Verdict:** on Claid's showcase image, PushUP is clean and faithful to the input but
+**behind on perceived texture**. Part of that gap is confounded: Claid also relit and
+sharpened the image (higher local contrast reads as texture), and its "after" may come from a
+sharper original. Claid's method is unknown; the result *possibly* comes from a generative
+(diffusion-style) upscaler, which would invent plausible material texture. In PushUP's favour,
+it doesn't change what's in the image. Closing the texture gap is task T7.
+
+The alignment (SIFT + RANSAC, 189/220 matches) is good enough for side-by-side crops, not
+for pixel metrics: small misregistration remains around the swoosh and laces.
 
 ## Other vendors
 
