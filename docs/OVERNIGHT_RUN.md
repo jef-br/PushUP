@@ -11,15 +11,15 @@ next. Keep going until the stop time: a blocker on one task never ends the run.
    landed on this branch yet — **make no changes, create nothing, and end the run** (the
    only early end besides the one under "Per-task blockers"). Do not scaffold code or
    invent a project.
-2. Read `CLAUDE.md`, `PROGRESS.md`, and `TASKS.md`. The last `PROGRESS.md` entry tells you
-   where the previous run stopped.
+2. Read `CLAUDE.md`, `PROGRESS.md` (decisions so far) and `TASKS.md`. Where the previous
+   run stopped is on the tasks themselves (`[~]` tasks and their open PRs).
 3. Benchmark images are not in git. If a task needs them and `bench/out/set` is missing,
    run `bash bench/fetch_testset.sh` (downloads ~1.9 GB from Hugging Face, ~5 min).
 4. `npm install`, then `npm test` on `main`. If the install fails downloading the CUDA
    binaries (e.g. a blocked NuGet host), use `npm install --onnxruntime-node-install-cuda=skip`
    (the sandbox has no GPU anyway). If tests already fail on `main`: when the cause is the
-   environment (network, missing download, no GPU), record it as a blocker in `PROGRESS.md`
-   and carry on with tasks that don't depend on it. When it's a real regression, fixing it
+   environment (network, missing download, no GPU), record it as a blocker on the affected
+   task in `TASKS.md` and carry on with tasks that don't depend on it. When it's a real regression, fixing it
    is your first task: add it to `TASKS.md` as `F-<date>-<HHMM>` and do it like any other
    (never weaken a test). While `main` is red, nothing else can be merged.
 5. Work out your stop time (Europe/Brussels, `TZ=Europe/Brussels date`), so runs never
@@ -54,7 +54,7 @@ registry.**
 - Implement the smallest complete version that satisfies the task's acceptance criteria.
 - `npm install`, then `npm test`. Add or extend tests for what you changed.
 - If the change can affect output quality, run the benchmark (use the `bench-runner`
-  subagent) and record the metrics in `PROGRESS.md`.
+  subagent) and put the metrics in the PR description.
 - **Quality gate:** a change to default behaviour must not lower quality on
   `node bench/bench.js bench/out/sub20 --sizes 400,800` (CPU, `fast` mode): PSNR may drop
   at most 0.02 dB, SSIM at most 0.001, GMSD may rise at most 0.001 (lower GMSD is better),
@@ -67,9 +67,10 @@ registry.**
 ## 3. Land it
 
 - Commit in logical steps with clear messages.
-- Update `TASKS.md` (mark the task `[x]`, or back to `[ ]` with notes if unfinished) and
-  append a `PROGRESS.md` entry: what you did, test/bench results, what's next, any blocker.
-- Record any non-obvious choice in `docs/DECISIONS.md`.
+- Update `TASKS.md` (mark the task `[x]`, or back to `[ ]` with next steps / blocker on the
+  task if unfinished). Put what you did and the test/bench numbers in the PR description.
+- Record any non-obvious choice in `docs/DECISIONS.md` (new D-number) and add one line for it
+  to the current week's block in `PROGRESS.md` (decisions only; start a new block on Monday).
 - Push the branch and update your **draft** PR to the default branch. One task = one PR.
 
 ## 3b. Review and merge (the owner delegated merging to this process)
@@ -84,27 +85,26 @@ task's acceptance criteria:
 3. **You** weigh both. Merge only if the reviewer says MEETS, the adversary says AGREE, and
    you agree. Otherwise fix what was raised, push, and run both again — at most **2 refine
    rounds**. Still not aligned → leave the PR open, add a PR comment summarising the
-   disagreement, record it in `PROGRESS.md`, and move on.
+   disagreement, note it on the task in `TASKS.md`, and move on.
 
 To merge: `git merge origin/main` into your branch first if it's behind, re-run `npm test`,
 push, then merge the PR (`mcp__github__merge_pull_request`, merge commit). Before merging,
-post both final verdict lines as a PR comment and log the merge in `PROGRESS.md` on the
-branch. Never merge a PR whose task is `blocked` or needs an owner decision (see `TASKS.md`).
+post both final verdict lines as a PR comment. Never merge a PR whose task is `blocked` or needs an owner decision (see `TASKS.md`).
 Follow-up decisions that a task defines with an explicit decision rule (e.g. T1a → T1b) are
 **not** owner decisions: the session that produces the measurement applies the rule and
 unblocks or closes the follow-up itself (D11).
 If the merge call is refused (permissions), leave the PR open with the verdicts posted and
-record that in `PROGRESS.md` — the owner merges it.
+note that on the task in `TASKS.md` — the owner merges it.
 
 ## 4. Next task, budget and wrap-up
 
 - After a task is merged (or left open after 2 refine rounds), go back to section 1 if at
   least 60 minutes remain before your hard stop. Don't start work you can't finish in time.
 - Don't start a 3b review or a merge within 15 minutes of the hard stop; leave the PR open
-  with its status in `PROGRESS.md` for the next run.
+  with its status noted on the task in `TASKS.md` for the next run.
 - At ~30 minutes before the hard stop, stop cleanly even mid-task: push WIP to the task
   branch (only if tests pass; otherwise revert it), write exact next steps and any blocker
-  in `PROGRESS.md` on that branch, and update the PR.
+  on the task in `TASKS.md` on that branch, and update the PR.
 
 ## 5. When nothing is ready — make work
 
@@ -113,8 +113,8 @@ A blocked task is not a reason to stop. In order:
 1. Try to unblock a `[blocked]` task from inside the sandbox (download a dataset, write a
    missing script). If it has an open PR, continue on that PR's branch (only if its last push
    is older than 3 hours, so no other run is still on it); set the task back to `[~]` there. Only an owner action (credential, account, network-host approval) is
-   a real blocker; record exactly what's needed in `PROGRESS.md` and the task.
-2. Find work: `PROGRESS.md` follow-ups, `docs/PERF.md` ideas, README "Known limits",
+   a real blocker; record exactly what's needed on the task in `TASKS.md`.
+2. Find work: follow-ups in `docs/` and `TASKS.md` notes, `docs/PERF.md` ideas, README "Known limits",
    untested code paths in `src/`, benchmark gaps (product types or sizes the set misses).
 3. Add 3–5 new tasks to `TASKS.md` (goal, acceptance criteria, notes; each small enough for
    one run). Land that as its own PR (task ID `BACKLOG-<date>-<HHMM>`) through 3b. At most
