@@ -6,6 +6,27 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-09 — T5 faster tensor-to-bytes conversion (byte-identical)
+
+- `copyFromTensor` in `src/index.js` now uses `floor(v * 255 + 0.5)` inline instead of a
+  `Math.round` + clamp helper. For float32 inputs `v * 255 + 0.5` is exact in float64, so the
+  bytes are identical; no `Uint8ClampedArray` (it rounds ties to even, which differs).
+- New `test/convert.test.js`: compares against the original rounding on 30,000 values,
+  incl. every .5 tie in range, near-ties, out-of-range, NaN, ±Infinity and -0; plus a
+  sub-region copy test. 16/16 tests pass.
+- `bench/profile.js` now times the shipped function. 4 cores, factor 1.5, median of 5:
+
+| Input | conversion stage (before → after) | total (before → after) |
+|---|---|---|
+| 400x300 | 63 → 13 ms | 559 → 452 ms |
+| 600x450 | 148 → 32 ms | 1183 → 1039 ms |
+| 800x600 | 250 → 48 ms | 2193 → 1792 ms |
+
+- Benchmark unchanged (sub20 @400: 31.51 / 0.8941 / 0.1076). Inference is now ~95%+ of
+  latency; further speed needs a faster model runtime (GPU, int8/fp16), not JS changes.
+
+---
+
 ## 2026-11-09 — T4 post-sharpen: negative result, not shipped
 
 Tested sharp's unsharp mask (`.sharpen({ sigma })`) on the final image, after the 20%

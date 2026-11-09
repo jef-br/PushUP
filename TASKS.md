@@ -47,7 +47,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Accept:** `npm pack` produces a tarball that includes `src/`, `models/*.onnx`, `README`;
   excludes `bench/`, `tools/`, test fixtures. `npm publish --dry-run` clean.
 
-### [ ] T5 — Faster `fromTensor` (byte-identical output)
+### [x] T5 — Faster `fromTensor` (byte-identical output) (done 2026-11-09: ~5x faster stage, see PROGRESS.md)
 - **Goal:** Replace the per-pixel `Math.round` + clamp loop in `src/index.js`
   (`copyFromTensor` since tiling landed; it was `fromTensor`)
   with a `Uint8ClampedArray`-based write (see `docs/PERF.md`).

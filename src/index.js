@@ -89,13 +89,19 @@ function copyFromTensor(tensor, sx, sy, cw, ch, out, outW, dx, dy) {
   const [, , th, tw] = tensor.dims;
   const src = tensor.data;
   const plane = tw * th;
+  const plane2 = 2 * plane;
   for (let y = 0; y < ch; y++) {
-    for (let x = 0; x < cw; x++) {
-      const i = (sy + y) * tw + sx + x;
-      const j = ((dy + y) * outW + dx + x) * 3;
-      out[j] = clampByte(src[i]);
-      out[j + 1] = clampByte(src[plane + i]);
-      out[j + 2] = clampByte(src[2 * plane + i]);
+    let i = (sy + y) * tw + sx;
+    let j = ((dy + y) * outW + dx) * 3;
+    for (const end = i + cw; i < end; i++, j += 3) {
+      // Same bytes as clampByte (Math.round, then clamp), ~6x faster: for float32 inputs,
+      // v * 255 + 0.5 is exact in float64, so truncating it equals Math.round(v * 255).
+      let t = src[i] * 255 + 0.5;
+      out[j] = t <= 0 ? 0 : t >= 255 ? 255 : t | 0;
+      t = src[plane + i] * 255 + 0.5;
+      out[j + 1] = t <= 0 ? 0 : t >= 255 ? 255 : t | 0;
+      t = src[plane2 + i] * 255 + 0.5;
+      out[j + 2] = t <= 0 ? 0 : t >= 255 ? 255 : t | 0;
     }
   }
 }
@@ -128,11 +134,6 @@ async function infer(session, rgb, w, h, tile, pad) {
     }
   }
   return { data: out, width: w * scale, height: h * scale };
-}
-
-function clampByte(v) {
-  const x = Math.round(v * 255);
-  return x < 0 ? 0 : x > 255 ? 255 : x;
 }
 
 function resizeRaw(data, width, height, outW, outH) {
@@ -223,3 +224,4 @@ async function run(
 module.exports = { upscale };
 module.exports.default = upscale;
 module.exports._run = run;
+module.exports._copyFromTensor = copyFromTensor;
