@@ -6,6 +6,18 @@ overnight runs hand off to each other.
 
 ---
 
+## 2026-11-09 — Housekeeping: playbook absorbs `dev`'s ideas; obsolete branches pruned
+
+- All work branches are merged into `main`. Obsolete branches: duplicate CI attempts
+  (`overnight/2026-11-06-I1`, `overnight/2026-11-07-I1`), the log-only
+  `overnight/2026-11-08-T4`, fully merged `overnight/*` + `claude/*` branches, and `dev`.
+- `dev` (another session's single-branch model) conflicted with the owner's later 3b rule;
+  its compatible ideas are now in `docs/OVERNIGHT_RUN.md` (D12): several tasks per run,
+  blockers move on to the next task, refill the backlog when empty (section 5), quality gate,
+  stop-time table, `npm install --onnxruntime-node-install-cuda=skip` for the sandbox.
+
+---
+
 ## 2026-11-09 — T3 done via Claid's published sample; T7 added; T1b decided by rule
 
 - T3 (owner: no spending, nothing the owner must do): compared against Claid's own

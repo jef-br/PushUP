@@ -80,3 +80,13 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 - **Decision:** tasks that wait on a measurement carry an explicit decision rule; the session
   that produces the measurement applies it, records the decision here, and unblocks or
   closes the follow-up itself.
+
+## D12 — Per-task PRs merged by review, not a single `dev` branch
+- **Context:** another session (2026-11-09 09:14) pushed a `dev` branch proposing that runs
+  push to `dev` and only the owner merges one rolling PR into `main`. Later the same day the
+  owner asked for autonomous merging after reviewer + adversary alignment (3b), which is
+  what `main` runs.
+- **Decision:** keep per-task PRs + 3b. From `dev`, keep the compatible ideas: several tasks
+  per run, per-task blockers don't end the run, refill the backlog when empty, a quality
+  gate on default changes, precise stop times, and the CUDA-skip install flag. Its
+  self-building benchmark set duplicates `bench/fetch_testset.sh`. `dev` itself is deleted.

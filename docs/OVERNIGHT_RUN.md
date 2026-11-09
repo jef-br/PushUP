@@ -1,7 +1,8 @@
 # Overnight run playbook
 
-The operating instructions for an **unattended scheduled session**. No human is watching, so
-be conservative: finish and verify one thing rather than start many.
+The operating instructions for an **unattended scheduled session**. No human is watching.
+Work one task at a time and finish it fully (merged, or left open with the reason) before the
+next. Keep going until the stop time: a blocker on one task never ends the run.
 
 ## 0. Orient (do this first, every run)
 
@@ -13,8 +14,20 @@ be conservative: finish and verify one thing rather than start many.
    where the previous run stopped.
 3. Benchmark images are not in git. If a task needs them and `bench/out/set` is missing,
    run `bash bench/fetch_testset.sh` (downloads ~1.9 GB from Hugging Face, ~5 min).
+4. `npm install`, then `npm test` on `main`. If the install fails downloading the CUDA
+   binaries (e.g. a blocked NuGet host), use `npm install --onnxruntime-node-install-cuda=skip`
+   (the sandbox has no GPU anyway). If tests already fail on `main`, fixing that is your first
+   task: add it to `TASKS.md` as `F-<date>` and do it like any other (never weaken a test).
+5. Work out your stop time (Europe/Brussels, `TZ=Europe/Brussels date`), so runs never
+   overlap the next scheduled window:
 
-## 1. Pick one task
+   | Run started | Hard stop |
+   |---|---|
+   | 22:00–00:59 | 02:15 |
+   | 01:00–03:59 | 05:45 Mon–Fri, 05:15 Sat/Sun |
+   | 04:00–07:59 (Sat/Sun) | 09:00 |
+
+## 1. Pick a task
 
 Overnight work lands on branches and reaches `main` only when its PR is merged (by the
 review process in 3b, or by the owner). Until then `main`'s `TASKS.md` is behind: a task can
@@ -28,9 +41,7 @@ registry.**
 - Branch `overnight/<YYYY-MM-DD>-<task-id>` off the default branch. Mark the task `[~]`
   with today's date, commit that single change, push, and **immediately open the draft PR**
   (title starts with the task ID). The open PR is your claim.
-- If no task is free: do not open a new PR just to log that. Append the reason to
-  `PROGRESS.md` on the most recent open overnight PR's branch (or skip logging if the
-  previous run already recorded the same reason), then stop.
+- If no task is free, go to section 5 (make work) instead of stopping.
 
 ## 2. Do the work
 
@@ -38,6 +49,9 @@ registry.**
 - `npm install`, then `npm test`. Add or extend tests for what you changed.
 - If the change can affect output quality, run the benchmark (use the `bench-runner`
   subagent) and record the metrics in `PROGRESS.md`.
+- **Quality gate:** a change to default behaviour must not lower PSNR, SSIM or GMSD (GMSD:
+  lower is better) on `bench/out/sub20` at 400 and 800 px. If it does, ship it off by default
+  or not at all, and record the negative result.
 - Keep the public API contract in `CLAUDE.md` intact unless the task explicitly changes it.
 
 ## 3. Land it
@@ -72,21 +86,39 @@ unblocks or closes the follow-up itself (D11).
 If the merge call is refused (permissions), leave the PR open with the verdicts posted and
 record that in `PROGRESS.md` — the owner merges it.
 
-## 4. Budget and wrap-up
+## 4. Next task, budget and wrap-up
 
-- Aim for about **3 hours**, and never run past the night's hard stop (Europe/Brussels):
-  **05:45** on Mon–Fri mornings, **09:00** on Sat/Sun mornings. The scheduled-run prompt
-  restates these limits — they override any other figure.
-- As you approach the limit or ~3 hours, stop cleanly even mid-task so you don't overlap the
-  next window: commit WIP, write the exact next steps in `PROGRESS.md`, push.
-- Prefer finishing one task well over leaving several half-done; don't start work you can't
-  finish before the stop time.
+- After a task is merged (or left open after 2 refine rounds), go back to section 1 if at
+  least 60 minutes remain before your hard stop. Don't start work you can't finish in time.
+- At ~30 minutes before the hard stop, stop cleanly even mid-task: push WIP to the task
+  branch (only if tests pass; otherwise revert it), write exact next steps and any blocker
+  in `PROGRESS.md` on that branch, and update the PR.
 
-## Stop conditions (record the reason in `PROGRESS.md`, push, then stop)
+## 5. When nothing is ready — make work
 
-- A dependency, credential, or network host you need is unavailable.
-- The task is ambiguous or would change the public contract in a way not spelled out.
-- Tests you didn't touch are already failing — report, don't paper over.
+A blocked task is not a reason to stop. In order:
+
+1. Try to unblock a `[blocked]` task from inside the sandbox (download a dataset, write a
+   missing script). Only an owner action (credential, account, network-host approval) is
+   a real blocker; record exactly what's needed in `PROGRESS.md` and the task.
+2. Find work: `PROGRESS.md` follow-ups, `docs/PERF.md` ideas, README "Known limits",
+   untested code paths in `src/`, benchmark gaps (product types or sizes the set misses).
+3. Add 3–5 new tasks to `TASKS.md` (goal, acceptance criteria, notes; each small enough for
+   one run). Land that as its own PR (task ID `BACKLOG-<date>`) through 3b, then continue
+   with the first new task.
+
+Only work on tasks that are in `TASKS.md`. Self-made tasks may cover speed, quality,
+robustness, tests, docs and packaging — never changing the public contract, changing the
+default model, or adding a runtime dependency that needs Python or a GPU (those need an
+owner-written task).
+
+## Per-task blockers (record, then move on)
+
+- A dependency, credential, or network host the task needs is unavailable → mark the task
+  `[blocked]` with the exact reason, push that to its PR, take the next task.
+- The task is ambiguous or would change the public contract in a way not spelled out →
+  same.
+- End the run early only if no task can be done **and** section 5 produced nothing.
 
 ## Guardrails
 
