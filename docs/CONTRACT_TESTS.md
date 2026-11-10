@@ -35,6 +35,7 @@ such as 800×1 and 4×800 resolve with the right shape.
 - `test/upscale.test.js`: "row padding in stride is handled"
 - `test/upscale.test.js`: "stride padding of 0, 1 and 2 bytes works for odd and even widths"
 - `test/length.test.js`: "arr shorter than one row rejects with RangeError"
+- `test/readme-errors.test.js`: "every row of the README Errors list rejects with the documented error class"
 
 Also covered by `test/length.test.js` (generated names, not checked): with padding 1 and 2, a
 last row without its padding gives the same output; with padding 0 and 2, trailing bytes
