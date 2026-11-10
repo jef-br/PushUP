@@ -157,7 +157,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Accept:** new tests in `test/upscale.test.js`: (a) a call whose inference fails *inside the queue* (mock or wrap the session so `infer` throws;
   an out-of-range size is rejected before the queue and does not test this) followed by a valid
   call still resolves with correct output; (b) with 3 calls started
-  together, inference runs one at a time and results arrive in call order (observable via a
+  together, inference runs one at a time and results arrive in call order (use same-size inputs, or assert order inside the stubbed `infer`; resolution order is not guaranteed for mixed sizes) (observable via a
   test hook or by wrapping the session, no sleeps); (c) `npm test` passes. No change to `src/`
   unless a test exposes a real bug (then fix it and say so in the PR) or a small test-only hook is
   needed for (a) or (b) (allowed; say so in the PR).
@@ -172,7 +172,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 ### [ ] Q3 — Measure first-call latency (session creation) and document it
 - **Goal:** `docs/PERF.md` says the first call pays session creation but doesn't measure it.
 - **Accept:** `bench/profile.js` (or a small new script) reports cold first-call time vs warm
-  median for `fast` (CPU) and, if feasible within the run, `high` (CPU) at 400 and 800 px (≥ 3 warm calls for `fast`, ≥ 1 warm call for `high`; if `high`
+  median for `fast` (CPU) and, if feasible within the run, `high` (CPU) at 400 and 800 px (each cold measurement in a fresh process, since sessions are cached per model; `high` = `PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`; ≥ 3 warm calls for `fast`, ≥ 1 warm call for `high`; if `high`
   at 800 px takes too long for the run, measure it at 400 px only and say so);
   numbers and machine in `docs/PERF.md`; one sentence on whether pre-warming would help
   (no API change). No product code.
