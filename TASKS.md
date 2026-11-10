@@ -177,7 +177,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   numbers and machine in `docs/PERF.md`; one sentence on whether pre-warming would help
   (no API change). No product code.
 
-### [~] Q4 — (in progress 2026-11-10, branch overnight/2026-11-10-Q4) Per-source breakdown in `bench/bench.js`
+### [x] Q4 — (done 2026-11-10) Per-source breakdown in `bench/bench.js`
 - **Goal:** the set mixes Amazon (ABO) and Lamoda images; averages can hide a per-source
   regression.
 - **Accept:** a `--by-source` flag adds rows grouped by file-name prefix (`abo_`, `lamoda_`) to
