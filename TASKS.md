@@ -152,6 +152,37 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] S1 — Test: shipped model files match the hashes in `models/LICENSES.md`
+- **Goal:** a corrupted or swapped `models/*.onnx` (or a stale hash in the licence file) should fail
+  CI, not surface as a quality regression.
+- **Accept:** `models/LICENSES.md` today records only truncated hashes of the *source* checkpoints,
+  so: add the full 64-hex SHA-256 of each shipped ONNX file (`4xLSDIRCompactC3.onnx`,
+  `4x_foolhardy_Remacri.onnx`) to `LICENSES.md` in a new `ONNX SHA-256` column (docs only; say so in
+  the PR). A test parses that column, computes each file's SHA-256 with `node:crypto`, and compares;
+  it also fails if a `.onnx` in `models/` has no recorded hash. The test must not read the truncated
+  source-hash column. No model or `src/` change. `npm test` passes.
+
+### [ ] S2 — Docs + check: map each contract row to the tests that cover it
+- **Goal:** `CLAUDE.md` says every contract row has a test. Make that checkable.
+- **Accept:** `docs/CONTRACT_TESTS.md` lists each of the four rows of the contract table in
+  `CLAUDE.md` (Input, `stride`, `upscale_factor`, Output) plus the "async, one at a time" sentence
+  under the table, with the test file(s) and test names that cover it; a test reads that doc and
+  fails if a listed test name no longer exists in `test/*.js`. List only tests whose names are
+  string literals (`test('…')`, either quote style); tests named by a template literal inside a
+  loop are described in prose, not checked. Missing coverage found while writing it is added as a new test or recorded as a task
+  in `TASKS.md` (do not edit `CLAUDE.md`). `npm test` passes.
+
+### [ ] S3 — `bench/bench.js --json` machine-readable output
+- **Goal:** the benchmark prints only a text table; scripts and the PR numbers would be easier to
+  produce from JSON.
+- **Accept:** `--json` prints exactly one JSON object `{images, rows: [{setting, psnr, ssim, gmsd,
+  ms}]}` on stdout (no `images:` line or table; progress dots stay on stderr; numbers unrounded;
+  rows include per-source rows when `--by-source` is also given). Without the flag the output is
+  unchanged apart from the `ms` values, which vary from run to run (check on `bench/out/sub20`,
+  built by `bash bench/fetch_testset.sh`, with `--sizes 400 --methods lanczos,sr-full`); usage line
+  updated; the JSON run's PSNR/SSIM/GMSD, rounded to the table's 2/4/4 decimals, equal the table
+  run's (ignore `ms`). `npm test` passes.
+
 ### [x] R1 — (done 2026-11-10, test/aspect.test.js) Test: extreme aspect ratios and sizes at the contract edge
 - **Goal:** the contract only bounds the largest side (400–800 px); the short side can be tiny.
   Pin what happens for such inputs: they must work, never crash or return a wrong shape.
