@@ -130,7 +130,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   short side ≤ 16) so the file runs in a few seconds. Fix `src/` only if a test exposes a real
   bug (say so in the PR); no contract or default change. `npm test` passes.
 
-### [ ] R5 — Test: device-fallback paths not yet covered
+### [~] R5 — (claimed 2026-11-10, branch overnight/2026-11-10-R5) Test: device-fallback paths not yet covered
 - **Goal:** `test/device.test.js` covers GPU load failure and run failure only for
   `PUSHUP_QUALITY=auto`. Pin the other branches of `resolveEngine` and the run-time fallback.
 - **Accept:** new tests (stub `ort.InferenceSession.create` as the existing tests do; no real
