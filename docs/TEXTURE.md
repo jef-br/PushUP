@@ -27,7 +27,7 @@ Not tested, with the reason:
 - **Generative / diffusion:** SeedVR2 (3B/7B, `ByteDance-Seed/SeedVR2-*`) is a video diffusion
   transformer with no ONNX export, so it is out of scope (needs PyTorch). The ONNX diffusion
   upscaler `ssube/stable-diffusion-x4-upscaler-onnx` (text-conditioned SD x4 upscaler, OpenRAIL++
-  license, 3.2 GB: text encoder, UNet, VAE) **was run**, see "Diffusion model" below.
+  license, 3.2 GB; SHA-256: UNet graph `643713dc2d33d4b33e06856ec24e76182735adf11f83e9a1e7a5603e5e6361a9`, UNet weights `0ba7199ec011d007a92c0ce4d7de46d9a0c58c2dfb633659b6a0f25738e36260`, VAE `cb02dfea860a2a7488de15ec5230304c4f9fd0fbadff7719b815bb1302aa57e5`, text encoder `5639a57145d95bc63dcfb0266397fcbdf13df42e71135c87908ffd3a7ef43965`) **was run**, see "Diffusion model" below.
 - `darktable-org/upscale-realplksr-onnx` (MIT, MSSIM-pretrained, conservative): the ONNX has a
   static 256×256 input, so it needs fixed tiling code. Not run for lack of time; a candidate
   for a follow-up.
@@ -97,13 +97,13 @@ Cost grows with pixel count, so the full 640×428 image is roughly 17x more (abo
 far more memory at 10 steps): not usable on a CPU in an upscaler call, and the model's 128 px
 design size makes it unusable for 400–800 px inputs without tiling. Not scored on `sub20` for
 the same reason (a 400 px image is 10x a crop). Package versions: diffusers 0.42.1,
-transformers, torch (latest at run time). Crop sheet: `bench/out/saas/compare_sd.png`
+transformers 5.22.2, torch 2.15.0, onnxruntime 1.29.0. Crop sheet: `bench/out/saas/compare_sd.png`
 (git-ignored).
 
 Visual result: smooth, plausible fabric, laces and logo at the same sharpness as `high` or
 Lite; **no suede grain** is added, and the "NIKE" lettering is slightly warped. One prompt, one
-seed and 10 steps is a thin sample, but there is no sign it closes the gap and it costs ~100x
-a CNN. Verdict: not worth pursuing on CPU; a GPU-only generative mode would be a new
+seed and 10 steps is a thin sample, but there is no sign it closes the gap and it is far slower
+(65 s for a 128 px crop, versus 12-21 s for a whole 1000 px image with Lite or Remacri). Verdict: not worth pursuing on CPU; a GPU-only generative mode would be a new
 dependency (owner decision).
 
 ## Recommendation
