@@ -124,7 +124,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   whose last row has no padding (`arr.length = (h − 1) * stride + width * 3`) resolves with the
   same output bytes as the fully padded buffer; (b) trailing bytes shorter than one row
   (`arr.length = h * stride + k`, `0 < k < width * 3`) are ignored: same output as without them;
-  (c) `arr` shorter than one row rejects with `RangeError`; (d) a plain `number[]` input gives
+  (c) `arr` shorter than `width * 3` bytes rejects with `RangeError` (a length between
+  `width * 3` and `stride` is a valid 1-row image: the last row may skip its padding); (d) a plain `number[]` input gives
   output byte-identical to the same pixels as a `Uint8Array`. Use small images (largest side 400,
   short side ≤ 16) so the file runs in a few seconds. Fix `src/` only if a test exposes a real
   bug (say so in the PR); no contract or default change. `npm test` passes.
@@ -135,8 +136,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Accept:** new tests (stub `ort.InferenceSession.create` as the existing tests do; no real
   GPU) for: (a) `PUSHUP_QUALITY=high` with a GPU session that fails at run time retries on CPU
   with the **Remacri** model (not the fast one): assert the CPU session was created for
-  `_MODES.high.modelPath`; (b) after one run-time GPU failure, a second call does not try to
-  create or run a GPU session again (sticky fallback until `_reset()`); (c) setting values are
+  `_MODES.high.modelPath`; (b) with `PUSHUP_QUALITY=high`, after one run-time GPU failure a second
+  call makes no further GPU `create` call and no GPU run (sticky fallback until `_reset()`; the
+  existing `auto` test already checks that runs don't repeat); (c) setting values are
   trimmed and case-insensitive (`' FAST '`, `'Cpu'`) and an empty string means `auto`. Keep
   `high` runs cheap (largest side 400, short side ≤ 16). No `src/` change unless a test exposes a
   real bug (say so in the PR). `npm test` passes.
@@ -150,14 +152,17 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   number > 0, invalid `PUSHUP_QUALITY` / `PUSHUP_DEVICE`). A test (new file
   `test/readme-errors.test.js`) parses that list and, for each row, triggers it and asserts the
   promise rejects with the documented class; it fails if a row can't be mapped to a trigger or
-  the list is missing. Docs and test only; no change to what `src/` throws (if the doc would
+  the list is missing. Note the check order in `run()`: `arr` type, factor, stride, size, then the
+  env settings, so each trigger needs the earlier arguments valid. Don't add a ```js block calling
+  `upscale(` before the usage example (R2's test reads the first one). Docs and test only; no change to what `src/` throws (if the doc would
   have to say something odd, document what the code does and add a TASKS note). `npm test`
   passes (the README test from R2 still passes).
 
 ### [ ] P2 — Faster Lanczos-mix loop (byte-identical output)
 - **Goal:** the mix in `run()` calls `Math.round` per byte (~3 M bytes at 1000 px).
 - **Accept:** replace it with an equivalent integer-friendly form (e.g. `(a * o + m * p + 0.5) | 0`
-  for non-negative values) only if the output is byte-identical: add a test that compares the new
+  for non-negative values) only if the output is byte-identical (extracting the loop into a helper
+  with a test-only `_` export, like `_copyFromTensor`, is allowed): add a test that compares the new
   mix against `Math.round(a * o + m * p)` over all 256×256 byte pairs for the shipped mix share
   (`_MODES.fast.lanczosMix`) and on one real `upscale` output; measure the stage before/after
   (median of ≥ 5 runs at 800 px, factor 1.25) and put the numbers in `docs/PERF.md`. If the
