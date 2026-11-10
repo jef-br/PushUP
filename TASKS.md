@@ -178,7 +178,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `after`. It prints one line per setting with the three deltas and PASS/FAIL, then `GATE: PASS` or
   `GATE: FAIL`, and exits 0 / 1. It fails (exit 1, clear message) if a `before` setting is missing in
   `after`, or if `images` differs. Thresholds are constants at the top of the file, with the
-  playbook section named in a comment; a delta exactly at a threshold passes. A test
+  playbook section named in a comment; a delta exactly at a threshold passes (allow a tiny
+  epsilon, e.g. 1e-9, for float rounding). A test
   (`test/gate.test.js`) runs it on small JSON fixtures written to a temp dir: identical files
   pass; each metric just over its threshold fails; exactly at it passes; missing setting and
   different `images` fail; per-source rows are ignored. Usage line at the top of the file. No
@@ -187,8 +188,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 ### [ ] R6 — Test: which `arr` types are accepted, rejected or converted
 - **Goal:** README "Errors" (Q6) says a plain `Array` is converted, not checked, and other
   non-`Uint8Array` inputs are a `TypeError`. Pin the edges so a change is a deliberate one.
-- **Accept:** new tests (new file `test/arr-types.test.js`, 400×4 images): `Buffer` and a
-  `Uint8Array` subarray are accepted; `Uint8ClampedArray`, `Int8Array`, `Float32Array`, a
+- **Accept:** new tests (new file `test/arr-types.test.js`, 400×4 images; `Buffer` slices,
+  `byteOffset` views and `number[]` = `Uint8Array` are already in `input.test.js` /
+  `length.test.js`, so don't repeat them): a `Buffer` is accepted; `Uint8ClampedArray`, `Int8Array`, `Float32Array`, a
   `DataView`, an `ArrayBuffer` and a string reject with `TypeError`; a plain `Array` with values
   300 and 'x' resolves with the same output as a `Uint8Array` holding 44 and 0 (the conversion
   `Uint8Array.from` does); an `Array` holding a `Symbol` or a `BigInt` rejects with `TypeError`.
