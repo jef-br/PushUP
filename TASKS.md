@@ -152,6 +152,33 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] S1 — Test: shipped model files match the hashes in `models/LICENSES.md`
+- **Goal:** a corrupted or swapped `models/*.onnx` (or a stale hash in the licence file) should fail
+  CI, not surface as a quality regression.
+- **Accept:** a test reads `models/LICENSES.md`, extracts the SHA-256 recorded for each shipped
+  `.onnx` file (`4xLSDIRCompactC3.onnx`, `4x_foolhardy_Remacri.onnx`), and compares it to the
+  SHA-256 computed with `node:crypto`; it also fails if a shipped `.onnx` has no recorded hash. If
+  the file records a hash for the *source* checkpoint rather than the ONNX, record the ONNX hash
+  in `LICENSES.md` as well (docs only) and say so in the PR. No model or `src/` change.
+  `npm test` passes.
+
+### [ ] S2 — Docs + check: map each contract row to the tests that cover it
+- **Goal:** `CLAUDE.md` says every contract row has a test. Make that checkable.
+- **Accept:** `docs/CONTRACT_TESTS.md` lists each row of the contract table in `CLAUDE.md`
+  (input range, stride, `upscale_factor`, output, async/serialised) with the test file(s) and test
+  names that cover it; a test reads that doc and fails if a listed test name no longer exists in
+  `test/*.js`. Missing coverage found while writing it is added as a new test or recorded as a task
+  in `TASKS.md` (do not edit `CLAUDE.md`). `npm test` passes.
+
+### [ ] S3 — `bench/bench.js --json` machine-readable output
+- **Goal:** the benchmark prints only a text table; scripts and the PR numbers would be easier to
+  produce from JSON.
+- **Accept:** `--json` prints one JSON object `{images, rows: [{setting, psnr, ssim, gmsd, ms}]}`
+  (rows include per-source rows when `--by-source` is also given) instead of the table; output
+  without the flag is unchanged apart from the `ms` column (check on `bench/out/sub20` with
+  `--sizes 400 --methods lanczos,sr-full`); usage line updated; the numbers from the JSON run match
+  the table run's PSNR/SSIM/GMSD. `npm test` passes.
+
 ### [x] R1 — (done 2026-11-10, test/aspect.test.js) Test: extreme aspect ratios and sizes at the contract edge
 - **Goal:** the contract only bounds the largest side (400–800 px); the short side can be tiny.
   Pin what happens for such inputs: they must work, never crash or return a wrong shape.
