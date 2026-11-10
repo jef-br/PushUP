@@ -174,7 +174,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `arr_out.length = 1800 * 450` (factor 1.5). The test fails with a clear message if the block is
   missing. No README change unless the example is wrong (then fix it and say so). `npm test` passes.
 
-### [~] R3 — (in progress 2026-11-10, branch overnight/2026-11-10-R3) Test: the parts of `bench/profile.js` that copy `src/` stay in sync
+### [x] R3 — (done 2026-11-10, test/profile-sync.test.js) Test: the parts of `bench/profile.js` that copy `src/` stay in sync
 - **Goal:** `profile.js` still copies two things from `src/index.js`: the NCHW float conversion
   (`toTensor`) and the 0.8/0.2 Lanczos-mix constants (the byte conversion already uses the shipped
   `_copyFromTensor`). If `src/` changes, the profile silently measures something else.
