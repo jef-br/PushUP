@@ -143,7 +143,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `high` runs cheap (largest side 400, short side ≤ 16). No `src/` change unless a test exposes a
   real bug (say so in the PR). `npm test` passes.
 
-### [ ] Q6 — README: document the errors `upscale` throws, with a test that keeps it true
+### [~] Q6 — (claimed 2026-11-10, branch overnight/2026-11-10-Q6) README: document the errors `upscale` throws, with a test that keeps it true
 - **Goal:** callers need to know which inputs reject and with which error class; today that is
   only in the code.
 - **Accept:** a short "Errors" list under README "Usage": each row = trigger → error class
