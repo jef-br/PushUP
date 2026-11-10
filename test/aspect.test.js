@@ -24,7 +24,7 @@ function expected(w, h, factor) {
   return [Math.max(1, Math.round((w * target) / longest)), Math.max(1, Math.round((h * target) / longest))];
 }
 
-const cases = [[800, 4], [800, 1], [4, 800], [1, 800], [400, 400], [800, 800]];
+const cases = [[800, 4], [800, 1], [4, 800], [1, 800], [400, 400], [800, 800], [800, 3], [799, 401], [3, 800], [401, 799]];
 for (const [w, h] of cases) {
   for (const factor of [1, 1.5]) {
     test(`${w}x${h} at factor ${factor} has the shape the size rule gives`, async () => {
@@ -46,4 +46,9 @@ test('literal expected shapes for thin inputs (guards the formula in this file)'
   assert.deepStrictEqual(await shape(800, 1, 1.5), [1000, 1]);
   assert.deepStrictEqual(await shape(4, 800, 1), [4, 800]);
   assert.deepStrictEqual(await shape(1, 800, 1.5), [1, 1000]);
+  // Fractional ratios: rounding is exercised (3.75 -> 4, 501.9 -> 502).
+  assert.deepStrictEqual(await shape(800, 3, 1.5), [1000, 4]);
+  assert.deepStrictEqual(await shape(799, 401, 1.5), [1000, 502]);
+  assert.deepStrictEqual(await shape(3, 800, 1.5), [4, 1000]);
+  assert.deepStrictEqual(await shape(401, 799, 1.5), [502, 1000]);
 });
