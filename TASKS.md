@@ -171,13 +171,16 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   returned `[arr_out, stride_out]` shape. The test fails with a clear message if the block is
   missing. No README change unless the example is wrong (then fix it and say so). `npm test` passes.
 
-### [ ] R3 — Test: `bench/profile.js` stage code matches the helpers in `src/`
-- **Goal:** `profile.js` copies pipeline helpers (see its NOTE) and can silently drift.
-- **Accept:** a test that runs the copied `toTensor`/byte-conversion stage code and the
-  corresponding `src/` behaviour on the same small input and asserts identical results (export
-  the stage functions from `profile.js` behind `require.main === module`, no behaviour change when
-  run as a script — check `node bench/profile.js --runs 1 --sizes 400` still prints its table).
-  Document in the PR how drift is now detected. `npm test` passes.
+### [ ] R3 — Test: the parts of `bench/profile.js` that copy `src/` stay in sync
+- **Goal:** `profile.js` still copies two things from `src/index.js`: the NCHW float conversion
+  (`toTensor`) and the 0.8/0.2 Lanczos-mix constants (the byte conversion already uses the shipped
+  `_copyFromTensor`). If `src/` changes, the profile silently measures something else.
+- **Accept:** `src/index.js` gets a test-only export `_toTensor` (like the existing `_copyFromTensor`;
+  no behaviour change) and `profile.js` uses it instead of its copy, and uses a mix share read from
+  an export (`_MODES.fast.lanczosMix`) instead of the literal `0.2`/`0.8`. A test asserts both
+  exports exist and `_toTensor` gives the expected layout on a 2×2 input. `node bench/profile.js
+  --runs 1 --sizes 400` still prints its table; `npm test` passes. No change to `upscale()` output
+  (existing byte-identity tests stay green).
 
 ### [x] Q1 — (done 2026-11-10, test/queue.test.js) Test: a failed call must not poison the queue, and calls run strictly in order
 - **Goal:** `src/index.js` serialises calls through one promise queue. Pin that behaviour.
