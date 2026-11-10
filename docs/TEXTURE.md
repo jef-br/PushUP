@@ -28,8 +28,10 @@ Not tested, with the reason:
   SeedVR2 (3B/7B, `ByteDance-Seed/SeedVR2-*`) is a video diffusion transformer with no ONNX
   export, so it is out of scope (needs PyTorch). The only ONNX diffusion upscaler found is
   `ssube/stable-diffusion-x4-upscaler-onnx` (text-conditioned, multi-step, OpenRAIL++); it
-  was not run: tens of UNet steps at 1000 px are far beyond a CPU budget, and a text-prompted
-  generator invents detail, which conflicts with "no wrong detail".
+  was **not run**: it is a diffusers pipeline (text encoder, UNet, VAE, noise schedule) that
+  needs extra Python dependencies and prompt handling, which did not fit in this run. Whether
+  it would be usable on CPU is therefore unmeasured. A text-prompted generator is also
+  likely to invent detail. Follow-up task T9.
 - `darktable-org/upscale-realplksr-onnx` (MIT, MSSIM-pretrained, conservative): the ONNX has a
   static 256×256 input, so it needs fixed tiling code. Not run for lack of time; a candidate
   for a follow-up.
@@ -45,19 +47,35 @@ Quality: `bench/out/sub20` at 400 px input (20 images, JPEG q85 degradation), CP
 `bench/bench.js` with `sr:<model>#192@0` (no Lanczos mix for the candidates).
 Mode `fast` (shipped default, 20% Lanczos mix) and Lanczos shown for reference.
 
-| Method | PSNR ↑ | SSIM ↑ | GMSD ↓ | ms / 400 px image | Claid sample time | Peak RSS |
-|---|---|---|---|---|---|---|
-| Lanczos | 28.97 | 0.8785 | 0.1271 | 28 | – | – |
-| PushUP `fast` | **31.51** | 0.8941 | 0.1076 | 526 | 1.6 s | – |
-| Remacri (`high`) | 31.12 | 0.8994 | 0.1018 | 15 426 | 36 s | – |
-| **UltraSharpV2_Lite** | 31.25 | 0.8953 | **0.0997** | 9 074 | 20.8 s | 482 MB |
-| UltraSharpV2 | 30.97 | **0.9000** | 0.1023 | 47 330 | 116 s | 2 635 MB |
-| UniversalUpscalerV2-Neutral | 30.85 | 0.8848 | 0.1157 | 15 411 | 34.8 s | 1 440 MB |
-| NomosWebPhoto_esrgan | 28.49 | 0.8781 | 0.1206 | 15 503 | 37.7 s | 1 460 MB |
-| ClearRealityV1 (whole image) | 29.60 | 0.8846 | 0.1142 | 348 | 1.3 s | 868 MB |
+| Method | PSNR ↑ | SSIM ↑ | GMSD ↓ | mean ms / 400 px image (20 images) |
+|---|---|---|---|---|
+| Lanczos | 28.97 | 0.8785 | 0.1271 | 28 |
+| PushUP `fast` | **31.51** | 0.8941 | 0.1076 | 526 |
+| Remacri (`high`) | 31.12 | 0.8994 | 0.1018 | 15 426 |
+| **UltraSharpV2_Lite** | 31.25 | 0.8953 | **0.0997** | 9 074 |
+| UltraSharpV2 | 30.97 | **0.9000** | 0.1023 | 47 330 |
+| UniversalUpscalerV2-Neutral | 30.85 | 0.8848 | 0.1157 | 15 411 |
+| NomosWebPhoto_esrgan | 28.49 | 0.8781 | 0.1206 | 15 503 |
+| ClearRealityV1 (whole image) | 29.60 | 0.8846 | 0.1142 | 348 |
 
-(Remacri's peak memory was not re-measured in this run.) The fidelity metrics reward
-faithfulness, not perceived texture, so they say nothing about the Claid gap by themselves.
+Single-run speed and peak memory (`bench/saas/upscale_model.js`, one process per run, CPU,
+4 cores, 192 px tiles; `fast` measured via `_run` in a fresh process, first call incl. model
+load). "sub20" = `abo_0002b541` degraded to 400 px, upscaled to 1000×1000.
+
+| Method | Claid sample: time / peak RSS | sub20 image: time / peak RSS |
+|---|---|---|
+| PushUP `fast` | 1.2 s / 408 MB | 0.6 s / 468 MB |
+| Remacri (`high`) | 33.5 s / 1454 MB | 20.6 s / 1425 MB |
+| UltraSharpV2_Lite | 21.6 s / 479 MB | 12.4 s / 461 MB |
+| UltraSharpV2 | 114.2 s / 2644 MB | 74.0 s / 2687 MB |
+| UniversalUpscalerV2-Neutral | 34.2 s / 1432 MB | 21.0 s / 1418 MB |
+| NomosWebPhoto_esrgan | 33.6 s / 1462 MB | 21.2 s / 1453 MB |
+| ClearRealityV1 (whole image) | 0.9 s / 868 MB | 0.6 s / 523 MB |
+
+(The first pass of these runs gave 37.7 / 20.8 / 116.3 / 34.8 / 1.3 s for Nomos / Lite /
+UltraSharpV2 / Universal / ClearReality on the Claid sample; run-to-run spread is about 10%.)
+The fidelity metrics reward faithfulness, not perceived texture, so they say nothing about
+the Claid gap by themselves.
 
 ### Visual check (Claid sample, three crops)
 
@@ -67,7 +85,7 @@ copyrighted image). Regenerate with `python bench/saas/compare_published.py` aft
 
 - Claid shows dense, high-contrast suede grain everywhere. No candidate reproduces it.
 - UniversalUpscalerV2-Neutral and UltraSharpV2 show the most fine speckle on the toe cap, but
-  UniversalUpscalerV2 also has the worst fidelity scores of the usable models.
+  UniversalUpscalerV2 scores below Remacri and Lite on all three metrics.
 - NomosWebPhoto is smoother than Remacri and scores below Lanczos on PSNR: it was trained to
   remove noise and blur, so it removes real texture here.
 - UltraSharpV2_Lite looks like Remacri with slightly crisper edges, and wins on GMSD.
@@ -81,7 +99,7 @@ copyrighted image). Regenerate with `python bench/saas/compare_published.py` aft
    step is an opt-in, GPU-only generative path, which needs a new dependency and is an owner
    decision.
 2. `high` mode: **UltraSharpV2_Lite is the best candidate to replace Remacri** (better GMSD and
-   PSNR, 1.7x faster on CPU, 3x less memory; SSIM 0.0041 lower). Before any switch: confirm its
+   PSNR, 1.7x faster on CPU, 3x less memory: 479 vs 1454 MB peak RSS; SSIM 0.0041 lower). Before any switch: confirm its
    license (it is a Lite variant of a CC BY-NC-SA model; the ONNX is a third-party conversion
    with no stated license), convert it ourselves or record the upstream weights hash, and
    re-run the quality gate. Changing the default model is an owner decision (playbook §5), so
