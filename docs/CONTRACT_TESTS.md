@@ -17,6 +17,15 @@ option (`//`-commented lines, `test.skip(` and `test.todo(` are caught).
 - `test/upscale.test.js`: "rejects out-of-range input sizes"
 - `test/upscale.test.js`: "largest-side bounds: 399 and 801 rejected, 400 and 800 accepted"
 - `test/upscale.test.js`: "rejects bad arguments"
+- `test/readme-errors.test.js`: "every row of the README Errors list rejects with the documented error class"
+- `test/readme-errors.test.js`: "README rows are in check order, and only the first problem is reported"
+- `test/length.test.js`: "a plain number[] gives the same output as a Uint8Array of the same pixels"
+- `test/arr-types.test.js`: "a whole Buffer is accepted and gives the same output as a Uint8Array"
+- `test/arr-types.test.js`: "other typed arrays, DataView, ArrayBuffer and strings reject with TypeError"
+- `test/arr-types.test.js`: "a plain Array holding a Symbol or a BigInt rejects with TypeError"
+
+Also covered by `test/arr-types.test.js` (name with escaped quotes, not checked): a plain `Array`
+is converted as by `Uint8Array.from` (300 → 44, `'x'` → 0).
 
 Also covered by `test/aspect.test.js` (generated names, not checked): thin and square inputs
 such as 800×1 and 4×800 resolve with the right shape.
@@ -25,6 +34,12 @@ such as 800×1 and 4×800 resolve with the right shape.
 
 - `test/upscale.test.js`: "row padding in stride is handled"
 - `test/upscale.test.js`: "stride padding of 0, 1 and 2 bytes works for odd and even widths"
+- `test/length.test.js`: "arr shorter than one row rejects with RangeError"
+- `test/readme-errors.test.js`: "every row of the README Errors list rejects with the documented error class"
+
+Also covered by `test/length.test.js` (generated names, not checked): with padding 1 and 2, a
+last row without its padding gives the same output; with padding 0 and 2, trailing bytes
+shorter than one row (up to `width * 3 − 1`) are ignored.
 
 Also covered by `test/input.test.js` (generated names, not checked): padding 0 and 2 on an
 odd-width image, input bytes untouched, `Buffer` slices and `Uint8Array` views with a
@@ -37,6 +52,7 @@ non-zero `byteOffset`.
 - `test/upscale.test.js`: "output cap: largest side never exceeds 1000px"
 - `test/upscale.test.js`: "upscale_factor below 1 downsizes: min(round(largest * factor), 1000)"
 - `test/upscale.test.js`: "invalid upscale_factor values are rejected"
+- `test/readme-errors.test.js`: "every row of the README Errors list rejects with the documented error class"
 - `test/aspect.test.js`: "literal expected shapes for thin inputs (guards the formula in this file)"
 
 ## Output — `[arr_out, stride_out]`, tightly packed RGB, `stride_out = out_width * 3`
