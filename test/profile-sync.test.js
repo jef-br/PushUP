@@ -32,10 +32,12 @@ test('the fast mode exposes the mix share that profile.js uses', () => {
 });
 
 test('profile.js uses the src exports instead of its own copies', () => {
-  const src = fs.readFileSync(path.join(__dirname, '..', 'bench', 'profile.js'), 'utf8');
+  // Strip comments first, so a mention in the header NOTE cannot satisfy the checks.
+  const src = fs.readFileSync(path.join(__dirname, '..', 'bench', 'profile.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   assert.match(src, /_toTensor/, 'profile.js should call _toTensor from src/');
   assert.match(src, /_copyFromTensor/, 'profile.js should call _copyFromTensor from src/');
-  assert.match(src, /_MODES\.fast\.lanczosMix/, 'profile.js should read the mix share from _MODES');
+  assert.match(src, /const mix = _MODES\.fast\.lanczosMix/, 'profile.js should read the mix share from _MODES');
   assert.doesNotMatch(src, /0\.8\s*\*/, 'profile.js hard-codes the 0.8 share again');
   assert.doesNotMatch(src, /new Float32Array\(3 \*/, 'profile.js copies the tensor conversion again');
 });
