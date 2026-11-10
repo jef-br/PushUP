@@ -24,7 +24,7 @@ downloaded into `bench/out/saas/`, never committed — they're the vendor's copy
 | Laces, logo | soft | crisp edges | crisp edges | crisp, "NIKE" sharper |
 | Faithfulness | — | follows the input | follows the input | adds texture, relights |
 
-Also tried on the same image (one-off check, not in the script yet — T7 adds model columns):
+Also tried on the same image (model columns are now in the script; see `docs/TEXTURE.md`, T7):
 the converted ESRGAN-type community models NMKD-Siax, 4x-UltraSharp and 4x-Nomos8kSC.
 None reaches Claid's suede texture; Siax comes closest.
 

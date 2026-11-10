@@ -18,6 +18,7 @@ new block on Monday).
   `Uint8ClampedArray` (rounds ties to even). — `docs/PERF.md`
 - **SaaS comparison** only from vendors' own published samples (no accounts, no spending).
   Claid: PushUP is behind on perceived texture → task T7. — D10, `docs/SAAS.md`
+- **Texture gap:** no tested model closes it; UltraSharpV2-Lite is a candidate for `high` (owner decision, T8). — D14, `docs/TEXTURE.md`
 - **Merging:** a PR merges when reviewer, adversary and working session agree; the owner
   granted the merge permission. Open PRs are the claim registry. — playbook §1, §3b
 - **Follow-ups** with a decision rule (T1a → T1b) are decided by the session, not the
