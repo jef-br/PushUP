@@ -158,7 +158,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   size) followed by a valid call still resolves with correct output; (b) with 3 calls started
   together, inference runs one at a time and results arrive in call order (observable via a
   test hook or by wrapping the session, no sleeps); (c) `npm test` passes. No change to `src/`
-  unless a test exposes a real bug (then fix it and say so in the PR).
+  unless a test exposes a real bug (then fix it and say so in the PR) or a small test-only hook is
+  needed for (b) (allowed; say so in the PR).
 
 ### [ ] Q2 — Test: input buffer is not modified; Buffer views with `byteOffset` work
 - **Goal:** callers often pass slices of a bigger `Buffer` (pooled allocations).
@@ -186,7 +187,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Goal:** the section still says the SaaS comparison needs an account (T3 did it from
   published samples) and doesn't point to the texture and text research.
 - **Accept:** README bullets reflect `docs/SAAS.md` (T3), `docs/TEXTURE.md` (T7) and the
-  current state of text handling (T1a is blocked on too few text crops: say what is known,
-  without claiming a result); all linked paths exist; `npm test` passes (the package test
+  current state of text handling (if T1a is still `[ ]` on `main`, read PR #19 / branch
+  `overnight/2026-11-10-T1a`: it found only 7 usable text crops, need 15; state that, claim no result); all linked paths exist; `npm test` passes (the package test
   checks the tarball).
 
