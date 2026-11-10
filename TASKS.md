@@ -154,12 +154,13 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [ ] Q1 — Test: a failed call must not poison the queue, and calls run strictly in order
 - **Goal:** `src/index.js` serialises calls through one promise queue. Pin that behaviour.
-- **Accept:** new tests in `test/upscale.test.js`: (a) a call that rejects (e.g. out-of-range
-  size) followed by a valid call still resolves with correct output; (b) with 3 calls started
+- **Accept:** new tests in `test/upscale.test.js`: (a) a call whose inference fails *inside the queue* (mock or wrap the session so `infer` throws;
+  an out-of-range size is rejected before the queue and does not test this) followed by a valid
+  call still resolves with correct output; (b) with 3 calls started
   together, inference runs one at a time and results arrive in call order (observable via a
   test hook or by wrapping the session, no sleeps); (c) `npm test` passes. No change to `src/`
   unless a test exposes a real bug (then fix it and say so in the PR) or a small test-only hook is
-  needed for (b) (allowed; say so in the PR).
+  needed for (a) or (b) (allowed; say so in the PR).
 
 ### [ ] Q2 — Test: input buffer is not modified; Buffer views with `byteOffset` work
 - **Goal:** callers often pass slices of a bigger `Buffer` (pooled allocations).
@@ -171,7 +172,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 ### [ ] Q3 — Measure first-call latency (session creation) and document it
 - **Goal:** `docs/PERF.md` says the first call pays session creation but doesn't measure it.
 - **Accept:** `bench/profile.js` (or a small new script) reports cold first-call time vs warm
-  median for `fast` (CPU) and, if feasible within the run, `high` (CPU) at 400 and 800 px;
+  median for `fast` (CPU) and, if feasible within the run, `high` (CPU) at 400 and 800 px (≥ 3 warm calls for `fast`, ≥ 1 warm call for `high`; if `high`
+  at 800 px takes too long for the run, measure it at 400 px only and say so);
   numbers and machine in `docs/PERF.md`; one sentence on whether pre-warming would help
   (no API change). No product code.
 
@@ -179,8 +181,10 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Goal:** the set mixes Amazon (ABO) and Lamoda images; averages can hide a per-source
   regression.
 - **Accept:** a `--by-source` flag adds rows grouped by file-name prefix (`abo_`, `lamoda_`) to
-  the output table; output without the flag is byte-identical to before (check on `sub20`
-  with `--sizes 400 --limit 3`); usage line updated; the numbers for `lanczos,sr-full` at
+  the output table; output without the flag is identical to before apart from the `ms` column, which varies between
+  runs (compare the `images:` line and the PSNR/SSIM/GMSD columns on `sub20` with `--sizes 400`;
+  `--limit` takes the first files alphabetically, so it would only see `abo_` images); the
+  `--by-source` run must show both `abo_` and `lamoda_` rows; usage line updated; the numbers for `lanczos,sr-full` at
   400 px on `sub20` go in the PR description.
 
 ### [ ] Q5 — README "Known limits" brought up to date
