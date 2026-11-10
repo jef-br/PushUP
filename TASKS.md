@@ -152,6 +152,39 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] R1 — Test: extreme aspect ratios and sizes at the contract edge
+- **Goal:** the contract only bounds the largest side (400–800 px); the short side can be tiny.
+  Pin what happens for such inputs: they must work, never crash or return a wrong shape.
+- **Accept:** tests (new file, e.g. `test/aspect.test.js`) for 800×4, 800×1, 4×800, 400×400 and
+  800×800 inputs with factor 1 and 1.5. Each must resolve with `stride_out = out_width * 3`,
+  `out.length = stride_out * out_height`, and each side equal to `max(1, round(side * target /
+  longest))` where `target = min(round(longest * factor), 1000)` (the largest-side rule is in
+  `CLAUDE.md`; the short side follows the aspect ratio, as in `src/index.js`). If an input crashes,
+  returns a wrong shape, or is rejected, fix `src/` minimally *without changing the contract table
+  or any default* and say so in the PR; if making it work would need a contract change, mark R1
+  `[blocked]` with the exact input and error instead (owner decision) and keep the passing cases.
+  `npm test` passes.
+
+### [ ] R2 — Test: the README usage example runs
+- **Goal:** the README's `upscale` example must not rot.
+- **Accept:** a test extracts the first ```js block that calls `upscale(` from `README.md`,
+  runs it against a synthetic 400×300 image with `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu` set
+  (wrap the block as `async (arr, stride, require) => { …; return [arr_out, stride_out]; }`,
+  passing a `require` that maps `'pushup'` to `../src`), and checks `stride_out = 1800` and
+  `arr_out.length = 1800 * 450` (factor 1.5). The test fails with a clear message if the block is
+  missing. No README change unless the example is wrong (then fix it and say so). `npm test` passes.
+
+### [ ] R3 — Test: the parts of `bench/profile.js` that copy `src/` stay in sync
+- **Goal:** `profile.js` still copies two things from `src/index.js`: the NCHW float conversion
+  (`toTensor`) and the 0.8/0.2 Lanczos-mix constants (the byte conversion already uses the shipped
+  `_copyFromTensor`). If `src/` changes, the profile silently measures something else.
+- **Accept:** `src/index.js` gets a test-only export `_toTensor` (like the existing `_copyFromTensor`;
+  no behaviour change) and `profile.js` uses it instead of its copy, and uses a mix share read from
+  an export (`_MODES.fast.lanczosMix`) instead of the literal `0.2`/`0.8`. A test asserts both
+  exports exist and `_toTensor` gives the expected layout on a 2×2 input. `node bench/profile.js
+  --runs 1 --sizes 400` still prints its table; `npm test` passes. No change to `upscale()` output
+  (existing byte-identity tests stay green).
+
 ### [x] Q1 — (done 2026-11-10, test/queue.test.js) Test: a failed call must not poison the queue, and calls run strictly in order
 - **Goal:** `src/index.js` serialises calls through one promise queue. Pin that behaviour.
 - **Accept:** new tests in `test/upscale.test.js`: (a) a call whose inference fails *inside the queue* (mock or wrap the session so `infer` throws;
