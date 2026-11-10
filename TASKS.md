@@ -152,7 +152,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [~] S1 — (in progress 2026-11-10, branch overnight/2026-11-10-S1) Test: shipped model files match the hashes in `models/LICENSES.md`
+### [x] S1 — (done 2026-11-10, test/models.test.js) Test: shipped model files match the hashes in `models/LICENSES.md`
 - **Goal:** a corrupted or swapped `models/*.onnx` (or a stale hash in the licence file) should fail
   CI, not surface as a quality regression.
 - **Accept:** `models/LICENSES.md` today records only truncated hashes of the *source* checkpoints,
