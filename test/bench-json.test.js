@@ -28,6 +28,10 @@ test('bench.js --json prints one JSON object with overall and per-source rows', 
     for (const row of out.rows) {
       for (const k of ['psnr', 'ssim', 'gmsd', 'ms']) assert.ok(Number.isFinite(row[k]), `${row.setting}: ${k} is not a number`);
     }
+    // Values are unrounded (the table rounds to 2/4/4 decimals; JSON must keep full precision).
+    assert.ok(out.rows.some((x) => x.ssim !== Number(x.ssim.toFixed(4)) && x.gmsd !== Number(x.gmsd.toFixed(4))),
+      'psnr/ssim/gmsd look rounded; --json should print full precision');
+    assert.ok(out.rows.some((x) => x.psnr !== Number(x.psnr.toFixed(2))), 'psnr looks rounded');
     // Without --json the table is printed (not JSON).
     const t = spawnSync(process.execPath,
       [path.join(__dirname, '..', 'bench', 'bench.js'), dir, '--sizes', '400', '--methods', 'lanczos'], { encoding: 'utf8' });
