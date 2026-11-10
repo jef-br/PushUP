@@ -152,7 +152,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [~] Q1 — (in progress 2026-11-10, branch overnight/2026-11-10-Q1) Test: a failed call must not poison the queue, and calls run strictly in order
+### [x] Q1 — (done 2026-11-10, test/queue.test.js) Test: a failed call must not poison the queue, and calls run strictly in order
 - **Goal:** `src/index.js` serialises calls through one promise queue. Pin that behaviour.
 - **Accept:** new tests in `test/upscale.test.js`: (a) a call whose inference fails *inside the queue* (mock or wrap the session so `infer` throws;
   an out-of-range size is rejected before the queue and does not test this) followed by a valid
