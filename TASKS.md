@@ -165,7 +165,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `[blocked]` with the exact input and error instead (owner decision) and keep the passing cases.
   `npm test` passes.
 
-### [ ] R2 — Test: the README usage example runs
+### [~] R2 — (in progress 2026-11-10, branch overnight/2026-11-10-R2) Test: the README usage example runs
 - **Goal:** the README's `upscale` example must not rot.
 - **Accept:** a test extracts the first ```js block that calls `upscale(` from `README.md`,
   runs it against a synthetic 400×300 image with `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu` set
