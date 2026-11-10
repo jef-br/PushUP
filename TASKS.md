@@ -169,7 +169,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `Uint8Array`, give byte-identical output to a freshly allocated copy of the same pixels.
   Fix `src/` only if a test fails, and document it.
 
-### [ ] Q3 — Measure first-call latency (session creation) and document it
+### [x] Q3 — (done 2026-11-10, see docs/PERF.md "Cold start") Measure first-call latency (session creation) and document it
 - **Goal:** `docs/PERF.md` says the first call pays session creation but doesn't measure it.
 - **Accept:** `bench/profile.js` (or a small new script) reports cold first-call time vs warm
   median for `fast` (CPU) and, if feasible within the run, `high` (CPU) at 400 and 800 px (each cold measurement in a fresh process, since sessions are cached per model; `high` = `PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`; ≥ 3 warm calls for `fast`, ≥ 1 warm call for `high`; if `high`
