@@ -80,6 +80,18 @@ test('a setting missing in after fails', () => {
   assert.match(r.out, /400px lanczos: missing in after/);
 });
 
+test('a missing or non-finite metric on either side fails (NaN is written as null)', () => {
+  for (const side of ['before', 'after']) {
+    for (const v of [null, undefined, 'x']) {
+      const bad = base();
+      bad.rows[1].gmsd = v;
+      const r = side === 'before' ? run(bad, base()) : run(base(), bad);
+      assert.strictEqual(r.code, 1, `${side} gmsd=${v}: ${r.out}`);
+      assert.match(r.out, /^400px sr-full: gmsd not a finite number {2}FAIL$/m);
+    }
+  }
+});
+
 test('a different image count fails', () => {
   const j = base();
   j.images = 19;

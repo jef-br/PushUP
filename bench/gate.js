@@ -37,6 +37,9 @@ function gate(before, after) {
   for (const b of overall) {
     const a = afterBy.get(b.setting);
     if (!a) { ok = false; lines.push(`${b.setting}: missing in after  FAIL`); continue; }
+    // bench.js writes NaN as null; a non-finite metric on either side can't pass.
+    const bad = ['psnr', 'ssim', 'gmsd'].filter((k) => !Number.isFinite(b[k]) || !Number.isFinite(a[k]));
+    if (bad.length) { ok = false; lines.push(`${b.setting}: ${bad.join(', ')} not a finite number  FAIL`); continue; }
     const dPsnr = a.psnr - b.psnr, dSsim = a.ssim - b.ssim, dGmsd = a.gmsd - b.gmsd;
     const pass = -dPsnr <= MAX_PSNR_DROP + EPS && -dSsim <= MAX_SSIM_DROP + EPS && dGmsd <= MAX_GMSD_RISE + EPS;
     if (!pass) ok = false;
