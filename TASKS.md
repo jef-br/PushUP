@@ -225,7 +225,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [ ] D4 — Refresh the `docs/PERF.md` results table
 - **Goal:** the "Current (2026-11-09)" table predates P2 (mix loop) and Q3; numbers drift.
-- **Accept:** run `node bench/profile.js --runs 5` (sizes 400, 600, 800, factor 1.5) twice; put
+- **Accept:** run `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/profile.js --runs 5` (sizes 400,
+  600, 800, factor 1.5) twice; put
   the second run's medians in a new dated table at the top of "Results" (keep the 2026-11-09 table
   below it as history, labelled), with the machine line (keep the existing "Machine:" wording;
   update `cpus` and the Node version from the script's header). One sentence on what changed since 2026-11-09 (stage by stage, only where the change
