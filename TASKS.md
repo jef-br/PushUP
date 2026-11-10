@@ -162,7 +162,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   it also fails if a `.onnx` in `models/` has no recorded hash. The test must not read the truncated
   source-hash column. No model or `src/` change. `npm test` passes.
 
-### [~] S2 — (in progress 2026-11-10, branch overnight/2026-11-10-S2) Docs + check: map each contract row to the tests that cover it
+### [x] S2 — (done 2026-11-10, docs/CONTRACT_TESTS.md + test/contract-tests.test.js) Docs + check: map each contract row to the tests that cover it
 - **Goal:** `CLAUDE.md` says every contract row has a test. Make that checkable.
 - **Accept:** `docs/CONTRACT_TESTS.md` lists each of the four rows of the contract table in
   `CLAUDE.md` (Input, `stride`, `upscale_factor`, Output) plus the "async, one at a time" sentence
