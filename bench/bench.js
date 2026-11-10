@@ -1,6 +1,7 @@
 'use strict';
-// Usage: node bench/bench.js <dir-of-HR-images> [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source]
+// Usage: node bench/bench.js <dir-of-HR-images> [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--json]
 // --by-source adds rows grouped by file-name prefix (abo_, lamoda_) after the overall table.
+// --json prints one JSON object {images, rows:[{setting, psnr, ssim, gmsd, ms}]} (unrounded) instead of the table.
 const fs = require('node:fs');
 const path = require('node:path');
 const sharp = require('sharp');
@@ -14,6 +15,7 @@ const sizes = opt('--sizes', '400,600,800').split(',').map(Number);
 const limit = Number(opt('--limit', 1e9));
 const saveDir = opt('--save', null);
 const bySource = args.includes('--by-source');
+const asJson = args.includes('--json');
 const methods = (opt('--methods', 'lanczos,sr-full,sr-500,sr-250')).split(',');
 
 async function rawOf(img) {
@@ -85,10 +87,15 @@ async function method(name, inp, w, h) {
   }
   process.stderr.write('\n');
   const mean = (a, k) => a.reduce((x, r) => x + r[k], 0) / a.length;
-  console.log(`images: ${files.length}  (input = 1000px GT downscaled + JPEG q85)`);
-  console.log('setting'.padEnd(bySource ? 30 : 18), 'PSNR↑'.padStart(7), 'SSIM↑'.padStart(7), 'GMSD↓'.padStart(7), 'ms'.padStart(7));
   // Overall rows first, then (with --by-source) the per-source rows.
   const entries = Object.entries(agg).sort(([a], [b]) => a.endsWith(']') - b.endsWith(']'));
+  if (asJson) {
+    const rows = entries.map(([setting, a]) => ({ setting, psnr: mean(a, 'psnr'), ssim: mean(a, 'ssim'), gmsd: mean(a, 'gmsd'), ms: mean(a, 'ms') }));
+    console.log(JSON.stringify({ images: files.length, rows }));
+    return;
+  }
+  console.log(`images: ${files.length}  (input = 1000px GT downscaled + JPEG q85)`);
+  console.log('setting'.padEnd(bySource ? 30 : 18), 'PSNR↑'.padStart(7), 'SSIM↑'.padStart(7), 'GMSD↓'.padStart(7), 'ms'.padStart(7));
   for (const [k, a] of entries) {
     console.log(k.padEnd(bySource ? 30 : 18), mean(a, 'psnr').toFixed(2).padStart(7), mean(a, 'ssim').toFixed(4).padStart(7), mean(a, 'gmsd').toFixed(4).padStart(7), mean(a, 'ms').toFixed(0).padStart(7));
   }
