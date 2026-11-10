@@ -46,6 +46,8 @@ test('literal expected shapes for thin inputs (guards the formula in this file)'
   assert.deepStrictEqual(await shape(800, 1, 1.5), [1000, 1]);
   assert.deepStrictEqual(await shape(4, 800, 1), [4, 800]);
   assert.deepStrictEqual(await shape(1, 800, 1.5), [1, 1000]);
+  // Downsizing a 1 px side must not produce a zero-sized image (0.4 rounds to 0 without max(1, ...)).
+  assert.deepStrictEqual(await shape(800, 1, 0.4), [320, 1]);
   // Fractional ratios: rounding is exercised (3.75 -> 4, 501.9 -> 502).
   assert.deepStrictEqual(await shape(800, 3, 1.5), [1000, 4]);
   assert.deepStrictEqual(await shape(799, 401, 1.5), [1000, 502]);
