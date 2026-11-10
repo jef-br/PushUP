@@ -187,7 +187,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `--by-source` run must show both `abo_` and `lamoda_` rows; usage line updated; the numbers for `lanczos,sr-full` at
   400 px on `sub20` go in the PR description.
 
-### [ ] Q5 — README "Known limits" brought up to date
+### [x] Q5 — (done 2026-11-10) README "Known limits" brought up to date
 - **Goal:** the section still says the SaaS comparison needs an account (T3 did it from
   published samples) and doesn't point to the texture and text research.
 - **Accept:** README bullets reflect `docs/SAAS.md` (T3), `docs/TEXTURE.md` (T7) and the
