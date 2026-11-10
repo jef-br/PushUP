@@ -117,7 +117,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   hash, run the quality gate (`PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`), update README and
   `models/LICENSES.md`.
 
-### [ ] T1a — Measure how well text on packaging survives (research, no product code)
+### [~] T1a — (in progress 2026-11-10, branch overnight/2026-11-10-T1a) Measure how well text on packaging survives (research, no product code)
 - **Goal:** Decide with data whether text needs special handling. Text on labels
   (ingredients, brand names, sizes) is where upscalers fail most visibly.
 - **Accept:**
