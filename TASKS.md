@@ -152,6 +152,33 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] R1 — Test: extreme aspect ratios and sizes at the contract edge
+- **Goal:** the contract only fixes the largest side (400–800 px); the short side can be tiny.
+  Make sure such inputs work or fail with a clear error, never a crash or a wrong shape.
+- **Accept:** tests (new file, e.g. `test/aspect.test.js`) for 800×4, 800×1, 4×800, 400×400
+  and 800×800 inputs with factor 1 and 1.5: either the call resolves with
+  `stride_out = out_width * 3`, `out.length = stride_out * out_height`, and
+  `out_width/out_height` equal to the formula in `CLAUDE.md` (`round(side * target / longest)`, at
+  least 1), or it rejects with a `RangeError`/`TypeError` whose message says why. Which of the two
+  happens is decided by the tests' findings and recorded in the PR; if an input crashes or returns
+  a wrong shape, fix `src/` minimally and say so. `npm test` passes.
+
+### [ ] R2 — Test: the README usage example runs
+- **Goal:** the README's `upscale` example must not rot.
+- **Accept:** a test extracts the first ```js block that calls `upscale(` from `README.md`,
+  runs it against a synthetic 400×300 image (substituting `require('pushup')` with
+  `require('../src')` and the example's placeholder `arr`/`stride` with test data), and checks the
+  returned `[arr_out, stride_out]` shape. The test fails with a clear message if the block is
+  missing. No README change unless the example is wrong (then fix it and say so). `npm test` passes.
+
+### [ ] R3 — Test: `bench/profile.js` stage code matches the helpers in `src/`
+- **Goal:** `profile.js` copies pipeline helpers (see its NOTE) and can silently drift.
+- **Accept:** a test that runs the copied `toTensor`/byte-conversion stage code and the
+  corresponding `src/` behaviour on the same small input and asserts identical results (export
+  the stage functions from `profile.js` behind `require.main === module`, no behaviour change when
+  run as a script — check `node bench/profile.js --runs 1 --sizes 400` still prints its table).
+  Document in the PR how drift is now detected. `npm test` passes.
+
 ### [x] Q1 — (done 2026-11-10, test/queue.test.js) Test: a failed call must not poison the queue, and calls run strictly in order
 - **Goal:** `src/index.js` serialises calls through one promise queue. Pin that behaviour.
 - **Accept:** new tests in `test/upscale.test.js`: (a) a call whose inference fails *inside the queue* (mock or wrap the session so `infer` throws;
