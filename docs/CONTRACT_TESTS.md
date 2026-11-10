@@ -8,6 +8,10 @@ Format: each bullet is `` - `test/<file>.js`: "<exact test name>" `` — only te
 string literal are listed (tests generated from a template literal inside a loop are described in
 prose instead and are not checked).
 
+Known limit of the check: it confirms a `test('<name>'` call starts a line in the listed file. It
+does not notice a test that sits in a `/* … */` block comment or is disabled with a `{ skip: true }`
+option (`//`-commented lines, `test.skip(` and `test.todo(` are caught).
+
 ## Input — 8-bit RGB, largest side 400–800 px, else `RangeError`
 
 - `test/upscale.test.js`: "rejects out-of-range input sizes"
