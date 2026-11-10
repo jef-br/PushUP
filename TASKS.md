@@ -169,7 +169,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   saving is < 5 ms at 800 px or any byte differs, don't ship it: record the negative result in
   `docs/PERF.md` and close the task. `npm test` passes.
 
-### [ ] B1 — `bench/gate.js`: apply the quality gate to two `--json` runs
+### [~] B1 — (claimed 2026-11-10, branch overnight/2026-11-10-B1) `bench/gate.js`: apply the quality gate to two `--json` runs
 - **Goal:** playbook §2's quality gate (PSNR may drop ≤ 0.02 dB, SSIM ≤ 0.001, GMSD may rise
   ≤ 0.001, at each size) is checked by hand today. Make it a script.
 - **Accept:** `node bench/gate.js <before.json> <after.json>` reads two outputs of
