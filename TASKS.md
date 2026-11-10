@@ -206,6 +206,37 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   name is misspelt (try it locally, don't commit that). Docs only; no test or `CLAUDE.md` change.
   `npm test` passes.
 
+### [ ] D3 — README "Benchmark": current workflow (fetch script, `--json`, gate)
+- **Goal:** the README still shows only `bench/build_testset.py` with local parquet files; it
+  doesn't mention `bash bench/fetch_testset.sh` (the way runs build `bench/out/set` / `sub20`),
+  `--by-source`, `--json` (S3) or `bench/gate.js` (B1).
+- **Accept:** README "Benchmark" gets a short command block covering: fetch the set with
+  `bash bench/fetch_testset.sh`; run `node bench/bench.js bench/out/sub20 --sizes 400,800 --json >
+  before.json` (and `after.json`); compare with `node bench/gate.js before.json after.json`; one
+  sentence on `--by-source`. Keep the existing `build_testset.py` line as the manual route. A test
+  (new file `test/readme-bench.test.js`) checks that every `bench/<file>` path mentioned in
+  README.md exists and every `--flag` used with `bench/bench.js` in the README appears in
+  `bench.js`'s usage line. Must not add a ```js block calling `upscale(` (R2). Docs + test only.
+  `npm test` passes.
+
+### [ ] D4 — Refresh the `docs/PERF.md` results table
+- **Goal:** the "Current (2026-11-09)" table predates P2 (mix loop) and Q3; numbers drift.
+- **Accept:** run `node bench/profile.js --runs 5` (sizes 400, 600, 800, factor 1.5) twice; put
+  the second run's medians in a new dated table at the top of "Results" (keep the 2026-11-09 table
+  below it as history, labelled), with the machine line (`cpus`, Node version from the script's
+  header). One sentence on what changed since 2026-11-09 (stage by stage, only where the change
+  is larger than the run-to-run difference between your two runs). No code change. `npm test` passes.
+
+### [ ] D5 — README results table for the current models
+- **Goal:** README "Benchmark" shows only the earlier realesr-general models; the shipped
+  `fast` model (4xLSDIRCompactC3 + 20% Lanczos) has no row there.
+- **Accept:** with `bench/out/set` (60 images, `bash bench/fetch_testset.sh`), run
+  `node bench/bench.js bench/out/set --methods lanczos,sr-full` (CPU, `fast`; sizes 400/600/800);
+  add the `sr-full` rows to the README table (or a new table directly above it) labelled with the
+  model and date, keeping the old rows labelled as earlier models; put the raw output in the PR
+  description. If the dataset fetch fails, mark D5 `[blocked]` with the error. No code change.
+  `npm test` passes. (`high` mode is out of scope: ~30x slower on CPU.)
+
 ### [ ] T1a — Measure how well text on packaging survives (research, no product code)
 - **Goal:** Decide with data whether text needs special handling. Text on labels
   (ingredients, brand names, sizes) is where upscalers fail most visibly.
