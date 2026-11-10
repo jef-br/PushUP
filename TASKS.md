@@ -117,6 +117,53 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   hash, run the quality gate (`PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`), update README and
   `models/LICENSES.md`.
 
+### [ ] R4 — Test: input length edge cases in `readDims`
+- **Goal:** `src/index.js` `readDims` derives the height from `arr.length`, and lets the last row
+  skip its padding. None of that is tested; pin it.
+- **Accept:** new tests (new file `test/length.test.js`) for: (a) a padded image (pad 1 and 2)
+  whose last row has no padding (`arr.length = (h − 1) * stride + width * 3`) resolves with the
+  same output bytes as the fully padded buffer; (b) trailing bytes shorter than one row
+  (`arr.length = h * stride + k`, `0 < k < width * 3`) are ignored: same output as without them;
+  (c) `arr` shorter than one row rejects with `RangeError`; (d) a plain `number[]` input gives
+  output byte-identical to the same pixels as a `Uint8Array`. Use small images (largest side 400,
+  short side ≤ 16) so the file runs in a few seconds. Fix `src/` only if a test exposes a real
+  bug (say so in the PR); no contract or default change. `npm test` passes.
+
+### [ ] R5 — Test: device-fallback paths not yet covered
+- **Goal:** `test/device.test.js` covers GPU load failure and run failure only for
+  `PUSHUP_QUALITY=auto`. Pin the other branches of `resolveEngine` and the run-time fallback.
+- **Accept:** new tests (stub `ort.InferenceSession.create` as the existing tests do; no real
+  GPU) for: (a) `PUSHUP_QUALITY=high` with a GPU session that fails at run time retries on CPU
+  with the **Remacri** model (not the fast one): assert the CPU session was created for
+  `_MODES.high.modelPath`; (b) after one run-time GPU failure, a second call does not try to
+  create or run a GPU session again (sticky fallback until `_reset()`); (c) setting values are
+  trimmed and case-insensitive (`' FAST '`, `'Cpu'`) and an empty string means `auto`. Keep
+  `high` runs cheap (largest side 400, short side ≤ 16). No `src/` change unless a test exposes a
+  real bug (say so in the PR). `npm test` passes.
+
+### [ ] Q6 — README: document the errors `upscale` throws, with a test that keeps it true
+- **Goal:** callers need to know which inputs reject and with which error class; today that is
+  only in the code.
+- **Accept:** a short "Errors" list under README "Usage": each row = trigger → error class
+  (`TypeError`: `arr` not a byte array / number array, `stride` not an integer ≥ 3; `RangeError`:
+  largest side outside 400–800 px, `arr` shorter than one row, `upscale_factor` not a finite
+  number > 0, invalid `PUSHUP_QUALITY` / `PUSHUP_DEVICE`). A test (new file
+  `test/readme-errors.test.js`) parses that list and, for each row, triggers it and asserts the
+  promise rejects with the documented class; it fails if a row can't be mapped to a trigger or
+  the list is missing. Docs and test only; no change to what `src/` throws (if the doc would
+  have to say something odd, document what the code does and add a TASKS note). `npm test`
+  passes (the README test from R2 still passes).
+
+### [ ] P2 — Faster Lanczos-mix loop (byte-identical output)
+- **Goal:** the mix in `run()` calls `Math.round` per byte (~3 M bytes at 1000 px).
+- **Accept:** replace it with an equivalent integer-friendly form (e.g. `(a * o + m * p + 0.5) | 0`
+  for non-negative values) only if the output is byte-identical: add a test that compares the new
+  mix against `Math.round(a * o + m * p)` over all 256×256 byte pairs for the shipped mix share
+  (`_MODES.fast.lanczosMix`) and on one real `upscale` output; measure the stage before/after
+  (median of ≥ 5 runs at 800 px, factor 1.25) and put the numbers in `docs/PERF.md`. If the
+  saving is < 5 ms at 800 px or any byte differs, don't ship it: record the negative result in
+  `docs/PERF.md` and close the task. `npm test` passes.
+
 ### [ ] T1a — Measure how well text on packaging survives (research, no product code)
 - **Goal:** Decide with data whether text needs special handling. Text on labels
   (ingredients, brand names, sizes) is where upscalers fail most visibly.
