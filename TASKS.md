@@ -172,7 +172,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   loop are described in prose, not checked. Missing coverage found while writing it is added as a new test or recorded as a task
   in `TASKS.md` (do not edit `CLAUDE.md`). `npm test` passes.
 
-### [ ] S3 — `bench/bench.js --json` machine-readable output
+### [~] S3 — (in progress 2026-11-10, branch overnight/2026-11-10-S3) `bench/bench.js --json` machine-readable output
 - **Goal:** the benchmark prints only a text table; scripts and the PR numbers would be easier to
   produce from JSON.
 - **Accept:** `--json` prints exactly one JSON object `{images, rows: [{setting, psnr, ssim, gmsd,
