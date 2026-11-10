@@ -117,7 +117,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   hash, run the quality gate (`PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`), update README and
   `models/LICENSES.md`.
 
-### [~] R4 — (claimed 2026-11-10, branch overnight/2026-11-10-R4) Test: input length edge cases in `readDims`
+### [x] R4 — (done 2026-11-10, test/length.test.js) Test: input length edge cases in `readDims`
 - **Goal:** `src/index.js` `readDims` derives the height from `arr.length`, and lets the last row
   skip its padding. None of that is tested; pin it.
 - **Accept:** new tests (new file `test/length.test.js`) for: (a) a padded image (pad 1 and 2)
