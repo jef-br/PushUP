@@ -206,7 +206,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   name is misspelt (try it locally, don't commit that). Docs only; no test or `CLAUDE.md` change.
   `npm test` passes.
 
-### [ ] D3 — README "Benchmark": current workflow (fetch script, `--json`, gate)
+### [~] D3 — (claimed 2026-11-10, branch overnight/2026-11-10-D3) README "Benchmark": current workflow (fetch script, `--json`, gate)
 - **Goal:** the README still shows only `bench/build_testset.py` with local parquet files; it
   doesn't mention `bash bench/fetch_testset.sh` (the way runs build `bench/out/set` / `sub20`),
   `--by-source`, `--json` (S3) or `bench/gate.js` (B1).
