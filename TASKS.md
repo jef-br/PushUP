@@ -185,7 +185,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   different `images` fail; per-source rows are ignored. Usage line at the top of the file. No
   change to `bench.js` output or the playbook. `npm test` passes.
 
-### [ ] R6 — Test: which `arr` types are accepted, rejected or converted
+### [x] R6 — (done 2026-11-10, test/arr-types.test.js) Test: which `arr` types are accepted, rejected or converted
 - **Goal:** README "Errors" (Q6) says a plain `Array` is converted, not checked, and other
   non-`Uint8Array` inputs are a `TypeError`. Pin the edges so a change is a deliberate one.
 - **Accept:** new tests (new file `test/arr-types.test.js`, 400×4 images; `Buffer` slices,
