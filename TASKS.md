@@ -152,7 +152,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [~] R1 — (in progress 2026-11-10, branch overnight/2026-11-10-R1) Test: extreme aspect ratios and sizes at the contract edge
+### [x] R1 — (done 2026-11-10, test/aspect.test.js) Test: extreme aspect ratios and sizes at the contract edge
 - **Goal:** the contract only bounds the largest side (400–800 px); the short side can be tiny.
   Pin what happens for such inputs: they must work, never crash or return a wrong shape.
 - **Accept:** tests (new file, e.g. `test/aspect.test.js`) for 800×4, 800×1, 4×800, 400×400 and
