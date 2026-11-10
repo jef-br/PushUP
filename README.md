@@ -43,7 +43,7 @@ time, because each one already uses every CPU core.
 
 | Trigger | Rejects with |
 |---|---|
-| `arr` is not a byte array (`Uint8Array`, `Buffer`) or an array of numbers | `TypeError` |
+| `arr` is not a byte array (`Uint8Array`, `Buffer`) or a plain `Array` (an `Array` is never rejected: its values are converted to bytes as by `Uint8Array.from`) | `TypeError` |
 | `upscale_factor` is not a finite number > 0 | `RangeError` |
 | `stride` is not an integer >= 3 | `TypeError` |
 | `arr` is shorter than one row (`width * 3` bytes) | `RangeError` |
