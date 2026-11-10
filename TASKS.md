@@ -169,6 +169,41 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   saving is < 5 ms at 800 px or any byte differs, don't ship it: record the negative result in
   `docs/PERF.md` and close the task. `npm test` passes.
 
+### [ ] B1 — `bench/gate.js`: apply the quality gate to two `--json` runs
+- **Goal:** playbook §2's quality gate (PSNR may drop ≤ 0.02 dB, SSIM ≤ 0.001, GMSD may rise
+  ≤ 0.001, at each size) is checked by hand today. Make it a script.
+- **Accept:** `node bench/gate.js <before.json> <after.json>` reads two outputs of
+  `bench/bench.js --json` and compares each overall row (`setting` like `400px sr-full`; rows whose
+  setting ends in `]` are per-source and ignored) present in `before` with the same setting in
+  `after`. It prints one line per setting with the three deltas and PASS/FAIL, then `GATE: PASS` or
+  `GATE: FAIL`, and exits 0 / 1. It fails (exit 1, clear message) if a `before` setting is missing in
+  `after`, or if `images` differs. Thresholds are constants at the top of the file, with the
+  playbook section named in a comment; a delta exactly at a threshold passes. A test
+  (`test/gate.test.js`) runs it on small JSON fixtures written to a temp dir: identical files
+  pass; each metric just over its threshold fails; exactly at it passes; missing setting and
+  different `images` fail; per-source rows are ignored. Usage line at the top of the file. No
+  change to `bench.js` output or the playbook. `npm test` passes.
+
+### [ ] R6 — Test: which `arr` types are accepted, rejected or converted
+- **Goal:** README "Errors" (Q6) says a plain `Array` is converted, not checked, and other
+  non-`Uint8Array` inputs are a `TypeError`. Pin the edges so a change is a deliberate one.
+- **Accept:** new tests (new file `test/arr-types.test.js`, 400×4 images): `Buffer` and a
+  `Uint8Array` subarray are accepted; `Uint8ClampedArray`, `Int8Array`, `Float32Array`, a
+  `DataView`, an `ArrayBuffer` and a string reject with `TypeError`; a plain `Array` with values
+  300 and 'x' resolves with the same output as a `Uint8Array` holding 44 and 0 (the conversion
+  `Uint8Array.from` does); an `Array` holding a `Symbol` or a `BigInt` rejects with `TypeError`.
+  Pin today's behaviour only: no `src/` change (if a case surprises, record it as a note on this
+  task for the owner instead of changing the API). `npm test` passes.
+
+### [ ] D2 — `docs/CONTRACT_TESTS.md`: add the tests landed since S2
+- **Goal:** R4, Q6 and R5 added contract-relevant tests that the map doesn't list yet.
+- **Accept:** list `test/length.test.js` and `test/readme-errors.test.js` tests (literal names as
+  bullets in the right section, generated names in prose, per the file's format) under the
+  matching contract rows (e.g. short/trailing `arr` under `stride`, error rows under Input /
+  `upscale_factor`); `test/contract-tests.test.js` passes and, as a check, fails when one listed
+  name is misspelt (try it locally, don't commit that). Docs only; no test or `CLAUDE.md` change.
+  `npm test` passes.
+
 ### [ ] T1a — Measure how well text on packaging survives (research, no product code)
 - **Goal:** Decide with data whether text needs special handling. Text on labels
   (ingredients, brand names, sizes) is where upscalers fail most visibly.
