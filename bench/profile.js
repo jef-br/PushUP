@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const ort = require('onnxruntime-node');
 const sharp = require('sharp');
-const { upscale, _copyFromTensor, _toTensor, _MODES } = require('../src/index.js');
+const { upscale, _copyFromTensor, _mixLanczos, _toTensor, _MODES } = require('../src/index.js');
 
 const arg = (n, d) => {
   const i = process.argv.indexOf('--' + n);
@@ -30,9 +30,9 @@ function synth(longest) {
   return { b, w, h };
 }
 
-// NOTE: the tensor conversion, the byte conversion and the mix share come from src/index.js
-// (_toTensor, _copyFromTensor, _MODES.fast.lanczosMix), so they cannot drift. The rest of the
-// stage replay (session options, resize calls, mix loop) is still a copy: update it if the
+// NOTE: the tensor conversion, the byte conversion, the mix loop and the mix share come from
+// src/index.js (_toTensor, _copyFromTensor, _mixLanczos, _MODES.fast.lanczosMix), so they cannot
+// drift. The rest of the stage replay (session options, resize calls) is still a copy: update it if the
 // pipeline changes. This profile measures the `fast` model only.
 const mix = _MODES.fast.lanczosMix;
 async function stages(rgb, w, h, outW, outH) {
@@ -55,7 +55,7 @@ async function stages(rgb, w, h, outW, outH) {
   t.resizeDown = now() - t0;
   t0 = now();
   const plain = await rs(rgb, w, h);
-  for (let i = 0; i < o.length; i++) o[i] = Math.round((1 - mix) * o[i] + mix * plain[i]);
+  _mixLanczos(o, plain, mix); // the function src/index.js ships
   t.lanczosMix = now() - t0;
   return t;
 }
