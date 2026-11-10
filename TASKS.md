@@ -152,3 +152,41 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] Q1 — Test: a failed call must not poison the queue, and calls run strictly in order
+- **Goal:** `src/index.js` serialises calls through one promise queue. Pin that behaviour.
+- **Accept:** new tests in `test/upscale.test.js`: (a) a call that rejects (e.g. out-of-range
+  size) followed by a valid call still resolves with correct output; (b) with 3 calls started
+  together, inference runs one at a time and results arrive in call order (observable via a
+  test hook or by wrapping the session, no sleeps); (c) `npm test` passes. No change to `src/`
+  unless a test exposes a real bug (then fix it and say so in the PR).
+
+### [ ] Q2 — Test: input buffer is not modified; Buffer views with `byteOffset` work
+- **Goal:** callers often pass slices of a bigger `Buffer` (pooled allocations).
+- **Accept:** tests that (a) a copy of the input taken before `upscale` equals the input
+  afterwards (byte for byte); (b) a `Buffer` that is a slice with non-zero `byteOffset`, and a
+  `Uint8Array`, give byte-identical output to a freshly allocated copy of the same pixels.
+  Fix `src/` only if a test fails, and document it.
+
+### [ ] Q3 — Measure first-call latency (session creation) and document it
+- **Goal:** `docs/PERF.md` says the first call pays session creation but doesn't measure it.
+- **Accept:** `bench/profile.js` (or a small new script) reports cold first-call time vs warm
+  median for `fast` (CPU) and, if feasible within the run, `high` (CPU) at 400 and 800 px;
+  numbers and machine in `docs/PERF.md`; one sentence on whether pre-warming would help
+  (no API change). No product code.
+
+### [ ] Q4 — Per-source breakdown in `bench/bench.js`
+- **Goal:** the set mixes Amazon (ABO) and Lamoda images; averages can hide a per-source
+  regression.
+- **Accept:** a `--by-source` flag adds rows grouped by file-name prefix (`abo_`, `lamoda_`) to
+  the output table; output without the flag is byte-identical to before (check on `sub20`
+  with `--sizes 400 --limit 3`); usage line updated; the numbers for `lanczos,sr-full` at
+  400 px on `sub20` go in the PR description.
+
+### [ ] Q5 — README "Known limits" brought up to date
+- **Goal:** the section still says the SaaS comparison needs an account (T3 did it from
+  published samples) and doesn't point to the texture and text research.
+- **Accept:** README bullets reflect `docs/SAAS.md` (T3), `docs/TEXTURE.md` (T7) and the
+  current state of text handling (T1a is blocked on too few text crops: say what is known,
+  without claiming a result); all linked paths exist; `npm test` passes (the package test
+  checks the tarball).
+
