@@ -162,7 +162,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   unless a test exposes a real bug (then fix it and say so in the PR) or a small test-only hook is
   needed for (a) or (b) (allowed; say so in the PR).
 
-### [ ] Q2 — Test: input buffer is not modified; Buffer views with `byteOffset` work
+### [x] Q2 — (done 2026-11-10, test/input.test.js) Test: input buffer is not modified; Buffer views with `byteOffset` work
 - **Goal:** callers often pass slices of a bigger `Buffer` (pooled allocations).
 - **Accept:** tests that (a) a copy of the input taken before `upscale` equals the input
   afterwards (byte for byte); (b) a `Buffer` that is a slice with non-zero `byteOffset`, and a
