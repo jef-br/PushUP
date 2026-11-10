@@ -314,6 +314,7 @@ module.exports = { upscale };
 module.exports.default = upscale;
 module.exports._run = run;
 module.exports._copyFromTensor = copyFromTensor;
+module.exports._toTensor = toTensor;
 module.exports._gpuProviders = gpuProviders;
 module.exports._MODES = MODES;
 // Tests only: forget cached sessions and GPU state.
