@@ -7,7 +7,7 @@ const path = require('node:path');
 
 test('the README upscale example runs and returns the documented shape', async () => {
   const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
-  const blocks = [...readme.matchAll(/```js\n([\s\S]*?)```/g)].map((m) => m[1]);
+  const blocks = [...readme.matchAll(/```js\r?\n([\s\S]*?)```/g)].map((m) => m[1]);
   const code = blocks.find((b) => b.includes('upscale('));
   assert.ok(code, 'README.md has no ```js block that calls upscale( - update this test if the example moved');
 
