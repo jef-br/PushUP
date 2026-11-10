@@ -158,7 +158,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   have to say something odd, document what the code does and add a TASKS note). `npm test`
   passes (the README test from R2 still passes).
 
-### [~] P2 — (claimed 2026-11-10, branch overnight/2026-11-10-P2) Faster Lanczos-mix loop (byte-identical output)
+### [x] P2 — (done 2026-11-10: mix stage ~15-19 ms faster at 800 px, byte-identical; see docs/PERF.md) Faster Lanczos-mix loop (byte-identical output)
 - **Goal:** the mix in `run()` calls `Math.round` per byte (~3 M bytes at 1000 px).
 - **Accept:** replace it with an equivalent integer-friendly form (e.g. `(a * o + m * p + 0.5) | 0`
   for non-negative values) only if the output is byte-identical (extracting the loop into a helper
