@@ -86,7 +86,10 @@ def main():
     print(f"aligned vendor output: {inl} inliers of {matches} matches")
 
     cols = [("Lanczos", "lanczos.png"), ("PushUP fast", "pushup_fast.png"),
-            ("PushUP high", "pushup_high.png"), ("Claid (aligned)", "vendor_aligned.png")]
+            ("PushUP high", "pushup_high.png")]
+    # Candidate models from T7 (bench/saas/upscale_model.js writes model_<name>.png); optional.
+    cols += [(f[6:-4], f) for f in sorted(os.listdir(OUT)) if f.startswith("model_") and f.endswith(".png")]
+    cols.append(("Claid (aligned)", "vendor_aligned.png"))
     ims = [cv2.imread(os.path.join(OUT, f)) for _, f in cols]
     # Crops in the 1000 px frame: logo + laces, suede + swoosh, toe + sole.
     crops = [(150, 140, 400, 330), (70, 250, 320, 450), (560, 380, 810, 560)]
@@ -95,7 +98,7 @@ def main():
     sheet = np.vstack(rows)
     hdr = np.full((24, sheet.shape[1], 3), 255, np.uint8)
     for i, (label, _) in enumerate(cols):
-        cv2.putText(hdr, label, (i * 254 + 5, 17), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 0), 1)
+        cv2.putText(hdr, label[:16], (i * 254 + 5, 17), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 0), 1)
     path = os.path.join(OUT, "compare.png")
     cv2.imwrite(path, np.vstack([hdr, sheet]))
     print("wrote", path)

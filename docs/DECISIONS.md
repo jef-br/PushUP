@@ -103,3 +103,11 @@ entries at the bottom. Keep each to a few lines: context → decision → why.
 - **Why:** a whitelist can't leak `bench/`, `tools/`, or fixtures by accident, and
   `test/package.test.js` asserts the contents. `sharp@0.35` requires Node >=20.9, so the old
   `engines` claim was wrong. Publishing itself is left to a human.
+
+## D14 — Texture gap: no swap-in model closes it; UltraSharpV2-Lite is a `high` candidate (2026-11-09, T7)
+
+Tried five ONNX models (published exports, CPU) on the Claid sample and `sub20` at 400 px.
+None reproduces Claid's suede grain, and no generative model with an ONNX export is
+practical on CPU. UltraSharpV2-Lite beats Remacri on GMSD and PSNR at 1.7x the speed. The
+default model is not changed (owner rule); the switch is task T8, blocked on the owner.
+Numbers: `docs/TEXTURE.md`.

@@ -89,7 +89,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Blocked on:** each vendor's site and image CDN must be added to the environment's
   network allowlist, which needs an interactive session (owner approves host additions).
 
-### [~] T7 — Close the texture gap (research, no product code) (started 2026-11-09, branch overnight/2026-11-09-T7)
+### [x] T7 — Close the texture gap (research, no product code) (done 2026-11-09, see docs/TEXTURE.md)
 - **Goal:** find a model that produces Claid-like material texture (suede, knit, leather)
   without inventing wrong detail, that runs on CPU (any speed) and is worthwhile on a GPU.
 - **Accept:**
@@ -108,6 +108,14 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   --sparse https://github.com/OpenModelDB/open-model-database`), and `claid.ai` for the
   Claid sample. `github.com/<repo>/raw/...` and other sites are blocked — a model only
   available elsewhere is recorded as unreachable, not worked around.
+
+### [blocked] T8 — Consider UltraSharpV2-Lite as the `high` model (owner decision)
+- **Why:** T7 found it better than Remacri on GMSD/PSNR, 1.7x faster on CPU, 3x less memory
+  (`docs/TEXTURE.md`). Changing a default model needs an owner-written decision.
+- **Blocked on:** owner says go. Then: verify the license of the Lite weights (no OpenModelDB
+  entry; the HF ONNX is a third-party conversion), build the ONNX ourselves or record upstream
+  hash, run the quality gate (`PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`), update README and
+  `models/LICENSES.md`.
 
 ### [ ] T1a — Measure how well text on packaging survives (research, no product code)
 - **Goal:** Decide with data whether text needs special handling. Text on labels
