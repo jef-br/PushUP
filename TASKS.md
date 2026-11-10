@@ -197,7 +197,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   Pin today's behaviour only: no `src/` change (if a case surprises, record it as a note on this
   task for the owner instead of changing the API). `npm test` passes.
 
-### [ ] D2 — `docs/CONTRACT_TESTS.md`: add the tests landed since S2
+### [~] D2 — (claimed 2026-11-10, branch overnight/2026-11-10-D2) `docs/CONTRACT_TESTS.md`: add the tests landed since S2
 - **Goal:** R4, Q6 and R5 added contract-relevant tests that the map doesn't list yet.
 - **Accept:** list `test/length.test.js` and `test/readme-errors.test.js` tests (literal names as
   bullets in the right section, generated names in prose, per the file's format) under the
