@@ -3,7 +3,7 @@
 Question: is there a model that gives Claid-like material texture (suede, knit, leather)
 without inventing wrong detail, runs on CPU (any speed) and is worth using on a GPU (`high`)?
 
-**Answer: no model tried closes the gap.** None reaches Claid's dense suede grain. One
+**Answer: no model tried (five non-generative ONNX models and one diffusion model) closes the gap.** None reaches Claid's dense suede grain. One
 candidate, **4x-UltraSharpV2-Lite**, beats the current `high` model (Remacri) on GMSD and
 PSNR, is ~1.7x faster on CPU and uses a third of the memory, so it is worth a decision by the
 owner (see recommendation). Date: 2026-11-09.
@@ -24,14 +24,10 @@ Sources: ONNX files already published on Hugging Face (dynamic height/width, flo
 
 Not tested, with the reason:
 
-- **Generative / diffusion** (the task asks for at least one if an ONNX export exists):
-  SeedVR2 (3B/7B, `ByteDance-Seed/SeedVR2-*`) is a video diffusion transformer with no ONNX
-  export, so it is out of scope (needs PyTorch). The only ONNX diffusion upscaler found is
-  `ssube/stable-diffusion-x4-upscaler-onnx` (text-conditioned, multi-step, OpenRAIL++); it
-  was **not run**: it is a diffusers pipeline (text encoder, UNet, VAE, noise schedule) that
-  needs extra Python dependencies and prompt handling, which did not fit in this run. Whether
-  it would be usable on CPU is therefore unmeasured. A text-prompted generator is also
-  likely to invent detail. Follow-up task T9.
+- **Generative / diffusion:** SeedVR2 (3B/7B, `ByteDance-Seed/SeedVR2-*`) is a video diffusion
+  transformer with no ONNX export, so it is out of scope (needs PyTorch). The ONNX diffusion
+  upscaler `ssube/stable-diffusion-x4-upscaler-onnx` (text-conditioned SD x4 upscaler, OpenRAIL++
+  license, 3.2 GB: text encoder, UNet, VAE) **was run**, see "Diffusion model" below.
 - `darktable-org/upscale-realplksr-onnx` (MIT, MSSIM-pretrained, conservative): the ONNX has a
   static 256×256 input, so it needs fixed tiling code. Not run for lack of time; a candidate
   for a follow-up.
@@ -91,6 +87,25 @@ copyrighted image). Regenerate with `python bench/saas/compare_published.py` aft
 - UltraSharpV2_Lite looks like Remacri with slightly crisper edges, and wins on GMSD.
 - ClearReality is sharp-looking but loses 1.9 dB PSNR versus `fast`.
 
+### Diffusion model (`ssube/stable-diffusion-x4-upscaler-onnx`)
+
+Run with `bench/saas/upscale_sd_x4.py` (diffusers `OnnxStableDiffusionUpscalePipeline`, CPU,
+fixed seed, generic prompt "a photo of a product, high detail", noise level 20, 10 steps) on a
+128×128 crop of the Claid "before" image (the laces/logo area), since the whole image would not
+fit: the crop alone takes **65 s and ~9 GB peak RSS** (5.6 s per step, 4x output 512×512).
+Cost grows with pixel count, so the full 640×428 image is roughly 17x more (about 18 min and
+far more memory at 10 steps): not usable on a CPU in an upscaler call, and the model's 128 px
+design size makes it unusable for 400–800 px inputs without tiling. Not scored on `sub20` for
+the same reason (a 400 px image is 10x a crop). Package versions: diffusers 0.42.1,
+transformers, torch (latest at run time). Crop sheet: `bench/out/saas/compare_sd.png`
+(git-ignored).
+
+Visual result: smooth, plausible fabric, laces and logo at the same sharpness as `high` or
+Lite; **no suede grain** is added, and the "NIKE" lettering is slightly warped. One prompt, one
+seed and 10 steps is a thin sample, but there is no sign it closes the gap and it costs ~100x
+a CNN. Verdict: not worth pursuing on CPU; a GPU-only generative mode would be a new
+dependency (owner decision).
+
 ## Recommendation
 
 1. Texture gap vs Claid: **not closable by a swap-in model from this list.** What Claid adds
@@ -99,7 +114,7 @@ copyrighted image). Regenerate with `python bench/saas/compare_published.py` aft
    step is an opt-in, GPU-only generative path, which needs a new dependency and is an owner
    decision.
 2. `high` mode: **UltraSharpV2_Lite is the best candidate to replace Remacri** (better GMSD and
-   PSNR, 1.7x faster on CPU, 3x less memory: 479 vs 1454 MB peak RSS; SSIM 0.0041 lower). Before any switch: confirm its
+   PSNR, 1.7x faster on CPU (sub20 mean; 1.55x on the Claid sample), 3x less memory: 479 vs 1454 MB peak RSS; SSIM 0.0041 lower). Before any switch: confirm its
    license (it is a Lite variant of a CC BY-NC-SA model; the ONNX is a third-party conversion
    with no stated license), convert it ourselves or record the upstream weights hash, and
    re-run the quality gate. Changing the default model is an owner decision (playbook §5), so
