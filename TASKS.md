@@ -214,26 +214,30 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `bash bench/fetch_testset.sh`; run `node bench/bench.js bench/out/sub20 --sizes 400,800 --json >
   before.json` (and `after.json`); compare with `node bench/gate.js before.json after.json`; one
   sentence on `--by-source`. Keep the existing `build_testset.py` line as the manual route. A test
-  (new file `test/readme-bench.test.js`) checks that every `bench/<file>` path mentioned in
-  README.md exists and every `--flag` used with `bench/bench.js` in the README appears in
+  (new file `test/readme-bench.test.js`) checks that every `bench/<file>` path with a file
+  extension (`.js`/`.sh`/`.py`) mentioned in README.md exists (generated dirs like `bench/out/sub20`
+  are skipped) and every `--flag` used with `bench/bench.js` in the README appears in
   `bench.js`'s usage line (today the usage line lacks `--methods`: add it there, a comment-only
   change to `bench.js`, and say so in the PR). Must not add a ```js block calling `upscale(`
-  (R2). Docs + test (+ that usage comment) only.
+  (R2). Docs + test (+ that usage comment) only. D3 and D5 both edit README "Benchmark": land one
+  before starting the other.
   `npm test` passes.
 
 ### [ ] D4 — Refresh the `docs/PERF.md` results table
 - **Goal:** the "Current (2026-11-09)" table predates P2 (mix loop) and Q3; numbers drift.
 - **Accept:** run `node bench/profile.js --runs 5` (sizes 400, 600, 800, factor 1.5) twice; put
   the second run's medians in a new dated table at the top of "Results" (keep the 2026-11-09 table
-  below it as history, labelled), with the machine line (`cpus`, Node version from the script's
-  header). One sentence on what changed since 2026-11-09 (stage by stage, only where the change
+  below it as history, labelled), with the machine line (keep the existing "Machine:" wording;
+  update `cpus` and the Node version from the script's header). One sentence on what changed since 2026-11-09 (stage by stage, only where the change
   is larger than the run-to-run difference between your two runs). No code change. `npm test` passes.
 
 ### [ ] D5 — README results table for the current models
-- **Goal:** README "Benchmark" shows only the earlier realesr-general models; the shipped
-  `fast` model (4xLSDIRCompactC3 + 20% Lanczos) has no row there.
+- **Goal:** the README "Benchmark" table shows only the earlier realesr-general models; the
+  shipped `fast` model (4xLSDIRCompactC3 + 20% Lanczos) has no row in it (its numbers appear only
+  in "Model choice"; reconcile them: if they differ, say which run is newer).
 - **Accept:** with `bench/out/set` (60 images, `bash bench/fetch_testset.sh`), run
-  `node bench/bench.js bench/out/set --methods lanczos,sr-full` (CPU, `fast`; sizes 400/600/800);
+  `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/bench.js bench/out/set --methods lanczos,sr-full`
+  (sizes 400/600/800);
   add the `sr-full` rows to the README table (or a new table directly above it) labelled with the
   model and date, keeping the old rows labelled as earlier models; put the raw output in the PR
   description. If the dataset fetch fails, mark D5 `[blocked]` with the error. No code change.
