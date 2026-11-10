@@ -117,7 +117,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   hash, run the quality gate (`PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`), update README and
   `models/LICENSES.md`.
 
-### [~] T1a — (in progress 2026-11-10, branch overnight/2026-11-10-T1a) Measure how well text on packaging survives (research, no product code)
+### [blocked] T1a — Measure how well text on packaging survives (research, no product code)
 - **Goal:** Decide with data whether text needs special handling. Text on labels
   (ingredients, brand names, sizes) is where upscalers fail most visibly.
 - **Accept:**
@@ -141,6 +141,17 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
     fixes most failures, say so (text might only need `high` mode, not a new model).
   - `docs/TEXT.md` has the numbers, ≤6 side-by-side crops (images outside git if large) and
     the recommendation.
+- **Blocked (2026-11-10, branch overnight/2026-11-10-T1a, PR #19):** the fixed protocol yields
+  too few crops. `rapidocr-onnxruntime` 1.2.3 (det `ch_PP-OCRv3_det_infer.onnx` sha256
+  3439588c…, rec `ch_PP-OCRv3_rec_infer.onnx` 897a3ede…, cls `ch_ppocr_mobile_v2.0_cls_infer.onnx`
+  e47acedf…; Apache-2.0) finds 111 text lines on the 60 set references, but only **7 crops from 3
+  images** pass conf ≥ 0.90 and ≥ 4 chars (`bench/text/find_crops.py`, `ocr_stats.py`); the
+  criterion needs ≥ 15. Most set images are apparel with little text (only abo_8d3f3789, a
+  nutrition label, has much). Not worked around: changing thresholds or the image set changes
+  the protocol. **Owner/next-run options:** (a) add a text-rich image source to the set
+  (e.g. more ABO shards `train-0000N.parquet` or a packaging dataset from Hugging Face, selected
+  by an OCR-independent rule), or (b) lower the confidence threshold to 0.80 (≈ +20 crops).
+  Python note: in this sandbox `pip` is Python 3.13 (`/usr/bin/python3`); `python3` is 3.11.
 
 ### [blocked] T1b — Text-aware upscaling
 - **Goal:** detect text regions, upscale them with a text-specialised path, blend back.
