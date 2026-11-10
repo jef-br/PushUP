@@ -185,13 +185,20 @@ case, so the model always gets the full-size input.
 
 - **Speed:** time grows with the number of input pixels (~1 s at 400 px,
   ~4 s at 800 px on 4 cores).
-- **Fine texture** (fabric weave) that isn't present in a small input
-  can't be restored faithfully. A model can only invent it.
-- **Text on packaging** (ingredient lists, labels) is handled by the
-  general model. A separate text detector plus a text-specific upscaler is
-  a possible next step.
-- **SaaS comparison** (e.g. Claid.ai) needs an account and API access. The
-  bench can score any output folder once results are available.
+- **Fine texture** (fabric weave, suede grain) that isn't present in a small input
+  can't be restored faithfully. A model can only invent it. Compared with Claid.ai's
+  own published sample, PushUP is clean and faithful but behind on perceived texture
+  ([docs/SAAS.md](docs/SAAS.md)). None of the community models and the one diffusion
+  model we tried closes the gap; a candidate for the GPU `high` mode is waiting for an
+  owner decision ([docs/TEXTURE.md](docs/TEXTURE.md)).
+- **Text on packaging** (ingredient lists, labels) is handled by the general model;
+  there is no text-specific path. Whether one is needed has not been measured yet: the
+  planned OCR test found too few text lines in the benchmark set (7 usable crops,
+  15 needed) and is waiting on a decision about the test data. A text detector plus a
+  text-specific upscaler is a possible next step.
+- **Other vendors:** only Claid.ai has been compared, using the vendor's own published
+  before/after images. Comparing more vendors needs their sites added to the network
+  allowlist. The bench can score any output folder.
 
 ## Development
 
