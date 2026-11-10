@@ -216,7 +216,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   sentence on `--by-source`. Keep the existing `build_testset.py` line as the manual route. A test
   (new file `test/readme-bench.test.js`) checks that every `bench/<file>` path mentioned in
   README.md exists and every `--flag` used with `bench/bench.js` in the README appears in
-  `bench.js`'s usage line. Must not add a ```js block calling `upscale(` (R2). Docs + test only.
+  `bench.js`'s usage line (today the usage line lacks `--methods`: add it there, a comment-only
+  change to `bench.js`, and say so in the PR). Must not add a ```js block calling `upscale(`
+  (R2). Docs + test (+ that usage comment) only.
   `npm test` passes.
 
 ### [ ] D4 — Refresh the `docs/PERF.md` results table
