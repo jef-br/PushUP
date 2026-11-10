@@ -41,6 +41,24 @@ The model always runs at 4×, so the factor barely changes latency.
 - First call additionally pays session creation: small for `fast`, a few seconds for `high`
   (see "Cold start" below).
 
+## Lanczos mix loop (P2, 2026-11-10)
+
+The 20% Lanczos mix used `Math.round(a * o + m * p)` per byte (2.25 M bytes for a 1000×750
+output). It is now `(a * o + m * p + 0.5) | 0` in `_mixLanczos` (`src/index.js`): the value is
+never negative, so it gives the same bytes. `test/mix.test.js` checks that over all 256×256
+byte pairs for the shipped share (0.2) and for shares 0, 0.05 … 1, and on a real `upscale`
+output; `bench/profile.js` now calls the shipped function.
+
+800×600 input, factor 1.25 (1000×750 output), `fast`, same machine (4 vCPU, Node 22.23), ms:
+
+| Measurement | Before | After |
+| --- | ---: | ---: |
+| `profile.js --runs 7 --sizes 800 --factor 1.25`, `lanczosMix` column (includes the plain Lanczos resize), 2 runs | 55, 53 | 28, 29 |
+| Mix loop alone on a real model output, median of 15 calls, 5 alternating rounds | 18.1–22.3 | 3.1–3.7 |
+
+So about 15–19 ms less per 800 px call (~1% of the ~2 s total; totals vary by more than that
+between runs). Output bytes are unchanged.
+
 ## Follow-up ideas (not implemented)
 
 Further speed has to come from inference: fp16/int8 quantisation, thread tuning, or a GPU.
