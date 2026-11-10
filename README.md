@@ -37,6 +37,21 @@ model still runs, so JPEG blocks are removed and edges get sharper.
 Calls are async; the model runs off the main thread. Calls run one at a
 time, because each one already uses every CPU core.
 
+### Errors
+
+`upscale` is async, so every error arrives as a rejected promise:
+
+| Trigger | Rejects with |
+|---|---|
+| `arr` is not a byte array (`Uint8Array`, `Buffer`) or a plain `Array` (an `Array` is not checked: its values are converted to bytes as by `Uint8Array.from`) | `TypeError` |
+| `upscale_factor` is not a finite number > 0 | `RangeError` |
+| `stride` is not an integer >= 3 | `TypeError` |
+| `arr` is shorter than one row (`width * 3` bytes) | `RangeError` |
+| Largest side outside 400-800 px | `RangeError` |
+| `PUSHUP_QUALITY` or `PUSHUP_DEVICE` is not one of its allowed values | `RangeError` |
+
+Checks run in that order, so only the first problem is reported.
+
 ## Quality modes and GPU
 
 Two modes, picked automatically; the function signature never changes.
