@@ -40,12 +40,11 @@ for (const pad of [0, 2]) {
   test(`trailing bytes shorter than one row are ignored (padding ${pad})`, async () => {
     const { arr, stride } = padded(pad);
     const [ref] = await upscale(arr, stride, 1.5);
-    for (const k of [1, ROW - pad - 1]) {
+    // arr is h full strides long, so the remainder is exactly k; readDims counts it as a row
+    // only if k >= width * 3. k = ROW - 1 is the largest remainder that must be ignored.
+    for (const k of [1, ROW - 1]) {
       const longer = new Uint8Array(arr.length + k).fill(0xcd);
       longer.set(arr);
-      // With padding, the bytes already present in the last row's padding plus k must stay
-      // below one full row, or they would be read as an extra row.
-      assert.ok(pad + k < ROW);
       const [out] = await upscale(longer, stride, 1.5);
       assert.strictEqual(out.length, ref.length, `k=${k}: height changed`);
       same(out, ref, `k=${k}: trailing bytes changed the output`);
