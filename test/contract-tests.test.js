@@ -25,12 +25,14 @@ function sections() {
 // Does the file declare test('<name>' ...) or test("<name>" ...) with a string literal?
 function declares(file, name) {
   const src = fs.readFileSync(path.join(root, file), 'utf8');
-  return src.includes(`test('${name}'`) || src.includes(`test("${name}"`);
+  // Anchored at the start of a line (after indentation), so a commented-out test does not count.
+  return src.split(/\r?\n/).some((l) => /^\s*test\(/.test(l) && (l.includes(`test('${name}'`) || l.includes(`test("${name}"`)));
 }
 
 test('every test listed in docs/CONTRACT_TESTS.md exists', () => {
   const secs = sections();
   assert.ok(secs.length >= 5, 'expected one section per contract row plus the async sentence');
+  assert.ok(secs.some((s) => /^Async/.test(s.heading)), 'docs/CONTRACT_TESTS.md needs an "Async" section for the one-at-a-time sentence in CLAUDE.md');
   for (const s of secs) {
     assert.ok(s.tests.length > 0, `section "${s.heading}" lists no test`);
     for (const t of s.tests) {
