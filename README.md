@@ -194,7 +194,27 @@ average hides a regression in one of them. `bench/gate.js` applies the limits fr
 `docs/OVERNIGHT_RUN.md` §2 (PSNR may drop at most 0.02 dB, SSIM 0.001, GMSD may rise 0.001)
 to every size; it checks the overall rows only, not the per-source ones.
 
-Results on a 4-core CPU for the earlier realesr-general models (60 images). Higher PSNR/SSIM is better;
+Current default, `fast` mode (4xLSDIRCompactC3 + 20% Lanczos), CPU, 60 images, measured
+2026-11-11 with
+`PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/bench.js bench/out/set --methods lanczos,sr-full`
+on a 4-core CPU (higher PSNR/SSIM is better, lower GMSD is better):
+
+| Input | Method | PSNR | SSIM | GMSD | Time |
+|---|---|---|---|---|---|
+| 400 px | Lanczos | 28.71 | 0.883 | 0.132 | 0.02 s |
+| | **4xLSDIRCompactC3 + 20% Lanczos (default)** | **31.02** | **0.901** | **0.111** | **0.42 s** |
+| 600 px | Lanczos | 30.30 | 0.917 | 0.098 | 0.02 s |
+| | **4xLSDIRCompactC3 + 20% Lanczos (default)** | **33.41** | **0.936** | **0.076** | **0.90 s** |
+| 800 px | Lanczos | 30.38 | 0.929 | 0.090 | 0.02 s |
+| | **4xLSDIRCompactC3 + 20% Lanczos (default)** | **36.53** | **0.962** | **0.046** | **1.6 s** |
+
+The "Model choice" figures above come from the 20-image subset, so they differ from these
+60-image ones; both measure the same model, and this 2026-11-11 run is the newer measurement
+(the "Model choice" table was added to this README on 2026-11-06). Times also vary between
+sessions and machine load, so compare times only within one table. The Lanczos quality
+metrics here match the earlier 60-image run exactly, so the set and protocol are unchanged.
+
+Earlier results on a 4-core CPU for the realesr-general models (60 images). Higher PSNR/SSIM is better;
 lower GMSD is better (GMSD compares edges, which tracks perceived
 sharpness).
 
