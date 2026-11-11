@@ -31,3 +31,19 @@ test('every flag used with bench/bench.js in README.md is in its usage line', ()
     assert.ok(new RegExp(`\\[${f}\\b`).test(usage), `README uses ${f} but the bench.js usage line does not list it: ${usage}`);
   }
 });
+
+// D6: the README "Development" commands must point at scripts that exist.
+test('every scripts/<file> path mentioned in README.md exists', () => {
+  const paths = [...new Set([...readme.matchAll(/\bscripts\/[\w./-]*\.(?:js|sh|py)\b/g)].map((m) => m[0]))];
+  assert.ok(paths.includes('scripts/pack-smoke.sh'), `README should mention scripts/pack-smoke.sh; found ${paths.join(', ')}`);
+  for (const p of paths) assert.ok(fs.existsSync(path.join(root, p)), `README mentions ${p}, which does not exist`);
+});
+
+test('README "Development" lists the dev scripts and the CUDA-skip install flag', () => {
+  const dev = readme.split(/^## /m).find((s) => s.startsWith('Development'));
+  assert.ok(dev, 'README has no "## Development" section');
+  for (const cmd of ['npm test', 'bash scripts/pack-smoke.sh', 'node bench/profile.js', 'node bench/cold.js',
+    'node bench/threads.js', '--onnxruntime-node-install-cuda=skip', 'docs/PERF.md']) {
+    assert.ok(dev.includes(cmd), `README "Development" does not mention ${cmd}`);
+  }
+});
