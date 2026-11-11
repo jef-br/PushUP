@@ -197,7 +197,7 @@ to every size; it checks the overall rows only, not the per-source ones.
 Current default, `fast` mode (4xLSDIRCompactC3 + 20% Lanczos), CPU, 60 images, measured
 2026-11-11 with
 `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/bench.js bench/out/set --methods lanczos,sr-full`
-on a 4-core CPU:
+on a 4-core CPU (higher PSNR/SSIM is better, lower GMSD is better):
 
 | Input | Method | PSNR | SSIM | GMSD | Time |
 |---|---|---|---|---|---|
@@ -209,8 +209,9 @@ on a 4-core CPU:
 | | **4xLSDIRCompactC3 + 20% Lanczos (default)** | **36.53** | **0.962** | **0.046** | **1.6 s** |
 
 The "Model choice" figures above come from the 20-image subset, so they differ from these
-60-image ones; both measure the same model (the Lanczos rows here match the earlier run
-exactly, so the set and protocol are unchanged).
+60-image ones; both measure the same model, and this 2026-11-11 run is the newer measurement.
+The Lanczos quality metrics here match the earlier 60-image run exactly, so the set and
+protocol are unchanged.
 
 Earlier results on a 4-core CPU for the realesr-general models (60 images). Higher PSNR/SSIM is better;
 lower GMSD is better (GMSD compares edges, which tracks perceived

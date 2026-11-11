@@ -233,6 +233,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   is larger than the run-to-run difference between your two runs). No code change. `npm test` passes.
 
 ### [x] D5 — (done 2026-11-11) README results table for the current models
+- **Follow-up (not done):** README "Known limits" still says ~1 s at 400 px / ~4 s at 800 px;
+  the 2026-11-11 run measured 0.42 s / 1.6 s per image (fast, 4 cores). Worth a small docs task.
 - **Goal:** the README "Benchmark" table shows only the earlier realesr-general models; the
   shipped `fast` model (4xLSDIRCompactC3 + 20% Lanczos) has no row in it (its numbers appear only
   in "Model choice"; reconcile them: if they differ, say which run is newer).
