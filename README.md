@@ -262,13 +262,15 @@ npm install                           # if the CUDA download fails: npm install 
 npm test                              # unit + contract tests (node --test)
 bash scripts/pack-smoke.sh            # pack the package, install it in a temp dir, run one upscale there
 node bench/profile.js                 # per-stage latency of the fast pipeline (synthetic images)
-node bench/cold.js                    # first-call vs warm latency, each in a fresh process
+node bench/cold.js --modes fast       # first-call vs warm latency, each in a fresh process
 node bench/threads.js                 # inference time vs ONNX Runtime thread count
 ```
 
-- `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download.
-  Use it where that download is blocked or not wanted; PushUP then runs on the CPU (see
-  "Quality modes and GPU").
+- `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
+  (Linux x64 only; Windows and macOS don't download them). Use it where that download is
+  blocked or not wanted; PushUP then runs on the CPU there (see "Quality modes and GPU").
+- `bench/cold.js` measures `high` mode too unless given the modes option shown above (`high`
+  takes minutes on a CPU).
 - `scripts/pack-smoke.sh` is what CI's `pack-smoke` job runs; pass extra `npm install`
   arguments in `PUSHUP_SMOKE_NPM_ARGS` (e.g. the CUDA skip flag above).
 - The latency scripts, their options and results are in [docs/PERF.md](docs/PERF.md).
