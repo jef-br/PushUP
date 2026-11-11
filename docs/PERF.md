@@ -8,12 +8,40 @@
 - `total` is the public `upscale()` call, median of N runs after one warm-up call (so the
   one-off ONNX session load is excluded). Stage columns replay the same steps in the
   script, median of N runs, and are indicative (they don't sum exactly to `total`).
-- Machine: 4 vCPU cloud container, Node 22, onnxruntime-node 1.31, sharp 0.35,
+- Machine: 4 vCPU cloud container (`cpus=4`), Node 22 (v22.23.4 in the 2026-11-11 run), onnxruntime-node 1.31, sharp 0.35,
   `DEFAULT_LANCZOS_MIX` 0.2, full input fed to the model. Re-measure on your own hardware.
 
 ## Results (median ms)
 
-Current (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5
+Current (2026-11-11, D4): model 4xLSDIRCompactC3, after the faster mix loop (P2).
+`PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/profile.js --runs 5` (factor 1.5), run twice;
+this is the second run. Same machine as above (4 vCPU cloud container, header
+`cpus=4 node=v22.23.4`):
+
+| Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix (incl. plain resize) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 443 | 1 | 428 | 13 | 9 | 13 |
+| 600×450 | 1014 | 2 | 932 | 31 | 12 | 21 |
+| 800×600 | 1854 | 3 | 1768 | 52 | 15 | 25 |
+
+First run, for the spread (the stage columns differ from the second run by at most 4 ms;
+`inference` by up to 62 ms at 600 px):
+
+| Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix (incl. plain resize) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 455 | 1 | 416 | 12 | 6 | 13 |
+| 600×450 | 1038 | 2 | 994 | 32 | 12 | 23 |
+| 800×600 | 1874 | 3 | 1751 | 48 | 15 | 27 |
+
+What changed since 2026-11-09 (every cell that moved by more than the spread between the two
+runs above, checked cell by cell): the Lanczos mix fell 18 / 36 / 46 → 13 / 21 / 25 ms, the only
+change with a code cause (P2), while 400 px `toTensor` 6 → 1 and `inference` 399 → 428, 600 px
+`total` 1039 → 1014 and Lanczos resize 11 → 12, and 800 px `total` 1792 → 1854 and Lanczos resize
+17 → 15 ms moved with no code change in those stages, so they are session-to-session variation
+(single runs on two days; the 400 px inference rise is unexplained and worth re-measuring if it
+recurs).
+
+Earlier (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5
 (800 px input is capped to a 1000 px output). `total` and the stage columns come from
 separate timed passes, so stages don't sum exactly to `total`; small stages are noisy:
 
