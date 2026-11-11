@@ -313,7 +313,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Done (2026-11-11, PR #49):** local run ~9 s (`PUSHUP_SMOKE_NPM_ARGS=--onnxruntime-node-install-cuda=skip`);
   a forced failure (`PUSHUP_QUALITY=bogus`) exits 1 and still removes the temp dir. CI results in the PR.
 
-### [ ] P3 — Measure ONNX Runtime thread count vs latency (docs only)
+### [~] P3 — (in progress 2026-11-11, branch overnight/2026-11-11-P3) Measure ONNX Runtime thread count vs latency (docs only)
 - **Goal:** `docs/PERF.md` lists thread tuning as an open idea. Sessions use
   `intraOpNumThreads = os.availableParallelism()`; find out whether fewer threads are about as
   fast (useful when a server runs several processes).
