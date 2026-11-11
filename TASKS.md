@@ -281,7 +281,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [ ] L1 — `package-lock.json` agrees with `package.json` (engines), with a test
+### [x] L1 — (done 2026-11-11, test/lockfile.test.js) `package-lock.json` agrees with `package.json` (engines), with a test
 - **Goal:** the lockfile's root package still records `engines: { node: ">=18.14" }` while
   `package.json` says `>=20.9` (D13), so every plain `npm install` rewrites the lockfile and
   runs keep having to revert it (seen in PR #19 and the 2026-11-11 runs).
@@ -292,6 +292,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   if it would change anything else, stop and record that on this task). A new test
   (`test/lockfile.test.js`) fails if those root fields differ from `package.json`. After the
   change a plain `npm install` leaves `git status` clean. `npm test` passes.
+- **Done (2026-11-11, PR #52):** `npm install --package-lock-only` (npm 10.9.9) changed one line,
+  root `engines` `>=18.14` → `>=20.9`; no resolved version changed. The new test fails on the old
+  lockfile (`engines` differs) and passes now; a plain `npm install` afterwards leaves `git status` clean.
 
 ### [ ] Q8 — One copy of the ONNX session options for `src/` and the bench scripts
 - **Goal:** `bench/profile.js` and `bench/threads.js` copy the session options of
