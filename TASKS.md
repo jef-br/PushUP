@@ -311,7 +311,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   and a string `bin` becomes `{ <name without scope>: path }` with `\` → `/` and no leading `./`. A
   lockfile that npm synced with all five fields set passes (review round 2).
 
-### [ ] P4 — Measure throughput: one N-thread process vs several fewer-thread processes (docs only)
+### [x] P4 — (done 2026-11-11, bench/throughput.js + docs/PERF.md "Throughput") Measure throughput: one N-thread process vs several fewer-thread processes (docs only)
 - **Goal:** P3 found one thread spends ~11–20% fewer core-ms per image than N threads, so a
   server running several processes *might* get more images/s. That ignored contention
   between processes. Measure it before anyone proposes a setting.
@@ -324,6 +324,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `docs/PERF.md` with the table, machine line and how to run; it updates the P3 follow-up
   idea with the result. No `src/` change (a thread setting would be an owner decision).
   `npm test` passes.
+- **Done (2026-11-11, PR #58):** on 4 vCPU, 4 × 1 thread gives +9–15% images/s over 1 × 4
+  threads (two 30 s runs), at ~3.5× the per-image latency. No change; the P3 follow-up idea in
+  `docs/PERF.md` now has the result.
 
 ### [x] L1 — (done 2026-11-11, test/lockfile.test.js) `package-lock.json` agrees with `package.json` (engines), with a test
 - **Goal:** the lockfile's root package still records `engines: { node: ">=18.14" }` while
