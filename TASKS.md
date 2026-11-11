@@ -281,6 +281,33 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] K2 — CI `pack-smoke`: skip the CUDA download
+- **Goal:** `pack-smoke` failed once on PR #55 (run 42948824529) because `npm install` of the
+  tarball timed out fetching onnxruntime-node's CUDA binaries from a Microsoft host. The runner
+  has no GPU, so the smoke test doesn't need them; the download only adds a network dependency.
+- **Accept:** the `pack-smoke` job in `.github/workflows/ci.yml` sets
+  `PUSHUP_SMOKE_NPM_ARGS: --onnxruntime-node-install-cuda=skip` (job `env`); the `test` job is
+  unchanged. The job is green on the PR and its log shows the flag reached `npm install` (e.g. no
+  CUDA download step / the install line). README "Development" stays accurate. `npm test` passes.
+
+### [ ] P5 — `bench/throughput.js`: stop the other children when one fails
+- **Goal:** when one child dies, the parent exits 1 but leaves the other children running until
+  their own deadline (P4 adversary note).
+- **Accept:** on any child failure the parent kills the remaining children before exiting (and
+  on SIGINT). Show in the PR: a forced crash in model load and a SIGKILL mid-run both exit 1 and
+  `ps` shows no `throughput.js --child` process afterwards; a normal
+  `node bench/throughput.js --seconds 3 --sizes 400` still exits 0. No `src/` change. `npm test`
+  passes.
+
+### [ ] D7 — `docs/DECISIONS.md`: record the thread-count decisions from P3/P4
+- **Goal:** P3 and P4 decided to keep `intraOpNumThreads = os.availableParallelism()` and not to
+  add a thread/process setting without the owner; that is in `PROGRESS.md` and `docs/PERF.md` but
+  has no D-number, unlike other decisions (P4 adversary note).
+- **Accept:** one new D-entry in `docs/DECISIONS.md` (next free number) with context, the P3/P4
+  numbers it rests on (linking `docs/PERF.md` "Threads" and "Throughput"), the decision, and what
+  would reopen it (e.g. a many-core host, or an owner-requested batch mode). The two W46 lines in
+  `PROGRESS.md` (Threads, Throughput) point to it. Docs only. `npm test` passes.
+
 ### [x] R7 — (done 2026-11-11, test/model-input.test.js) Test: the shrink-before-model path (`modelInputMax`) in `_run`
 - **Goal:** `run()` can shrink the input before the model (`opts.modelInputMax`, used by
   `bench/bench.js` methods like `sr-300`), never below `ceil(target / 4)`. No test covers it.
