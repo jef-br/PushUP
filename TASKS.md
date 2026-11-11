@@ -281,7 +281,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [ ] L1 — `package-lock.json` agrees with `package.json` (engines), with a test
+### [~] L1 — (in progress 2026-11-11, branch overnight/2026-11-11-L1) `package-lock.json` agrees with `package.json` (engines), with a test
 - **Goal:** the lockfile's root package still records `engines: { node: ">=18.14" }` while
   `package.json` says `>=20.9` (D13), so every plain `npm install` rewrites the lockfile and
   runs keep having to revert it (seen in PR #19 and the 2026-11-11 runs).
