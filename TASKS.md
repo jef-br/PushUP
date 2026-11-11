@@ -311,7 +311,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   and a string `bin` becomes `{ <name without scope>: path }` with `\` → `/` and no leading `./`. A
   lockfile that npm synced with all five fields set passes (review round 2).
 
-### [ ] P4 — Measure throughput: one N-thread process vs several fewer-thread processes (docs only)
+### [~] P4 — (in progress 2026-11-11, branch overnight/2026-11-11-P4) Measure throughput: one N-thread process vs several fewer-thread processes (docs only)
 - **Goal:** P3 found one thread spends ~11–20% fewer core-ms per image than N threads, so a
   server running several processes *might* get more images/s. That ignored contention
   between processes. Measure it before anyone proposes a setting.
