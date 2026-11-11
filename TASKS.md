@@ -308,7 +308,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   --sizes 400` and `node bench/profile.js --runs 1 --sizes 400` still run (paste their output in
   the PR). `npm test` passes.
 - **Done (2026-11-11, PR #53):** `src/index.js` exports `_sessionOptions` (one line, no behaviour
-  change); both bench scripts use it. The two new tests fail against the old bench scripts and pass now.
+  change); both bench scripts use it. The new script-check test fails against the old bench scripts
+  (the value test needs the new export, so it fails only against the old `src/`); both pass now.
 
 ### [ ] D6 — README "Development": the dev commands that exist now
 - **Goal:** README "Development" lists only `npm install` / `npm test`; the pack smoke test
