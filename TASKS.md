@@ -223,7 +223,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   before starting the other.
   `npm test` passes.
 
-### [~] D4 — (claimed 2026-11-10, branch overnight/2026-11-10-D4) Refresh the `docs/PERF.md` results table
+### [x] D4 — (done 2026-11-11, docs/PERF.md) Refresh the `docs/PERF.md` results table
 - **Goal:** the "Current (2026-11-09)" table predates P2 (mix loop) and Q3; numbers drift.
 - **Accept:** run `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/profile.js --runs 5` (sizes 400,
   600, 800, factor 1.5) twice; put
