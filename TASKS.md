@@ -296,7 +296,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   dropping 20 from the matrix is worth deciding (`package-lock.json` also still records
   `>=18.14`).
 
-### [~] K1 — (in progress 2026-11-11, branch overnight/2026-11-11-K1) CI: smoke-test the packed tarball as an installed package
+### [x] K1 — (done 2026-11-11, scripts/pack-smoke.sh + CI job `pack-smoke`) CI: smoke-test the packed tarball as an installed package
 - **Goal:** `test/package.test.js` checks the tarball's file list, but nothing proves the
   published package works once installed (model paths resolved from `src/`, only
   `dependencies` available, no repo `node_modules`).
@@ -310,6 +310,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   is unchanged. Run it in the sandbox too and put its output in the PR (CUDA download may need
   `--onnxruntime-node-install-cuda=skip`; pass it through an env var or argument, documented
   at the top of the script). `npm test` passes and both CI jobs are green.
+- **Done (2026-11-11, PR #49):** local run ~9 s (`PUSHUP_SMOKE_NPM_ARGS=--onnxruntime-node-install-cuda=skip`);
+  a forced failure (`PUSHUP_QUALITY=bogus`) exits 1 and still removes the temp dir. CI results in the PR.
 
 ### [ ] P3 — Measure ONNX Runtime thread count vs latency (docs only)
 - **Goal:** `docs/PERF.md` lists thread tuning as an open idea. Sessions use
