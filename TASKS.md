@@ -281,7 +281,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [ ] I5 — CI: add Node 24 (current LTS) to the test matrix
+### [~] I5 — (in progress 2026-11-11, branch overnight/2026-11-11-I5) CI: add Node 24 (current LTS) to the test matrix
 - **Goal:** CI tests Node 20 and 22 only. Node 24 is the active LTS (Node 20 reached
   end-of-life in April 2026), so `engines: >=20.9` is unverified on the version most users
   install.
