@@ -8,7 +8,7 @@
 // src/index.js ships and compares them with the bytes at N threads.
 const os = require('node:os');
 const ort = require('onnxruntime-node');
-const { _toTensor, _copyFromTensor, _MODES } = require('../src/index.js');
+const { _toTensor, _copyFromTensor, _MODES, _sessionOptions } = require('../src/index.js');
 
 const arg = (n, d) => {
   const i = process.argv.indexOf('--' + n);
@@ -36,13 +36,8 @@ function synth(longest) {
   return { b, w, h };
 }
 
-// Copy of sessionOptions() in src/index.js (not exported); only intraOpNumThreads varies here.
-const options = (n) => ({
-  executionProviders: ['cpu'],
-  graphOptimizationLevel: 'all',
-  intraOpNumThreads: n,
-  executionMode: 'sequential',
-});
+// The CPU session options src/index.js ships (_sessionOptions); only intraOpNumThreads varies here.
+const options = (n) => ({ ..._sessionOptions(['cpu']), intraOpNumThreads: n });
 
 function toBytes(t) {
   const [, , oh, ow] = t.dims;

@@ -325,6 +325,7 @@ module.exports._mixLanczos = mixLanczos;
 module.exports._toTensor = toTensor;
 module.exports._gpuProviders = gpuProviders;
 module.exports._MODES = MODES;
+module.exports._sessionOptions = sessionOptions; // bench scripts reuse the shipped options
 // Tests only: forget cached sessions and GPU state.
 module.exports._reset = () => {
   cpuSessions.clear();

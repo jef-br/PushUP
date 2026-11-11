@@ -43,3 +43,24 @@ test('profile.js uses the src exports instead of its own copies', () => {
   assert.doesNotMatch(src, /0\.8\s*\*/, 'profile.js hard-codes the 0.8 share again');
   assert.doesNotMatch(src, /new Float32Array\(3 \*/, 'profile.js copies the tensor conversion again');
 });
+
+// Q8: the bench scripts create their sessions with the options src/ ships, not a copy.
+test('_sessionOptions gives the shipped CPU session options', () => {
+  const os = require('node:os');
+  const o = pushup._sessionOptions(['cpu']);
+  assert.deepStrictEqual(o.executionProviders, ['cpu']);
+  assert.strictEqual(o.intraOpNumThreads, os.availableParallelism());
+  assert.strictEqual(o.graphOptimizationLevel, 'all');
+  assert.strictEqual(o.executionMode, 'sequential');
+});
+
+test('profile.js and threads.js use _sessionOptions instead of their own copies', () => {
+  for (const name of ['profile.js', 'threads.js']) {
+    // Strip comments first, so a mention in a comment cannot satisfy or trip the checks.
+    const src = fs.readFileSync(path.join(__dirname, '..', 'bench', name), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\s\/\/.*$/gm, '');
+    assert.match(src, /_sessionOptions\(\['cpu'\]\)/, `${name} should call _sessionOptions(['cpu'])`);
+    assert.doesNotMatch(src, /graphOptimizationLevel/, `${name} sets graphOptimizationLevel itself`);
+    assert.doesNotMatch(src, /executionMode/, `${name} sets executionMode itself`);
+  }
+});
