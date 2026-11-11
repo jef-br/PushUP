@@ -281,6 +281,41 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] L1 — `package-lock.json` agrees with `package.json` (engines), with a test
+- **Goal:** the lockfile's root package still records `engines: { node: ">=18.14" }` while
+  `package.json` says `>=20.9` (D13), so every plain `npm install` rewrites the lockfile and
+  runs keep having to revert it (seen in PR #19 and the 2026-11-11 runs).
+- **Accept:** regenerate the lockfile's root entry with `npm install --package-lock-only`
+  (add `--onnxruntime-node-install-cuda=skip` if needed) so that `packages[""]` matches
+  `package.json` for `name`, `version`, `license`, `dependencies` and `engines`; no resolved
+  dependency version may change (`git diff package-lock.json` touches only the root entry —
+  if it would change anything else, stop and record that on this task). A new test
+  (`test/lockfile.test.js`) fails if those root fields differ from `package.json`. After the
+  change a plain `npm install` leaves `git status` clean. `npm test` passes.
+
+### [ ] Q8 — One copy of the ONNX session options for `src/` and the bench scripts
+- **Goal:** `bench/profile.js` and `bench/threads.js` copy the session options of
+  `sessionOptions()` in `src/index.js` (not exported), so they can drift from what ships.
+- **Accept:** export it test/bench-only as `_sessionOptions` (like `_toTensor`; no public API
+  change), use it in `bench/profile.js` (CPU) and `bench/threads.js` (overriding only
+  `intraOpNumThreads`), and update their "copy" comments. Extend `test/profile-sync.test.js`:
+  `_sessionOptions(['cpu'])` has `intraOpNumThreads === os.availableParallelism()`, and
+  neither bench script contains its own `graphOptimizationLevel` / `executionMode` literal.
+  Output and timing of `src/` unchanged (no behaviour change); `node bench/threads.js --runs 1
+  --sizes 400` and `node bench/profile.js --runs 1 --sizes 400` still run (paste their output in
+  the PR). `npm test` passes.
+
+### [ ] D6 — README "Development": the dev commands that exist now
+- **Goal:** README "Development" lists only `npm install` / `npm test`; the pack smoke test
+  (`scripts/pack-smoke.sh`, K1), the latency profile, cold-start and thread scripts
+  (`bench/profile.js`, `bench/cold.js`, `bench/threads.js`) and the sandbox install flag are
+  only in `CLAUDE.md`, `docs/PERF.md` or the scripts themselves.
+- **Accept:** README "Development" lists each of those commands with one line on what it does
+  and links `docs/PERF.md`; mentions `--onnxruntime-node-install-cuda=skip` for machines where
+  the CUDA download fails. Extend `test/readme-bench.test.js` (or a new test) so every
+  `scripts/<file>` path in the README must exist, like the existing `bench/<file>` check. Docs
+  and test only. `npm test` passes (README tests from R2 / Q6 / D3 still pass).
+
 ### [x] I5 — (done 2026-11-11, .github/workflows/ci.yml) CI: add Node 24 (current LTS) to the test matrix
 - **Goal:** CI tests Node 20 and 22 only. Node 24 is the active LTS (Node 20 reached
   end-of-life in April 2026), so `engines: >=20.9` is unverified on the version most users
