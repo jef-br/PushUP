@@ -296,7 +296,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `session.run` input's dims), ~0.5 s. No `src/` bug found. Mutation check: dropping the
   `ceil(target / 4)` floor fails (b); disabling the shrink fails (a) and (b).
 
-### [ ] L2 — Lockfile test: compare every dependency field, not just the five named in L1
+### [~] L2 — (in progress 2026-11-11, branch overnight/2026-11-11-L2) Lockfile test: compare every dependency field, not just the five named in L1
 - **Goal:** `test/lockfile.test.js` (L1) compares `name`, `version`, `license`, `dependencies`,
   `engines`. If `package.json` later gains `devDependencies`, `optionalDependencies`,
   `peerDependencies` or `bin`, the lockfile root could drift unnoticed (L1 adversary note).
