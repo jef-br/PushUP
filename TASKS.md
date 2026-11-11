@@ -296,7 +296,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   dropping 20 from the matrix is worth deciding (`package-lock.json` also still records
   `>=18.14`).
 
-### [ ] K1 — CI: smoke-test the packed tarball as an installed package
+### [~] K1 — (in progress 2026-11-11, branch overnight/2026-11-11-K1) CI: smoke-test the packed tarball as an installed package
 - **Goal:** `test/package.test.js` checks the tarball's file list, but nothing proves the
   published package works once installed (model paths resolved from `src/`, only
   `dependencies` available, no repo `node_modules`).
