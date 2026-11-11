@@ -281,6 +281,47 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] I5 — CI: add Node 24 (current LTS) to the test matrix
+- **Goal:** CI tests Node 20 and 22 only. Node 24 is the active LTS (Node 20 reached
+  end-of-life in April 2026), so `engines: >=20.9` is unverified on the version most users
+  install.
+- **Accept:** `.github/workflows/ci.yml` matrix is `[20, 22, 24]`; all three `test` jobs are
+  green on the PR (job names + result in the PR description). If Node 24 fails because a
+  dependency has no working prebuilt (`onnxruntime-node`, `sharp`), don't work around it:
+  record the failing step and error on this task and leave 24 out of the matrix. No change to
+  `engines` (dropping Node 20 is an owner decision; add a note to this task if it looks due).
+  Update the CI line in `PROGRESS.md`. `npm test` passes.
+
+### [ ] K1 — CI: smoke-test the packed tarball as an installed package
+- **Goal:** `test/package.test.js` checks the tarball's file list, but nothing proves the
+  published package works once installed (model paths resolved from `src/`, only
+  `dependencies` available, no repo `node_modules`).
+- **Accept:** a script `scripts/pack-smoke.sh` that runs `npm pack`, installs the `.tgz` into a
+  fresh temp directory outside the repo (`npm install <tgz>`), and there runs a small Node
+  script (written into the temp dir, so `require('pushup')` resolves from the installed copy,
+  not the repo) that upscales a synthetic 400×300 RGB image at factor 1.5 and asserts the
+  contract: resolves to `[arr_out, stride_out]` with `stride_out === 1800` and
+  `arr_out.length === 600 * 450 * 3`; exits non-zero on any failure and removes its temp dir.
+  A separate CI job `pack-smoke` (ubuntu, Node 22, npm cache) runs it; the existing `test` job
+  is unchanged. Run it in the sandbox too and put its output in the PR (CUDA download may need
+  `--onnxruntime-node-install-cuda=skip`; pass it through an env var or argument, documented
+  at the top of the script). `npm test` passes and both CI jobs are green.
+
+### [ ] P3 — Measure ONNX Runtime thread count vs latency (docs only)
+- **Goal:** `docs/PERF.md` lists thread tuning as an open idea. Sessions use
+  `intraOpNumThreads = os.availableParallelism()`; find out whether fewer threads are about as
+  fast (useful when a server runs several processes).
+- **Accept:** a script `bench/threads.js` that, for the `fast` model on CPU, creates one session
+  per thread count in {1, 2, N/2, N} (N = `os.availableParallelism()`, duplicates removed; other
+  session options as in `src/index.js`) and times `session.run` on a deterministic synthetic
+  whole-image input at 400×300 and 800×600 px: median of ≥ 5 runs after 1 warm-up. It also
+  reports, per thread count, whether the output bytes (after the same byte conversion as
+  `src/`) equal those at N threads, and the max absolute byte difference. A section
+  "Threads (P3, <date>)" in `docs/PERF.md` with the table, the machine line (CPU model, N, Node
+  and `onnxruntime-node` versions) and how to run the script. No `src/` change (changing the
+  default is an owner decision); if a smaller count is within 5% of N's time, write that up as a
+  follow-up idea in `docs/PERF.md`. `npm test` passes.
+
 ### [x] S1 — (done 2026-11-10, test/models.test.js) Test: shipped model files match the hashes in `models/LICENSES.md`
 - **Goal:** a corrupted or swapped `models/*.onnx` (or a stale hash in the licence file) should fail
   CI, not surface as a quality regression.
