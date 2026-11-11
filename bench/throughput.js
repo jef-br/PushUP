@@ -62,18 +62,25 @@ async function runConfig(procs, threads, size, seconds) {
       env: { ...process.env, P4_THREADS: String(threads), P4_SIZE: String(size) },
     }));
   }
-  await Promise.all(kids.map((k) => new Promise((resolve, reject) => {
-    k.once('message', resolve);
+  // A child that crashes (non-zero code) or is killed (signal, e.g. out of memory) rejects
+  // instead of leaving the parent waiting forever.
+  const died = (k) => new Promise((_, reject) => {
     k.once('error', reject);
-  })));
+    k.once('exit', (code, signal) => {
+      if (code !== 0 || signal) reject(new Error(`child exited (code ${code}, signal ${signal})`));
+    });
+  });
+  const deaths = kids.map(died);
+  deaths.forEach((d) => d.catch(() => {}));
+  await Promise.race([
+    Promise.all(kids.map((k) => new Promise((resolve) => k.once('message', resolve)))),
+    ...deaths,
+  ]);
   const startAt = Date.now();
   const endAt = startAt + seconds * 1000;
-  const results = kids.map((k) => new Promise((resolve, reject) => {
-    k.once('message', resolve);
-    k.once('exit', (code) => { if (code) reject(new Error(`child exited ${code}`)); });
-  }));
+  const results = kids.map((k) => new Promise((resolve) => k.once('message', resolve)));
   for (const k of kids) k.send({ endAt });
-  const res = await Promise.all(results);
+  const res = await Promise.race([Promise.all(results), ...deaths]);
   const lat = res.flatMap((r) => r.lat);
   const wall = (Math.max(...res.map((r) => r.finishedAt)) - startAt) / 1000; // includes the last run
   return { images: lat.length, wall, ips: lat.length / wall, med: median(lat) };

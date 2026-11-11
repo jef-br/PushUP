@@ -96,8 +96,9 @@ call, and the output bytes don't depend on the thread count.
 
 - **Throughput with one thread per process (measured in P4, see "Throughput" below).** In the
   P3 numbers, one thread spends about 11–20% fewer core-milliseconds per image than four threads.
-  Run concurrently on 4 vCPU, four 1-thread processes finish 9–15% more images per second than
-  one 4-thread process, but each image takes ~3.5× longer. Worth it only for batch jobs where
+  Run concurrently on 4 vCPU, four 1-thread processes finish 9–15% more model calls per second
+  than one 4-thread process (model call only, without tensor conversion, resize or mix), but each
+  image takes ~3.5× longer. Worth it only for batch jobs where
   per-image latency doesn't matter; it would need a way to set the thread count (a new setting
   or API: an owner decision).
 
@@ -186,9 +187,10 @@ Images finished per configuration: 71–84 at 400×300, only 16–22 at 800×600
 are rougher (one image more or less moves images/s by ~5%).
 
 **Result:** running N single-thread processes gives about 9–15% more throughput than one
-N-thread process on this 4-vCPU machine. That is a bit below what P3's core-ms figures alone
-would predict (11–20% fewer core-ms ≈ 12–25% more images/s), so contention between processes
-costs a few percent. The price is latency: each image takes ~3.5×
+N-thread process on this 4-vCPU machine (model call only). P3's core-ms figures alone would
+predict 12–25% (11–20% fewer core-ms); the measured gain is at the low end of that, but the
+difference is within the run-to-run spread above (up to ~7 points), so these runs can't say how
+much contention between processes costs. The price is latency: each image takes ~3.5×
 longer (1.5 s instead of 0.42 s at 400×300; 6.1–6.4 s instead of 1.8 s at 800×600). PushUP's
 default (one process, all cores, one call at a time) is the right choice for interactive use,
 where latency matters. A batch user who wants the extra ~10% would need a way to set the
