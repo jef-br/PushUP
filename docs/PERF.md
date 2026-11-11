@@ -8,12 +8,33 @@
 - `total` is the public `upscale()` call, median of N runs after one warm-up call (so the
   one-off ONNX session load is excluded). Stage columns replay the same steps in the
   script, median of N runs, and are indicative (they don't sum exactly to `total`).
-- Machine: 4 vCPU cloud container, Node 22, onnxruntime-node 1.31, sharp 0.35,
+- Machine: 4 vCPU cloud container (`cpus=4`), Node 22 (v22.23.4 in the 2026-11-11 run), onnxruntime-node 1.31, sharp 0.35,
   `DEFAULT_LANCZOS_MIX` 0.2, full input fed to the model. Re-measure on your own hardware.
 
 ## Results (median ms)
 
-Current (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5
+Current (2026-11-11, D4): model 4xLSDIRCompactC3, after the faster mix loop (P2).
+`PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/profile.js --runs 5` (factor 1.5), run twice;
+this is the second run. Same machine as above (4 vCPU cloud container, header
+`cpus=4 node=v22.23.4`):
+
+| Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix (incl. plain resize) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 443 | 1 | 428 | 13 | 9 | 13 |
+| 600×450 | 1014 | 2 | 932 | 31 | 12 | 21 |
+| 800×600 | 1854 | 3 | 1768 | 52 | 15 | 25 |
+
+First run, for the spread: 455 / 1038 / 1874 total; mix 13 / 23 / 27; the stage columns of the
+two runs differ by at most 4 ms (inference by up to 62 ms at 600 px).
+
+What changed since 2026-11-09, counting only differences larger than the spread between the two
+runs above: the **Lanczos mix** stage fell from 18 / 36 / 46 to 13 / 21 / 25 ms (P2's
+byte-identical loop). `toTensor` at 400 px reads 1 ms instead of 6 ms, with no code change (the
+older single figure was probably noise). The 800 px `total` is 62 ms higher (1792 → 1854), but
+its `inference` column moved by less than the spread, and totals measured in different sessions
+vary by ±100-200 ms (see below), so that is not a regression. Nothing else moved by more than the spread.
+
+Earlier (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5
 (800 px input is capped to a 1000 px output). `total` and the stage columns come from
 separate timed passes, so stages don't sum exactly to `total`; small stages are noisy:
 
