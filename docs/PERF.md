@@ -24,15 +24,22 @@ this is the second run. Same machine as above (4 vCPU cloud container, header
 | 600×450 | 1014 | 2 | 932 | 31 | 12 | 21 |
 | 800×600 | 1854 | 3 | 1768 | 52 | 15 | 25 |
 
-First run, for the spread: 455 / 1038 / 1874 total; mix 13 / 23 / 27; the stage columns of the
-two runs differ by at most 4 ms (inference by up to 62 ms at 600 px).
+First run, for the spread (the stage columns differ from the second run by at most 4 ms;
+`inference` by up to 62 ms at 600 px):
 
-What changed since 2026-11-09, counting only differences larger than the spread between the two
-runs above: the **Lanczos mix** stage fell from 18 / 36 / 46 to 13 / 21 / 25 ms (P2's
-byte-identical loop). `toTensor` at 400 px reads 1 ms instead of 6 ms, with no code change (the
-older single figure was probably noise). The 800 px `total` is 62 ms higher (1792 → 1854), but
-its `inference` column moved by less than the spread, and totals measured in different sessions
-vary by ±100-200 ms (see below), so that is not a regression. Nothing else moved by more than the spread.
+| Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix (incl. plain resize) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 455 | 1 | 416 | 12 | 6 | 13 |
+| 600×450 | 1038 | 2 | 994 | 32 | 12 | 23 |
+| 800×600 | 1874 | 3 | 1751 | 48 | 15 | 27 |
+
+What changed since 2026-11-09 (every cell that moved by more than the spread between the two
+runs above, checked cell by cell): the Lanczos mix fell 18 / 36 / 46 → 13 / 21 / 25 ms, the only
+change with a code cause (P2), while 400 px `toTensor` 6 → 1 and `inference` 399 → 428, 600 px
+`total` 1039 → 1014 and Lanczos resize 11 → 12, and 800 px `total` 1792 → 1854 and Lanczos resize
+17 → 15 ms moved with no code change in those stages, so they are session-to-session variation
+(single runs on two days; the 400 px inference rise is unexplained and worth re-measuring if it
+recurs).
 
 Earlier (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5
 (800 px input is capped to a 1000 px output). `total` and the stage columns come from
