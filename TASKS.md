@@ -281,7 +281,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [ ] K2 — CI `pack-smoke`: skip the CUDA download
+### [~] K2 — (in progress 2026-11-11, branch overnight/2026-11-11-K2) CI `pack-smoke`: skip the CUDA download
 - **Goal:** `pack-smoke` failed once on PR #55 (run 42948824529): the job log ends in
   `npm error ... ETIMEDOUT 150.171.109.152:443` (+ `ENETUNREACH` on IPv6) during the tarball's
   `npm install`, most likely onnxruntime-node's CUDA binaries download (a Microsoft host). The
