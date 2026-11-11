@@ -16,18 +16,29 @@ test('package-lock.json top level matches package.json name and version', () => 
   assert.strictEqual(lock.version, pkg.version);
 });
 
-// npm writes `bin` to the lockfile in its normalized form: a string becomes { <name>: path }
-// and a leading "./" is dropped (checked with npm 10.9). Compare against that form.
+// npm writes these fields to the lockfile in a normalized form (checked with npm 10.9.9,
+// `npm install --package-lock-only`): an empty object may be dropped (e.g. `optionalDependencies: {}`)
+// or kept (`devDependencies: {}`), so empty counts as absent on both sides; and `bin` given as a
+// string becomes { <name without @scope/>: path }, with "\" turned into "/" and a leading "./" dropped.
 function normalizeBin(bin, name) {
   if (bin === undefined) return undefined;
-  const obj = typeof bin === 'string' ? { [name]: bin } : bin;
-  return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, String(v).replace(/^\.\//, '')]));
+  const obj = typeof bin === 'string' ? { [name.replace(/^@[^/]+\//, '')]: bin } : bin;
+  return Object.fromEntries(Object.entries(obj)
+    .map(([k, v]) => [k, String(v).replace(/\\/g, '/').replace(/^\.\//, '')]));
+}
+function normalize(field, value, name) {
+  if (field === 'bin') value = normalizeBin(value, name);
+  if (value && typeof value === 'object' && Object.keys(value).length === 0) return undefined;
+  return value;
 }
 
-test('normalizeBin matches what npm writes to the lockfile', () => {
-  assert.deepStrictEqual(normalizeBin('./src/index.js', 'pushup'), { pushup: 'src/index.js' });
-  assert.deepStrictEqual(normalizeBin({ a: 'x.js' }, 'pushup'), { a: 'x.js' });
-  assert.strictEqual(normalizeBin(undefined, 'pushup'), undefined);
+test('normalize matches what npm writes to the lockfile', () => {
+  assert.deepStrictEqual(normalize('bin', './src/index.js', 'pushup'), { pushup: 'src/index.js' });
+  assert.deepStrictEqual(normalize('bin', './a\\b.js', '@sc/pk'), { pk: 'a/b.js' });
+  assert.deepStrictEqual(normalize('bin', { a: 'x.js' }, 'pushup'), { a: 'x.js' });
+  assert.strictEqual(normalize('bin', undefined, 'pushup'), undefined);
+  assert.strictEqual(normalize('optionalDependencies', {}, 'pushup'), undefined);
+  assert.deepStrictEqual(normalize('devDependencies', { a: '1' }, 'pushup'), { a: '1' });
 });
 
 test('package-lock.json root entry matches package.json', () => {
@@ -36,8 +47,7 @@ test('package-lock.json root entry matches package.json', () => {
   for (const field of ['name', 'version', 'license', 'dependencies', 'engines',
     'devDependencies', 'optionalDependencies', 'peerDependencies', 'peerDependenciesMeta', 'bin']) {
     // deepStrictEqual: absent on both sides (undefined === undefined) passes; absent on one side fails.
-    const want = field === 'bin' ? normalizeBin(pkg.bin, pkg.name) : pkg[field];
-    assert.deepStrictEqual(entry[field], want,
+    assert.deepStrictEqual(normalize(field, entry[field], pkg.name), normalize(field, pkg[field], pkg.name),
       `package-lock.json packages[""].${field} differs from package.json; run npm install --package-lock-only`);
   }
 });

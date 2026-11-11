@@ -306,9 +306,10 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `package.json` only (scratch copy, not committed). No change to `package.json` or the
   lockfile. `npm test` passes.
 - **Done (2026-11-11, PR #57):** the five fields are compared too; each one added to `package.json`
-  only fails the test (scratch, not committed). `bin` is compared in npm's normalized form (a string
-  becomes `{ <name>: path }`, leading `./` dropped; checked with npm 10.9.9), so a synced lockfile
-  passes.
+  only fails the test (scratch, not committed). Both sides are compared in npm's normalized form
+  (checked with npm 10.9.9): an empty object counts as absent (npm drops `optionalDependencies: {}`),
+  and a string `bin` becomes `{ <name without scope>: path }` with `\` → `/` and no leading `./`. A
+  lockfile that npm synced with all five fields set passes (review round 2).
 
 ### [ ] P4 — Measure throughput: one N-thread process vs several fewer-thread processes (docs only)
 - **Goal:** P3 found one thread spends ~11–20% fewer core-ms per image than N threads, so a
