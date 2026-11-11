@@ -111,3 +111,20 @@ plus the SD x4 upscaler (diffusion) on a crop. None reproduces Claid's suede gra
 diffusion model takes 65 s and 9 GB for a 128 px crop. UltraSharpV2-Lite beats Remacri on GMSD and PSNR at 1.7x the speed. The
 default model is not changed (owner rule); the switch is task T8, blocked on the owner.
 Numbers: `docs/TEXTURE.md`.
+
+## D15 — Keep one process using all cores; no thread/process setting without the owner (2026-11-11, P3/P4)
+
+- **Context:** sessions use `intraOpNumThreads = os.availableParallelism()` and run one call at a
+  time. `docs/PERF.md` listed thread tuning as an open idea.
+- **Evidence** (4 vCPU Xeon, `fast` model, model call only):
+  - [Threads](PERF.md#threads-p3-2026-11-11) (P3): one call is ~1.8× slower with 2 threads and
+    ~3.2–3.6× slower with 1 thread than with 4; output bytes are identical at every thread count.
+  - [Throughput](PERF.md#throughput-p4-2026-11-11) (P4): four 1-thread processes run at the same
+    time finish ~9–15% more model calls per second than one 4-thread process, but each image takes
+    ~3.5× longer.
+- **Decision:** keep the default (all cores, one call at a time): it gives the lowest latency per
+  call, which is what an interactive upscale needs. Don't add a thread-count or multi-process
+  setting: that is a new option (public behaviour), so it needs an owner-written task.
+- **Would reopen it:** an owner-requested batch mode (where ~10% more throughput beats latency),
+  or measurements on a many-core host showing that fewer threads per call lose little speed.
+
