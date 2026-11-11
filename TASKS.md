@@ -281,7 +281,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [~] K2 — (in progress 2026-11-11, branch overnight/2026-11-11-K2) CI `pack-smoke`: skip the CUDA download
+### [x] K2 — (done 2026-11-11, ci.yml `pack-smoke` env) CI `pack-smoke`: skip the CUDA download
 - **Goal:** `pack-smoke` failed once on PR #55 (run 42948824529): the job log ends in
   `npm error ... ETIMEDOUT 150.171.109.152:443` (+ `ENETUNREACH` on IPv6) during the tarball's
   `npm install`, most likely onnxruntime-node's CUDA binaries download (a Microsoft host). The
@@ -291,6 +291,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `PUSHUP_SMOKE_NPM_ARGS: --onnxruntime-node-install-cuda=skip` (job `env`); the `test` job is
   unchanged. The job is green on the PR and its log shows the flag reached `npm install` (the
   onnxruntime-node install output reports the CUDA download skipped, or shows no CUDA download). README "Development" stays accurate. `npm test` passes.
+- **Done (2026-11-11, PR #60):** job-level `env` sets the flag; `scripts/pack-smoke.sh` now echoes
+  `npm install extra args: …` so the log shows it reached the install. CI results in the PR.
 
 ### [ ] P5 — `bench/throughput.js`: stop the other children when one fails
 - **Goal:** when one child dies, the parent exits 1 but leaves the other children running until

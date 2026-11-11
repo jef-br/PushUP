@@ -33,6 +33,9 @@ jobs:
   pack-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # No GPU on the runner: skip onnxruntime-node's CUDA download (one less network dependency, K2).
+      PUSHUP_SMOKE_NPM_ARGS: --onnxruntime-node-install-cuda=skip
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
