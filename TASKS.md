@@ -296,7 +296,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `session.run` input's dims), ~0.5 s. No `src/` bug found. Mutation check: dropping the
   `ceil(target / 4)` floor fails (b); disabling the shrink fails (a) and (b).
 
-### [ ] L2 — Lockfile test: compare every dependency field, not just the five named in L1
+### [x] L2 — (done 2026-11-11, test/lockfile.test.js) Lockfile test: compare every dependency field, not just the five named in L1
 - **Goal:** `test/lockfile.test.js` (L1) compares `name`, `version`, `license`, `dependencies`,
   `engines`. If `package.json` later gains `devDependencies`, `optionalDependencies`,
   `peerDependencies` or `bin`, the lockfile root could drift unnoticed (L1 adversary note).
@@ -305,6 +305,11 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   absent on one side only fails). Show in the PR that it fails when one of them is added to
   `package.json` only (scratch copy, not committed). No change to `package.json` or the
   lockfile. `npm test` passes.
+- **Done (2026-11-11, PR #57):** the five fields are compared too; each one added to `package.json`
+  only fails the test (scratch, not committed). Both sides are compared in npm's normalized form
+  (checked with npm 10.9.9): an empty object counts as absent (npm drops `optionalDependencies: {}`),
+  and a string `bin` becomes `{ <name without scope>: path }` with `\` → `/` and no leading `./`. A
+  lockfile that npm synced with all five fields set passes (review round 2).
 
 ### [ ] P4 — Measure throughput: one N-thread process vs several fewer-thread processes (docs only)
 - **Goal:** P3 found one thread spends ~11–20% fewer core-ms per image than N threads, so a
