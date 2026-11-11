@@ -49,7 +49,7 @@ new block on Monday).
 - **Self-running project:** overnight runs follow `docs/OVERNIGHT_RUN.md`, backlog in
   `TASKS.md`, decisions in `docs/DECISIONS.md`, helpers in `.claude/agents/`.
 - **CI:** `npm ci` + `npm test` on push to `main` and every PR, Node 20 and 22 (Node 18
-  untested, so not in the matrix). — I1, `.github/workflows/ci.yml`
+  untested, so not in the matrix; Node 24 added in W46, I5). — I1, `.github/workflows/ci.yml`
 - **Publishing:** `files` whitelist, `prepublishOnly: npm test`, Node >=20.9. — D13
 - **Latency:** inference is ~90% of the time; speed has to come from the model runtime. —
   `docs/PERF.md`

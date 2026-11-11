@@ -281,7 +281,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [~] I5 — (in progress 2026-11-11, branch overnight/2026-11-11-I5) CI: add Node 24 (current LTS) to the test matrix
+### [x] I5 — (done 2026-11-11, .github/workflows/ci.yml) CI: add Node 24 (current LTS) to the test matrix
 - **Goal:** CI tests Node 20 and 22 only. Node 24 is the active LTS (Node 20 reached
   end-of-life in April 2026), so `engines: >=20.9` is unverified on the version most users
   install.
@@ -291,6 +291,10 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   record the failing step and error on this task and leave 24 out of the matrix. No change to
   `engines` (dropping Node 20 is an owner decision; add a note to this task if it looks due).
   Update the CI line in `PROGRESS.md`. `npm test` passes.
+- **Done (2026-11-11, PR #48):** matrix `[20, 22, 24]`, all three jobs green (see PR).
+  Owner note: Node 20 has been end-of-life since April 2026; raising `engines` to `>=22` and
+  dropping 20 from the matrix is worth deciding (`package-lock.json` also still records
+  `>=18.14`).
 
 ### [ ] K1 — CI: smoke-test the packed tarball as an installed package
 - **Goal:** `test/package.test.js` checks the tarball's file list, but nothing proves the
