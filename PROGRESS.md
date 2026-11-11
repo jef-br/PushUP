@@ -33,6 +33,8 @@ new block on Monday).
 - **CI:** Node 24 (current LTS) added; the matrix is now Node 20, 22 and 24. `engines` stays
   `>=20.9` (dropping Node 20, EOL since April 2026, is an owner decision). — I5,
   `.github/workflows/ci.yml`
+- **Threads:** keep `intraOpNumThreads = os.availableParallelism()`: fewer threads are slower
+  per call (near-linear scaling on 4 vCPU) and output bytes don't depend on it. — P3, `docs/PERF.md`
 
 ## 2026-W45 (Nov 2–8)
 
