@@ -232,7 +232,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   update `cpus` and the Node version from the script's header). One sentence on what changed since 2026-11-09 (stage by stage, only where the change
   is larger than the run-to-run difference between your two runs). No code change. `npm test` passes.
 
-### [ ] D5 — README results table for the current models
+### [~] D5 — (claimed 2026-11-11, branch overnight/2026-11-10-D5) README results table for the current models
 - **Goal:** the README "Benchmark" table shows only the earlier realesr-general models; the
   shipped `fast` model (4xLSDIRCompactC3 + 20% Lanczos) has no row in it (its numbers appear only
   in "Model choice"; reconcile them: if they differ, say which run is newer).
