@@ -313,7 +313,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Done (2026-11-11, PR #49):** local run ~9 s (`PUSHUP_SMOKE_NPM_ARGS=--onnxruntime-node-install-cuda=skip`);
   a forced failure (`PUSHUP_QUALITY=bogus`) exits 1 and still removes the temp dir. CI results in the PR.
 
-### [~] P3 — (in progress 2026-11-11, branch overnight/2026-11-11-P3) Measure ONNX Runtime thread count vs latency (docs only)
+### [x] P3 — (done 2026-11-11, bench/threads.js + docs/PERF.md "Threads") Measure ONNX Runtime thread count vs latency (docs only)
 - **Goal:** `docs/PERF.md` lists thread tuning as an open idea. Sessions use
   `intraOpNumThreads = os.availableParallelism()`; find out whether fewer threads are about as
   fast (useful when a server runs several processes).
@@ -327,6 +327,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   and `onnxruntime-node` versions) and how to run the script. No `src/` change (changing the
   default is an owner decision); if a smaller count is within 5% of N's time, write that up as a
   follow-up idea in `docs/PERF.md`. `npm test` passes.
+- **Done (2026-11-11, PR #50):** near-linear scaling on 4 vCPU (1 thread ~3.2–3.6× slower, 2 threads
+  ~1.8×); no count within 5% of N; bytes identical at every count. Unmeasured follow-up idea
+  (several 1-thread processes for throughput) written up in `docs/PERF.md`.
 
 ### [x] S1 — (done 2026-11-10, test/models.test.js) Test: shipped model files match the hashes in `models/LICENSES.md`
 - **Goal:** a corrupted or swapped `models/*.onnx` (or a stale hash in the licence file) should fail

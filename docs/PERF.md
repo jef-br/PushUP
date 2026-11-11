@@ -91,6 +91,16 @@ between runs). Output bytes are unchanged.
 
 Further speed has to come from inference: fp16/int8 quantisation, thread tuning, or a GPU.
 These change output quality or depend on hardware, so they need a human decision first.
+Thread tuning was measured in P3 (section "Threads" below): fewer threads are not faster per
+call, and the output bytes don't depend on the thread count.
+
+- **Throughput with one thread per process (not measured).** In the P3 numbers, one thread
+  spends about 11–20% fewer core-milliseconds per image than four threads (e.g. 400×300: 1367 ms
+  on one core vs 4 × 415 = 1660 core-ms). A server that runs several processes, each with
+  fewer threads, *might* finish more images per second than one process using all cores. P3
+  ran one session at a time, so this ignores contention for memory bandwidth and cache between
+  processes. It would need a concurrent-throughput measurement plus a way to set the thread
+  count (a new setting or API: an owner decision).
 
 ## Cold start (Q3, 2026-11-10)
 
@@ -117,3 +127,35 @@ ones, which is below the noise of one request. For `high` it would save about 1-
 process, small next to the 14-58 s per call, and `high` is meant for GPU machines anyway
 (not measured here). A pre-warm call would need a new API or a dummy upscale at start-up, so
 there is no case for it now.
+
+## Threads (P3, 2026-11-11)
+
+`node bench/threads.js [--runs 5] [--sizes 400,800] [--threads 1,2,4]` creates one CPU session
+of the `fast` model (`4xLSDIRCompactC3.onnx`) per `intraOpNumThreads` value. By default the
+values are {1, 2, N/2, N}, N = `os.availableParallelism()`, with duplicates removed; the other
+session options are as in `src/index.js`. It times `session.run` on a deterministic synthetic
+whole-image input (4:3, gradient + noise): median of the runs after one warm-up. Only the model
+call is timed, so tensor conversion, Lanczos resizing and the mix are not included. Each count's
+output is converted to bytes with `_copyFromTensor` (the function `src/` ships) and compared
+with the bytes at N threads.
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, N = 4 (4 vCPU cloud container), Node v22.23.4,
+onnxruntime-node 1.31.1. `node bench/threads.js --runs 7`, run twice. Median ms, and the
+ratio to N threads:
+
+| Input | Threads | Run 1 ms | vs N | Run 2 ms | vs N | Bytes equal to N | Max abs byte diff |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| 400×300 | 1 | 1367 | 3.30× | 1589 | 3.37× | yes | 0 |
+| 400×300 | 2 | 773 | 1.86× | 834 | 1.77× | yes | 0 |
+| 400×300 | 4 (N) | 415 | 1.00× | 471 | 1.00× | — | — |
+| 800×600 | 1 | 5999 | 3.20× | 6135 | 3.55× | yes | 0 |
+| 800×600 | 2 | 3389 | 1.81× | 3192 | 1.85× | yes | 0 |
+| 800×600 | 4 (N) | 1876 | 1.00× | 1728 | 1.00× | — | — |
+
+**Result:** latency scales almost linearly with the thread count: 2 threads are ~1.8× and
+1 thread is ~3.2–3.6× slower than 4. No smaller count is within 5% of N's time, so the
+current default (`intraOpNumThreads = os.availableParallelism()`) stays the fastest setting
+for one call. The output bytes are identical at every thread count, so the thread count doesn't
+change results. Only a 4-vCPU machine was measured; on many-core hosts the curve may flatten,
+so re-run the script there. For several processes per host, see the throughput idea under
+"Follow-up ideas".
