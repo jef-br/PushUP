@@ -282,20 +282,23 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
 ### [ ] K2 — CI `pack-smoke`: skip the CUDA download
-- **Goal:** `pack-smoke` failed once on PR #55 (run 42948824529) because `npm install` of the
-  tarball timed out fetching onnxruntime-node's CUDA binaries from a Microsoft host. The runner
-  has no GPU, so the smoke test doesn't need them; the download only adds a network dependency.
+- **Goal:** `pack-smoke` failed once on PR #55 (run 42948824529): the job log ends in
+  `npm error ... ETIMEDOUT 150.171.109.152:443` (+ `ENETUNREACH` on IPv6) during the tarball's
+  `npm install`, most likely onnxruntime-node's CUDA binaries download (a Microsoft host). The
+  runner has no GPU, so the smoke test doesn't need them; the download only adds a network
+  dependency.
 - **Accept:** the `pack-smoke` job in `.github/workflows/ci.yml` sets
   `PUSHUP_SMOKE_NPM_ARGS: --onnxruntime-node-install-cuda=skip` (job `env`); the `test` job is
-  unchanged. The job is green on the PR and its log shows the flag reached `npm install` (e.g. no
-  CUDA download step / the install line). README "Development" stays accurate. `npm test` passes.
+  unchanged. The job is green on the PR and its log shows the flag reached `npm install` (the
+  onnxruntime-node install output reports the CUDA download skipped, or shows no CUDA download). README "Development" stays accurate. `npm test` passes.
 
 ### [ ] P5 — `bench/throughput.js`: stop the other children when one fails
 - **Goal:** when one child dies, the parent exits 1 but leaves the other children running until
   their own deadline (P4 adversary note).
 - **Accept:** on any child failure the parent kills the remaining children before exiting (and
   on SIGINT). Show in the PR: a forced crash in model load and a SIGKILL mid-run both exit 1 and
-  `ps` shows no `throughput.js --child` process afterwards; a normal
+  `ps` shows no `throughput.js --child` process afterwards, and the same after a SIGINT (Ctrl-C)
+  to the parent mid-run; a normal
   `node bench/throughput.js --seconds 3 --sizes 400` still exits 0. No `src/` change. `npm test`
   passes.
 
