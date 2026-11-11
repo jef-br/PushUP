@@ -281,6 +281,42 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
+### [ ] R7 — Test: the shrink-before-model path (`modelInputMax`) in `_run`
+- **Goal:** `run()` can shrink the input before the model (`opts.modelInputMax`, used by
+  `bench/bench.js` methods like `sr-300`), never below `ceil(target / 4)`. No test covers it.
+- **Accept:** new tests (new file `test/model-input.test.js`, `fast` model on CPU, small images
+  with short side ≤ 16 so it runs in seconds) via `_run`: (a) with `modelInputMax` 200 on a
+  400 px input at factor 1.0 the output has the contract size and stride; (b) the model really
+  sees the shrunk input: stub or wrap `session.run` (as `test/device*.test.js` do) and assert
+  the tensor's largest side is `max(ceil(target / 4), modelInputMax)`, e.g. 250 for a 400 px
+  input at factor 2.5 (target 1000) with `modelInputMax` 100; (c) `modelInputMax` ≥ the input's
+  largest side leaves the model input at full size. No `src/` change unless a test exposes a
+  real bug (say so in the PR). `npm test` passes.
+
+### [ ] L2 — Lockfile test: compare every dependency field, not just the five named in L1
+- **Goal:** `test/lockfile.test.js` (L1) compares `name`, `version`, `license`, `dependencies`,
+  `engines`. If `package.json` later gains `devDependencies`, `optionalDependencies`,
+  `peerDependencies` or `bin`, the lockfile root could drift unnoticed (L1 adversary note).
+- **Accept:** the test also compares `devDependencies`, `optionalDependencies`,
+  `peerDependencies`, `peerDependenciesMeta` and `bin` (absent on both sides counts as equal;
+  absent on one side only fails). Show in the PR that it fails when one of them is added to
+  `package.json` only (scratch copy, not committed). No change to `package.json` or the
+  lockfile. `npm test` passes.
+
+### [ ] P4 — Measure throughput: one N-thread process vs several fewer-thread processes (docs only)
+- **Goal:** P3 found one thread spends ~11–20% fewer core-ms per image than N threads, so a
+  server running several processes *might* get more images/s. That ignored contention
+  between processes. Measure it before anyone proposes a setting.
+- **Accept:** a script `bench/throughput.js` that, for the `fast` model on CPU, runs for a
+  fixed wall time (default 30 s, after warm-up) (a) one process with
+  `intraOpNumThreads = N` and (b) N processes with 1 thread each (and N/2 processes with 2
+  threads if N ≥ 4), all on the same synthetic 400×300 and 800×600 inputs, timing only
+  `session.run` (session options from `_sessionOptions`), and reports images/s per
+  configuration and per-image latency (median). A section "Throughput (P4, <date>)" in
+  `docs/PERF.md` with the table, machine line and how to run; it updates the P3 follow-up
+  idea with the result. No `src/` change (a thread setting would be an owner decision).
+  `npm test` passes.
+
 ### [x] L1 — (done 2026-11-11, test/lockfile.test.js) `package-lock.json` agrees with `package.json` (engines), with a test
 - **Goal:** the lockfile's root package still records `engines: { node: ">=18.14" }` while
   `package.json` says `>=20.9` (D13), so every plain `npm install` rewrites the lockfile and
