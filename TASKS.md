@@ -281,7 +281,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [~] R7 — (in progress 2026-11-11, branch overnight/2026-11-11-R7) Test: the shrink-before-model path (`modelInputMax`) in `_run`
+### [x] R7 — (done 2026-11-11, test/model-input.test.js) Test: the shrink-before-model path (`modelInputMax`) in `_run`
 - **Goal:** `run()` can shrink the input before the model (`opts.modelInputMax`, used by
   `bench/bench.js` methods like `sr-300`), never below `ceil(target / 4)`. No test covers it.
 - **Accept:** new tests (new file `test/model-input.test.js`, `fast` model on CPU, small images
@@ -292,6 +292,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   input at factor 2.5 (target 1000) with `modelInputMax` 100; (c) `modelInputMax` ≥ the input's
   largest side leaves the model input at full size. No `src/` change unless a test exposes a
   real bug (say so in the PR). `npm test` passes.
+- **Done (2026-11-11, PR #56):** three tests (wrapped `InferenceSession.create` records each
+  `session.run` input's dims), ~0.5 s. No `src/` bug found. Mutation check: dropping the
+  `ceil(target / 4)` floor fails (b); disabling the shrink fails (a) and (b).
 
 ### [ ] L2 — Lockfile test: compare every dependency field, not just the five named in L1
 - **Goal:** `test/lockfile.test.js` (L1) compares `name`, `version`, `license`, `dependencies`,
