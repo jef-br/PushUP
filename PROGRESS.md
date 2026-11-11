@@ -30,6 +30,9 @@ new block on Monday).
   `main` is the only long-lived branch.
 - **Network / permissions:** PushUP environment allows Hugging Face and `claid.ai`;
   `Bash(curl:*)` and `mcp__github__merge_pull_request` are allowed in `.claude/settings.json`.
+- **CI:** Node 24 (current LTS) added; the matrix is now Node 20, 22 and 24. `engines` stays
+  `>=20.9` (dropping Node 20, EOL since April 2026, is an owner decision). — I5,
+  `.github/workflows/ci.yml`
 
 ## 2026-W45 (Nov 2–8)
 
@@ -46,7 +49,7 @@ new block on Monday).
 - **Self-running project:** overnight runs follow `docs/OVERNIGHT_RUN.md`, backlog in
   `TASKS.md`, decisions in `docs/DECISIONS.md`, helpers in `.claude/agents/`.
 - **CI:** `npm ci` + `npm test` on push to `main` and every PR, Node 20 and 22 (Node 18
-  untested, so not in the matrix). — I1, `.github/workflows/ci.yml`
+  untested, so not in the matrix; Node 24 added in W46, I5). — I1, `.github/workflows/ci.yml`
 - **Publishing:** `files` whitelist, `prepublishOnly: npm test`, Node >=20.9. — D13
 - **Latency:** inference is ~90% of the time; speed has to come from the model runtime. —
   `docs/PERF.md`
