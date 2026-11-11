@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const ort = require('onnxruntime-node');
 const sharp = require('sharp');
-const { upscale, _copyFromTensor, _mixLanczos, _toTensor, _MODES } = require('../src/index.js');
+const { upscale, _copyFromTensor, _mixLanczos, _toTensor, _MODES, _sessionOptions } = require('../src/index.js');
 
 const arg = (n, d) => {
   const i = process.argv.indexOf('--' + n);
@@ -30,10 +30,11 @@ function synth(longest) {
   return { b, w, h };
 }
 
-// NOTE: the tensor conversion, the byte conversion, the mix loop and the mix share come from
-// src/index.js (_toTensor, _copyFromTensor, _mixLanczos, _MODES.fast.lanczosMix), so they cannot
-// drift. The rest of the stage replay (session options, resize calls) is still a copy: update it if the
-// pipeline changes. This profile measures the `fast` model only.
+// NOTE: the tensor conversion, the byte conversion, the mix loop, the mix share and the CPU
+// session options come from src/index.js (_toTensor, _copyFromTensor, _mixLanczos,
+// _MODES.fast.lanczosMix, _sessionOptions), so they cannot drift. The rest of the stage replay
+// (resize calls) is still a copy: update it if the pipeline changes. This profile measures the
+// `fast` model only.
 const mix = _MODES.fast.lanczosMix;
 async function stages(rgb, w, h, outW, outH) {
   const t = {};
@@ -64,7 +65,7 @@ let session;
 (async () => {
   session = await ort.InferenceSession.create(
     path.join(__dirname, '..', 'models', '4xLSDIRCompactC3.onnx'),
-    { graphOptimizationLevel: 'all', intraOpNumThreads: os.availableParallelism(), executionMode: 'sequential' });
+    _sessionOptions(['cpu']));
   console.log(`cpus=${os.availableParallelism()} node=${process.version} factor=${factor} runs=${runs} (median ms)`);
   console.log('size      total(upscale)  toTensor  inference  fromTensor  resizeDown  lanczosMix');
   for (const L of sizes) {

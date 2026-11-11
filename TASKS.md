@@ -296,7 +296,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   root `engines` `>=18.14` → `>=20.9`; no resolved version changed. The new test fails on the old
   lockfile (`engines` differs) and passes now; a plain `npm install` afterwards leaves `git status` clean.
 
-### [ ] Q8 — One copy of the ONNX session options for `src/` and the bench scripts
+### [x] Q8 — (done 2026-11-11, `_sessionOptions` + test/profile-sync.test.js) One copy of the ONNX session options for `src/` and the bench scripts
 - **Goal:** `bench/profile.js` and `bench/threads.js` copy the session options of
   `sessionOptions()` in `src/index.js` (not exported), so they can drift from what ships.
 - **Accept:** export it test/bench-only as `_sessionOptions` (like `_toTensor`; no public API
@@ -307,6 +307,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   Output and timing of `src/` unchanged (no behaviour change); `node bench/threads.js --runs 1
   --sizes 400` and `node bench/profile.js --runs 1 --sizes 400` still run (paste their output in
   the PR). `npm test` passes.
+- **Done (2026-11-11, PR #53):** `src/index.js` exports `_sessionOptions` (one line, no behaviour
+  change); both bench scripts use it. The new script-check test fails against the old bench scripts
+  (the value test needs the new export, so it fails only against the old `src/`); both pass now.
 
 ### [ ] D6 — README "Development": the dev commands that exist now
 - **Goal:** README "Development" lists only `npm install` / `npm test`; the pack smoke test
