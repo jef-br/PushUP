@@ -311,7 +311,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   change); both bench scripts use it. The new script-check test fails against the old bench scripts
   (the value test needs the new export, so it fails only against the old `src/`); both pass now.
 
-### [ ] D6 — README "Development": the dev commands that exist now
+### [~] D6 — (in progress 2026-11-11, branch overnight/2026-11-11-D6) README "Development": the dev commands that exist now
 - **Goal:** README "Development" lists only `npm install` / `npm test`; the pack smoke test
   (`scripts/pack-smoke.sh`, K1), the latency profile, cold-start and thread scripts
   (`bench/profile.js`, `bench/cold.js`, `bench/threads.js`) and the sandbox install flag are
