@@ -296,7 +296,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   root `engines` `>=18.14` → `>=20.9`; no resolved version changed. The new test fails on the old
   lockfile (`engines` differs) and passes now; a plain `npm install` afterwards leaves `git status` clean.
 
-### [ ] Q8 — One copy of the ONNX session options for `src/` and the bench scripts
+### [~] Q8 — (in progress 2026-11-11, branch overnight/2026-11-11-Q8) One copy of the ONNX session options for `src/` and the bench scripts
 - **Goal:** `bench/profile.js` and `bench/threads.js` copy the session options of
   `sessionOptions()` in `src/index.js` (not exported), so they can drift from what ships.
 - **Accept:** export it test/bench-only as `_sessionOptions` (like `_toTensor`; no public API
