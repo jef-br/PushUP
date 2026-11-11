@@ -174,6 +174,26 @@ python bench/build_testset.py abo.parquet lamoda.parquet bench/out/set
 node bench/bench.js bench/out/set --methods lanczos,sr-full
 ```
 
+The usual route, as the overnight runs do it: `bench/fetch_testset.sh` downloads the source
+parquet files from Hugging Face and builds `bench/out/set` (60 images) and `bench/out/sub20`
+(20 images, the quality-gate subset). To check that a change doesn't lower quality, score
+`sub20` before and after it and compare the two runs:
+
+```bash
+bash bench/fetch_testset.sh
+PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/bench.js bench/out/sub20 --sizes 400,800 --methods lanczos,sr-full --json > before.json
+# ...make the change...
+PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/bench.js bench/out/sub20 --sizes 400,800 --methods lanczos,sr-full --json > after.json
+node bench/gate.js before.json after.json   # GATE: PASS / FAIL (exit 0 / 1)
+```
+
+The gate is defined for CPU and the `fast` mode, hence the two variables (on a GPU machine
+`auto` would score `high`). `--json` prints the scores as one JSON object instead of the
+table; `--by-source` adds rows per image source (`abo`, `lamoda`), so you can see whether an
+average hides a regression in one of them. `bench/gate.js` applies the limits from
+`docs/OVERNIGHT_RUN.md` §2 (PSNR may drop at most 0.02 dB, SSIM 0.001, GMSD may rise 0.001)
+to every size; it checks the overall rows only, not the per-source ones.
+
 Results on a 4-core CPU for the earlier realesr-general models (60 images). Higher PSNR/SSIM is better;
 lower GMSD is better (GMSD compares edges, which tracks perceived
 sharpness).

@@ -1,5 +1,5 @@
 'use strict';
-// Usage: node bench/bench.js <dir-of-HR-images> [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--json]
+// Usage: node bench/bench.js <dir-of-HR-images> [--methods lanczos,sr-full,...] [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--json]
 // --by-source adds rows grouped by file-name prefix (abo_, lamoda_) after the overall table.
 // --json prints one JSON object {images, rows:[{setting, psnr, ssim, gmsd, ms}]} (unrounded) instead of the table.
 const fs = require('node:fs');
