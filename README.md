@@ -209,9 +209,10 @@ on a 4-core CPU (higher PSNR/SSIM is better, lower GMSD is better):
 | | **4xLSDIRCompactC3 + 20% Lanczos (default)** | **36.53** | **0.962** | **0.046** | **1.6 s** |
 
 The "Model choice" figures above come from the 20-image subset, so they differ from these
-60-image ones; both measure the same model, and this 2026-11-11 run is the newer measurement.
-The Lanczos quality metrics here match the earlier 60-image run exactly, so the set and
-protocol are unchanged.
+60-image ones; both measure the same model, and this 2026-11-11 run is the newer measurement
+(the "Model choice" table was added to this README on 2026-11-06). Times also vary between
+sessions and machine load, so compare times only within one table. The Lanczos quality
+metrics here match the earlier 60-image run exactly, so the set and protocol are unchanged.
 
 Earlier results on a 4-core CPU for the realesr-general models (60 images). Higher PSNR/SSIM is better;
 lower GMSD is better (GMSD compares edges, which tracks perceived
