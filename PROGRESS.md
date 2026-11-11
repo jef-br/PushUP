@@ -35,6 +35,9 @@ new block on Monday).
   `.github/workflows/ci.yml`
 - **Threads:** keep `intraOpNumThreads = os.availableParallelism()`: fewer threads are slower
   per call (near-linear scaling on 4 vCPU) and output bytes don't depend on it. — P3, `docs/PERF.md`
+- **Throughput:** N one-thread processes give ~9–15% more images/s than one N-thread process
+  but ~3.5× the latency per image; default unchanged, a thread setting would be an owner
+  decision. — P4, `docs/PERF.md`
 
 ## 2026-W45 (Nov 2–8)
 

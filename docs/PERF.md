@@ -94,13 +94,12 @@ These change output quality or depend on hardware, so they need a human decision
 Thread tuning was measured in P3 (section "Threads" below): fewer threads are not faster per
 call, and the output bytes don't depend on the thread count.
 
-- **Throughput with one thread per process (not measured).** In the P3 numbers, one thread
-  spends about 11–20% fewer core-milliseconds per image than four threads (e.g. 400×300: 1367 ms
-  on one core vs 4 × 415 = 1660 core-ms). A server that runs several processes, each with
-  fewer threads, *might* finish more images per second than one process using all cores. P3
-  ran one session at a time, so this ignores contention for memory bandwidth and cache between
-  processes. It would need a concurrent-throughput measurement plus a way to set the thread
-  count (a new setting or API: an owner decision).
+- **Throughput with one thread per process (measured in P4, see "Throughput" below).** In the
+  P3 numbers, one thread spends about 11–20% fewer core-milliseconds per image than four threads.
+  Run concurrently on 4 vCPU, four 1-thread processes finish 9–15% more images per second than
+  one 4-thread process, but each image takes ~3.5× longer. Worth it only for batch jobs where
+  per-image latency doesn't matter; it would need a way to set the thread count (a new setting
+  or API: an owner decision).
 
 ## Cold start (Q3, 2026-11-10)
 
@@ -159,3 +158,39 @@ for one call. The output bytes are identical at every thread count, so the threa
 change results. Only a 4-vCPU machine was measured; on many-core hosts the curve may flatten,
 so re-run the script there. For several processes per host, see the throughput idea under
 "Follow-up ideas".
+
+## Throughput (P4, 2026-11-11)
+
+`node bench/throughput.js [--seconds 30] [--sizes 400,800]` compares one process using all N
+threads with several processes using fewer threads each, all running at the same time:
+1 × N, N/2 × 2 (when N ≥ 4) and N × 1 (processes × threads). Each process creates one CPU
+session of the `fast` model (`_sessionOptions` from `src/`, only `intraOpNumThreads` changed),
+does one warm-up run, waits until all processes are ready, then runs `session.run` on the same
+deterministic synthetic whole-image input in a loop for the given wall time. Only `session.run`
+is timed (no tensor conversion, resize or mix). `images/s` = images finished by all processes /
+wall time until the last one finished (a run that started before the deadline still counts).
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, N = 4 (4 vCPU cloud container), Node v22.23.4,
+onnxruntime-node 1.31.1. `node bench/throughput.js --seconds 30`, run twice:
+
+| Input | Processes × threads | Run 1 images/s | vs 1 × 4 | Run 2 images/s | vs 1 × 4 | Median ms per image (run 1 / 2) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 1 × 4 | 2.35 | 1.00× | 2.34 | 1.00× | 418 / 423 |
+| 400×300 | 2 × 2 | 2.46 | 1.05× | 2.57 | 1.10× | 803 / 783 |
+| 400×300 | 4 × 1 | 2.55 | 1.09× | 2.69 | 1.15× | 1541 / 1497 |
+| 800×600 | 1 × 4 | 0.53 | 1.00× | 0.56 | 1.00× | 1860 / 1773 |
+| 800×600 | 2 × 2 | 0.58 | 1.09× | 0.57 | 1.02× | 3398 / 3418 |
+| 800×600 | 4 × 1 | 0.61 | 1.15× | 0.63 | 1.12× | 6104 / 6356 |
+
+Images finished per configuration: 71–84 at 400×300, only 16–22 at 800×600, so the 800 px rows
+are rougher (one image more or less moves images/s by ~5%).
+
+**Result:** running N single-thread processes gives about 9–15% more throughput than one
+N-thread process on this 4-vCPU machine. That is a bit below what P3's core-ms figures alone
+would predict (11–20% fewer core-ms ≈ 12–25% more images/s), so contention between processes
+costs a few percent. The price is latency: each image takes ~3.5×
+longer (1.5 s instead of 0.42 s at 400×300; 6.1–6.4 s instead of 1.8 s at 800×600). PushUP's
+default (one process, all cores, one call at a time) is the right choice for interactive use,
+where latency matters. A batch user who wants the extra ~10% would need a way to set the
+thread count, which PushUP doesn't offer; adding one is an owner decision. Only one 4-vCPU
+machine was measured; re-run on the target hardware.
