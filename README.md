@@ -258,6 +258,18 @@ case, so the model always gets the full-size input.
 ## Development
 
 ```bash
-npm install
-npm test
+npm install                           # if the CUDA download fails: npm install --onnxruntime-node-install-cuda=skip
+npm test                              # unit + contract tests (node --test)
+bash scripts/pack-smoke.sh            # pack the package, install it in a temp dir, run one upscale there
+node bench/profile.js                 # per-stage latency of the fast pipeline (synthetic images)
+node bench/cold.js                    # first-call vs warm latency, each in a fresh process
+node bench/threads.js                 # inference time vs ONNX Runtime thread count
 ```
+
+- `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download.
+  Use it where that download is blocked or not wanted; PushUP then runs on the CPU (see
+  "Quality modes and GPU").
+- `scripts/pack-smoke.sh` is what CI's `pack-smoke` job runs; pass extra `npm install`
+  arguments in `PUSHUP_SMOKE_NPM_ARGS` (e.g. the CUDA skip flag above).
+- The latency scripts, their options and results are in [docs/PERF.md](docs/PERF.md).
+  Quality benchmarking is described under "Benchmark" above.
