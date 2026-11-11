@@ -30,6 +30,9 @@ new block on Monday).
   `main` is the only long-lived branch.
 - **Network / permissions:** PushUP environment allows Hugging Face and `claid.ai`;
   `Bash(curl:*)` and `mcp__github__merge_pull_request` are allowed in `.claude/settings.json`.
+- **CI:** Node 24 (current LTS) added; the matrix is now Node 20, 22 and 24. `engines` stays
+  `>=20.9` (dropping Node 20, EOL since April 2026, is an owner decision). — I5,
+  `.github/workflows/ci.yml`
 
 ## 2026-W45 (Nov 2–8)
 
