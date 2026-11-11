@@ -304,7 +304,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `node bench/throughput.js --seconds 3 --sizes 400` still exits 0. No `src/` change. `npm test`
   passes.
 
-### [ ] D7 — `docs/DECISIONS.md`: record the thread-count decisions from P3/P4
+### [~] D7 — (in progress 2026-11-11, branch overnight/2026-11-11-D7) `docs/DECISIONS.md`: record the thread-count decisions from P3/P4
 - **Goal:** P3 and P4 decided to keep `intraOpNumThreads = os.availableParallelism()` and not to
   add a thread/process setting without the owner; that is in `PROGRESS.md` and `docs/PERF.md` but
   has no D-number, unlike other decisions (P4 adversary note).
