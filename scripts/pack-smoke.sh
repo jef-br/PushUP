@@ -18,6 +18,7 @@ echo "packed $tgz"
 
 cd "$tmp"
 npm init -y >/dev/null
+echo "npm install extra args: ${PUSHUP_SMOKE_NPM_ARGS:-(none)}"
 # shellcheck disable=SC2086
 npm install --no-audit --no-fund ${PUSHUP_SMOKE_NPM_ARGS:-} "./$tgz"
 
