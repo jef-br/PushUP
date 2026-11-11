@@ -281,7 +281,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [split] T1 — Text-on-packaging upscaler → see T1a (measure) and T1b (build).
 
-### [ ] R7 — Test: the shrink-before-model path (`modelInputMax`) in `_run`
+### [~] R7 — (in progress 2026-11-11, branch overnight/2026-11-11-R7) Test: the shrink-before-model path (`modelInputMax`) in `_run`
 - **Goal:** `run()` can shrink the input before the model (`opts.modelInputMax`, used by
   `bench/bench.js` methods like `sr-300`), never below `ceil(target / 4)`. No test covers it.
 - **Accept:** new tests (new file `test/model-input.test.js`, `fast` model on CPU, small images
