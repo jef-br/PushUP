@@ -588,7 +588,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   synthetic dimensions (no model needed). Numbers for `lanczos` at 400 px on `sub20` go in the PR
   description (needs `bash bench/fetch_testset.sh`; if that fails, mark `[blocked]` with the error).
 
-### [ ] R8 — Test: output is deterministic (byte-identical across repeated calls)
+### [~] R8 — (started 2026-11-12) Test: output is deterministic (byte-identical across repeated calls)
 - **Goal:** caching of sessions and the call queue must not make results depend on call history;
   P-tasks relied on "byte-identical" comparisons without a test that a repeated call matches.
 - **Accept:** `test/determinism.test.js`: for a fixed synthetic image, `fast` mode at 400 px,
