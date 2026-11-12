@@ -30,7 +30,20 @@ function synth(longest) {
   return { b, w, h };
 }
 
+// Every forked child, so the parent can stop them all when one fails or on Ctrl-C (task P5).
+const live = new Set();
+function killAll() {
+  for (const k of live) { try { k.kill('SIGKILL'); } catch { /* already gone */ } }
+  live.clear();
+}
+for (const sig of ['SIGINT', 'SIGTERM']) {
+  process.on(sig, () => { killAll(); process.exit(sig === 'SIGINT' ? 130 : 143); });
+}
+
 async function child() {
+  // Test hook (P5): P5_FAIL_CHILD=load crashes (child 0 only) before the session is created; =run after the warm-up.
+  const failMe = process.env.P5_CHILD_INDEX === '0' ? process.env.P5_FAIL_CHILD : '';
+  if (failMe === 'load') throw new Error('forced crash in model load');
   const ort = require('onnxruntime-node');
   const { _toTensor, _MODES, _sessionOptions } = require('../src/index.js');
   const threads = Number(process.env.P4_THREADS);
@@ -39,6 +52,7 @@ async function child() {
     { ..._sessionOptions(['cpu']), intraOpNumThreads: threads });
   const feed = () => ({ [session.inputNames[0]]: _toTensor(b, w, 0, 0, w, h) });
   await session.run(feed()); // warm-up
+  if (failMe === 'run') throw new Error('forced crash after warm-up');
   process.send({ ready: true });
   const { endAt } = await new Promise((resolve) => process.once('message', resolve));
   const lat = [];
@@ -59,7 +73,7 @@ async function runConfig(procs, threads, size, seconds) {
   const kids = [];
   for (let i = 0; i < procs; i++) {
     kids.push(fork(__filename, ['--child'], {
-      env: { ...process.env, P4_THREADS: String(threads), P4_SIZE: String(size) },
+      env: { ...process.env, P5_CHILD_INDEX: String(i), P4_THREADS: String(threads), P4_SIZE: String(size) },
     }));
   }
   // A child that crashes (non-zero code) or is killed (signal, e.g. out of memory) rejects
@@ -70,8 +84,18 @@ async function runConfig(procs, threads, size, seconds) {
       if (code !== 0 || signal) reject(new Error(`child exited (code ${code}, signal ${signal})`));
     });
   });
+  kids.forEach((k) => { live.add(k); k.once('exit', () => live.delete(k)); });
   const deaths = kids.map(died);
   deaths.forEach((d) => d.catch(() => {}));
+  try {
+    return await measure(kids, deaths, seconds);
+  } catch (e) {
+    killAll(); // a child failed: stop the surviving ones before the parent exits 1
+    throw e;
+  }
+}
+
+async function measure(kids, deaths, seconds) {
   await Promise.race([
     Promise.all(kids.map((k) => new Promise((resolve) => k.once('message', resolve)))),
     ...deaths,
