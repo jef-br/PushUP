@@ -214,8 +214,9 @@ to use). Same machine as above (4 vCPU Xeon @ 2.1 GHz, 16 GB, Node 22.23). MB:
 | `high` | 400×300 | 1.5 | 68 | 898 | 902 | 915 |
 
 - `fast` needs roughly 0.2 GB at 400 px and 0.57 GB at 800 px for one call; the factor (1.0 vs
-  1.5) changes it by under 1%. The memory is mostly the whole-image 4× model output
-  (800 px input → 3200×2400×3 floats), so it grows with the input pixel count.
+  1.5) changes it by under 1%. It grows with the input pixel count (the 4× model output
+  alone is 3200×2400×3 floats ≈ 92 MB at 800 px; the rest is ONNX Runtime's intermediate
+  buffers and the image copies, which were not broken down).
 - `high` at 400 px peaks near 0.9 GB: the 67 MB model plus tiles. `high` at 800 px was not
   measured here (about 60 s per call); the README's "around 1.6 GB" for tiling is a design
   note, not one of these measurements.
