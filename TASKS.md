@@ -563,3 +563,37 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `overnight/2026-11-10-T1a`: it found only 7 usable text crops, need 15; state that, claim no result); all linked paths exist; `npm test` passes (the package test
   checks the tarball).
 
+
+### [ ] M1 — Measure peak memory (RSS) of `upscale` and document it (docs only)
+- **Goal:** the README only quotes "memory around 1.6 GB" for `high` tiling (a design note, not a
+  measurement); a server owner has no measured number for how much RAM one `fast` call needs at
+  400 and 800 px, or how much the 67 MB `high` model adds.
+- **Accept:** a script `bench/memory.js` runs each measurement in a **fresh child process**
+  (like `bench/cold.js`), synthetic 4:3 image, factor 1.0 and 1.5, sizes 400 and 800, mode `fast`
+  (and `high` at 400 px only, ~15 s per call); it reports peak RSS in MB (sampled
+  `process.memoryUsage().rss` at ≥10 ms intervals, plus the final `process.resourceUsage().maxRSS`)
+  and RSS after `require` and after the first call. `docs/PERF.md` gets a "Memory" section with the
+  table, the machine line, and a sentence on what it means for running several processes. README
+  "Known limits" gets one bullet linking it. No `src/` change. `npm test` passes (the README link
+  must resolve).
+
+### [ ] B3 — `bench/bench.js --by-aspect`: per-aspect-ratio rows
+- **Goal:** the set mixes portrait, square and landscape images (Q4 split by source only); a
+  regression could hide in one orientation.
+- **Accept:** a `--by-aspect` flag adds rows grouped by `portrait` (h > w), `landscape` (w > h)
+  and `square` (equal), using the reference image's size, after the overall rows (and after the
+  `--by-source` rows when both are given); output without the flag is identical to before apart
+  from the `ms` column; `--json` includes the groups the same way `--by-source` does; usage line
+  updated; a test in `test/bench-json.test.js` style checks the grouping function on a few
+  synthetic dimensions (no model needed). Numbers for `lanczos` at 400 px on `sub20` go in the PR
+  description (needs `bash bench/fetch_testset.sh`; if that fails, mark `[blocked]` with the error).
+
+### [ ] R8 — Test: output is deterministic (byte-identical across repeated calls)
+- **Goal:** caching of sessions and the call queue must not make results depend on call history;
+  P-tasks relied on "byte-identical" comparisons without a test that a repeated call matches.
+- **Accept:** `test/determinism.test.js`: for a fixed synthetic image, `fast` mode at 400 px,
+  factors 1.0 and 1.5, the same call made twice in a row, and once more after `_reset()` (fresh
+  session), returns equal `arr_out` bytes each time and equal `stride_out`; a third case calls with
+  an input padded by stride padding (+2 bytes) and expects the same output as the tightly packed
+  input. No `src/` change. `npm test` passes. If the outputs are not identical, do not weaken the
+  test: record the finding on the task and mark `[blocked]`.
