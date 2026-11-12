@@ -240,6 +240,8 @@ case, so the model always gets the full-size input.
 
 - **Speed:** time grows with the number of input pixels (~1 s at 400 px,
   ~4 s at 800 px on 4 cores).
+- **Memory:** one `fast` call peaks at about 0.2 GB (400 px) to 0.57 GB (800 px); `high`
+  at 400 px about 0.9 GB ([docs/PERF.md](docs/PERF.md#memory-m1-2026-11-12)).
 - **Fine texture** (fabric weave, suede grain) that isn't present in a small input
   can't be restored faithfully. A model can only invent it. Compared with Claid.ai's
   own published sample, PushUP is clean and faithful but behind on perceived texture
