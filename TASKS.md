@@ -294,7 +294,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Done (2026-11-11, PR #60):** job-level `env` sets the flag; `scripts/pack-smoke.sh` now echoes
   `npm install extra args: …` so the log shows it reached the install. CI results in the PR.
 
-### [ ] P5 — `bench/throughput.js`: stop the other children when one fails
+### [~] P5 — (started 2026-11-12) `bench/throughput.js`: stop the other children when one fails
 - **Goal:** when one child dies, the parent exits 1 but leaves the other children running until
   their own deadline (P4 adversary note).
 - **Accept:** on any child failure the parent kills the remaining children before exiting (and
