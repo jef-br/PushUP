@@ -597,3 +597,40 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   an input padded by stride padding (+2 bytes) and expects the same output as the tightly packed
   input. No `src/` change. `npm test` passes. If the outputs are not identical, do not weaken the
   test: record the finding on the task and mark `[blocked]`.
+
+### [ ] M2 — `bench/memory.js`: correct `maxRSS` unit on macOS
+- **Goal:** the script multiplies `process.resourceUsage().maxRSS` by 1024 (KiB on Linux); on macOS
+  the value is already in bytes, so the figure would be 1024× too large (M1 reviewer/adversary note).
+- **Accept:** a small exported helper (e.g. `maxRssBytes(raw, platform)`) returns `raw * 1024` on
+  Linux/other and `raw` on `darwin`; `bench/memory.js` uses it; a test (new file
+  `test/memory-units.test.js`, no model, no child process) checks both platforms. No `src/` change,
+  no change to the printed table format. `npm test` passes.
+
+### [ ] D8 — README: replace the unmeasured "memory around 1.6 GB" and old speed figures with measured ones
+- **Goal:** README line ~103 still says Remacri tiling keeps "memory around 1.6 GB" (a design note;
+  `docs/PERF.md` "Memory (M1)" measured ~0.9 GB for `high` at 400 px and states 800 px is unmeasured),
+  and "Known limits → Speed" says ~1 s at 400 px / ~4 s at 800 px, while D4/D5 measured 0.42 s / 1.6 s
+  (`fast`, 4 cores).
+- **Accept:** both statements are reworded to match `docs/PERF.md` (numbers, mode, machine class,
+  link to the section); nothing is claimed for `high` at 800 px beyond "not measured"; README tests
+  (R2, Q6, D3, D6) still pass; docs only. `npm test` passes.
+
+### [ ] M3 — Measure peak memory of `high` at 800 px (docs only)
+- **Goal:** M1 measured `high` at 400 px only; a server owner on a GPU-less box forcing
+  `PUSHUP_QUALITY=high` has no 800 px number (the 192 px tiling should keep it near the 400 px
+  figure, but this is unmeasured).
+- **Accept:** `node bench/memory.js --sizes "" --high-sizes 800 --factors 1` (adjust flags to what
+  the script supports) run once on the sandbox; a row added to the `docs/PERF.md` Memory table
+  with the machine line, the call duration, and one sentence on whether tiling keeps memory flat
+  versus 400 px. If the call takes more than ~10 minutes, record that and the partial result
+  instead. No `src/` change. `npm test` passes.
+
+### [ ] R9 — Test: concurrent calls of mixed sizes return the output for their own input
+- **Goal:** `queue.test.js` pins order for same-size inputs; nothing checks that results are not
+  swapped or shared when calls of different sizes/factors are queued together (a shared tensor or
+  output buffer bug would show only there).
+- **Accept:** a new test (`test/mixed-queue.test.js`, `fast` model, small images with short side ≤ 16)
+  starts 4 calls together (sizes 400/500/600/400, factors 1.0/1.5/1.0/2.0, distinct pixel
+  patterns) and checks each result equals, byte for byte, the result of the same call made alone
+  afterwards, and has the contract size and stride. No `src/` change unless the test exposes a real
+  bug (say so in the PR). `npm test` passes.
