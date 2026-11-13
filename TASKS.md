@@ -620,7 +620,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   versus 400 px. If the call takes more than ~10 minutes, record that and the partial result
   instead. No `src/` change. `npm test` passes.
 
-### [ ] R9 — Test: concurrent calls of mixed sizes return the output for their own input
+### [x] R9 — (done 2026-11-13, test/mixed-queue.test.js) Test: concurrent calls of mixed sizes return the output for their own input
 - **Goal:** `queue.test.js` pins order for same-size inputs; nothing checks that results are not
   swapped or shared when calls of different sizes/factors are queued together (a shared tensor or
   output buffer bug would show only there).
