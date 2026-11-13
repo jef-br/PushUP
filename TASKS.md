@@ -601,7 +601,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 ### [ ] DOC1 — README: replace the unmeasured "memory around 1.6 GB" and old speed figures with measured ones
 - **Goal:** README line ~103 still says Remacri tiling keeps "memory around 1.6 GB" (a design note;
   `docs/PERF.md` "Memory (M1)" measured ~0.9 GB for `high` at 400 px and states 800 px is unmeasured),
-  and "Known limits → Speed" says ~1 s at 400 px / ~4 s at 800 px, while D4/D5 measured 0.42 s / 1.6 s
+  and "Known limits → Speed" says ~1 s at 400 px / ~4 s at 800 px, while `docs/PERF.md` (D4) measured 0.42 s at 400×300 and 1.8 s at 800×600
   (`fast`, 4 cores).
 - **Also:** the same README paragraph says Remacri's "License: CC BY 4.0"; `CLAUDE.md` and
   `models/LICENSES.md` say CC BY-NC-SA 4.0 (non-commercial). Correct it.
@@ -627,5 +627,5 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Accept:** a new test (`test/mixed-queue.test.js`, `fast` model, thin images, short side ≤ 16, e.g. 400×12; the largest side is what the contract bounds)
   starts 4 calls together (sizes 400/500/600/400, factors 1.0/1.5/1.0/2.0, distinct pixel
   patterns) and checks each result equals, byte for byte, the result of the same call made alone
-  afterwards, and has the contract size and stride. No `src/` change unless the test exposes a real
+  afterwards, and has the contract size and stride (assert against the contract rule `round(side * target / longest)`, not hand-computed heights). No `src/` change unless the test exposes a real
   bug (say so in the PR). `npm test` passes.
