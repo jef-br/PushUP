@@ -5,7 +5,7 @@
 // after `require`, after session creation (one call on a thin 400x12 image: inputs under 400 px are
 // rejected), the peak during one full call (sampled every 10 ms, plus process.resourceUsage().maxRSS),
 // and RSS after the call. Next to that: the sizes (MB) of the whole-image arrays that src/index.js
-// holds, computed from the image size (MODEL_SCALE 4, tile and pad from _MODES / the README's 16 px),
+// holds, computed from the image size (MODEL_SCALE 4 and the 16 px tile pad mirror src/index.js, where DEFAULT_TILE_PAD is not exported, so keep them in sync by hand; the tile size comes from _MODES.high.tile),
 // and the tile count. The arrays are arithmetic, not measured: infer() and getSession() are not exported.
 const { spawnSync } = require('node:child_process');
 
@@ -40,6 +40,7 @@ function geometry(w, h, tile) {
     tiles, maxTw, maxTh,
     packedInput: w * h * 3, // rgb after packRows (uint8)
     srOutput: w * s * h * s * 3, // whole-image 4x output Buffer (uint8)
+    packedOutput: w * h * 3, // returned image at factor 1.0 (uint8; the resize target equals the input size)
     tileInputTensor: maxTw * maxTh * 3 * 4, // float32 NCHW, largest tile
     tileOutputTensor: maxTw * s * maxTh * s * 3 * 4, // float32 NCHW, largest tile
   };
@@ -79,11 +80,11 @@ if (process.argv[2] === '--child') {
       `${MB(j.peak).toFixed(0).padStart(14)}${MB(j.maxRss).toFixed(0).padStart(10)}${MB(j.afterCall).toFixed(0).padStart(16)}`);
   }
   console.log('\nwhole-image arrays and tiles (arithmetic, MB):');
-  console.log('input   tiles  largest_tile  packed_input  sr_output(4x,u8)  tile_in_f32  tile_out_f32');
+  console.log('input   tiles  largest_tile  packed_input  sr_output(4x,u8)  packed_output  tile_in_f32  tile_out_f32');
   for (const j of rows) {
     const g = j.geo;
     console.log(`${String(j.w + 'x' + j.h).padEnd(8)}${String(g.tiles).padStart(4)}${String(g.maxTw + 'x' + g.maxTh).padStart(14)}` +
-      `${MB(g.packedInput).toFixed(1).padStart(14)}${MB(g.srOutput).toFixed(1).padStart(18)}${MB(g.tileInputTensor).toFixed(1).padStart(13)}${MB(g.tileOutputTensor).toFixed(1).padStart(14)}`);
+      `${MB(g.packedInput).toFixed(1).padStart(14)}${MB(g.srOutput).toFixed(1).padStart(18)}${MB(g.packedOutput).toFixed(1).padStart(14)}${MB(g.tileInputTensor).toFixed(1).padStart(13)}${MB(g.tileOutputTensor).toFixed(1).padStart(14)}`);
   }
   if (rows.length >= 2) {
     const a = rows[0], b = rows[rows.length - 1];

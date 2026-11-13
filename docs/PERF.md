@@ -248,10 +248,10 @@ loads the 67 MB model and runs three small tiles. Arrays held by `src/index.js`,
 image size (arithmetic, not measured: `infer()` is not exported, so stage boundaries inside a
 call are not observable without a `src/` change):
 
-| Input | Tiles (192 px + 16 px pad) | Largest tile | Packed input | Whole-image 4× output (uint8) | Largest tile, float32 in / out |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| 400×300 | 6 | 224×208 | 0.3 | 5.5 | 0.5 / 8.5 |
-| 800×600 | 20 | 224×224 | 1.4 | 22.0 | 0.6 / 9.2 |
+| Input | Tiles (192 px + 16 px pad) | Largest tile | Packed input | Whole-image 4× output (uint8) | Returned image (factor 1.0) | Largest tile, float32 in / out |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 6 | 224×208 | 0.3 | 5.5 | 0.3 | 0.5 / 8.5 |
+| 800×600 | 20 | 224×224 | 1.4 | 22.0 | 1.4 | 0.6 / 9.2 |
 
 **Result:** the whole-image arrays grow by 18 MB from 400 to 800 px, which is **3%** of the
 598 MB growth in max RSS, so they explain far less than half. The per-tile tensors are nearly
@@ -261,7 +261,7 @@ moved RSS from 1459 to 1521 MB (max 1510 → 1533 MB; ad-hoc check, not in the s
 memory is retained, not freed between calls, and creeps up a little more. What is left is memory
 that scales with the number of tiles processed rather than with any one array; the likely
 suspects are ONNX Runtime's allocator arena (it keeps blocks and grows when tile shapes differ)
-and sharp/libvips buffers for the final resize from 3200×2400 to 1000×750. Neither was measured
+and sharp/libvips buffers for the final resize from 3200×2400 to the output size (800×600 at factor 1.0). Neither was measured
 here, so this is a hypothesis. Practical reading: budget about 1.5 GB per `high` process at
 800 px and expect it to stay allocated; the only way to test the allocator guess is a
 `src/` change (e.g. disabling the CPU arena), which is an owner decision.
