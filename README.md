@@ -190,9 +190,10 @@ node bench/gate.js before.json after.json   # GATE: PASS / FAIL (exit 0 / 1)
 The gate is defined for CPU and the `fast` mode, hence the two variables (on a GPU machine
 `auto` would score `high`). `--json` prints the scores as one JSON object instead of the
 table; `--by-source` adds rows per image source (`abo`, `lamoda`), so you can see whether an
-average hides a regression in one of them. `bench/gate.js` applies the limits from
+average hides a regression in one of them, and `--by-aspect` adds rows for `portrait`,
+`landscape` and `square` images. `bench/gate.js` applies the limits from
 `docs/OVERNIGHT_RUN.md` §2 (PSNR may drop at most 0.02 dB, SSIM 0.001, GMSD may rise 0.001)
-to every size; it checks the overall rows only, not the per-source ones.
+to every size; it checks the overall rows only, not the per-source or per-aspect ones.
 
 Current default, `fast` mode (4xLSDIRCompactC3 + 20% Lanczos), CPU, 60 images, measured
 2026-11-11 with
