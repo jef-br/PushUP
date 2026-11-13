@@ -1,12 +1,14 @@
 'use strict';
-// Usage: node bench/bench.js <dir-of-HR-images> [--methods lanczos,sr-full,...] [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--json]
+// Usage: node bench/bench.js <dir-of-HR-images> [--methods lanczos,sr-full,...] [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--by-aspect] [--json]
 // --by-source adds rows grouped by file-name prefix (abo_, lamoda_) after the overall table.
+// --by-aspect adds rows grouped by reference shape (portrait: h > w, landscape: w > h, square) after the overall and per-source rows.
 // --json prints one JSON object {images, rows:[{setting, psnr, ssim, gmsd, ms}]} (unrounded) instead of the table.
 const fs = require('node:fs');
 const path = require('node:path');
 const sharp = require('sharp');
 const { _run } = require('../src');
 const { psnr, ssim, gmsd } = require('./metrics');
+const { aspectGroup } = require('./aspect');
 
 const args = process.argv.slice(2);
 const dir = args[0];
@@ -15,6 +17,7 @@ const sizes = opt('--sizes', '400,600,800').split(',').map(Number);
 const limit = Number(opt('--limit', 1e9));
 const saveDir = opt('--save', null);
 const bySource = args.includes('--by-source');
+const byAspect = args.includes('--by-aspect');
 const asJson = args.includes('--json');
 const methods = (opt('--methods', 'lanczos,sr-full,sr-500,sr-250')).split(',');
 
@@ -52,6 +55,7 @@ async function method(name, inp, w, h) {
 (async () => {
   const files = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort().slice(0, limit);
   const agg = {};
+  const rank = {}; // 0 overall, 1 per-source, 2 per-aspect: the output order
   for (const f of files) {
     const hr = sharp(path.join(dir, f));
     const meta = await hr.metadata();
@@ -76,7 +80,8 @@ async function method(name, inp, w, h) {
         const r = { psnr: psnr(out, ref, cw, ch), ssim: ssim(out, ref, cw, ch), gmsd: gmsd(out, ref, cw, ch), ms };
         const key = `${s}px ${m}`;
         (agg[key] ||= []).push(r);
-        if (bySource) (agg[`${key} [${f.split('_')[0]}]`] ||= []).push(r);
+        if (bySource) { const k = `${key} [${f.split('_')[0]}]`; rank[k] = 1; (agg[k] ||= []).push(r); }
+        if (byAspect) { const k = `${key} [${aspectGroup(gw, gh)}]`; rank[k] = 2; (agg[k] ||= []).push(r); }
         if (saveDir) {
           fs.mkdirSync(saveDir, { recursive: true });
           await sharp(out, { raw: { width: cw, height: ch, channels: 3 } }).png().toFile(path.join(saveDir, `${path.parse(f).name}_${s}_${path.basename(m).replace(/[^\w.@-]/g, '_')}.png`));
@@ -87,16 +92,16 @@ async function method(name, inp, w, h) {
   }
   process.stderr.write('\n');
   const mean = (a, k) => a.reduce((x, r) => x + r[k], 0) / a.length;
-  // Overall rows first, then (with --by-source) the per-source rows.
-  const entries = Object.entries(agg).sort(([a], [b]) => a.endsWith(']') - b.endsWith(']'));
+  // Overall rows first, then per-source (--by-source), then per-aspect (--by-aspect) rows.
+  const entries = Object.entries(agg).sort(([a], [b]) => (rank[a] || 0) - (rank[b] || 0));
   if (asJson) {
     const rows = entries.map(([setting, a]) => ({ setting, psnr: mean(a, 'psnr'), ssim: mean(a, 'ssim'), gmsd: mean(a, 'gmsd'), ms: mean(a, 'ms') }));
     console.log(JSON.stringify({ images: files.length, rows }));
     return;
   }
   console.log(`images: ${files.length}  (input = 1000px GT downscaled + JPEG q85)`);
-  console.log('setting'.padEnd(bySource ? 30 : 18), 'PSNR↑'.padStart(7), 'SSIM↑'.padStart(7), 'GMSD↓'.padStart(7), 'ms'.padStart(7));
+  console.log('setting'.padEnd(bySource || byAspect ? 30 : 18), 'PSNR↑'.padStart(7), 'SSIM↑'.padStart(7), 'GMSD↓'.padStart(7), 'ms'.padStart(7));
   for (const [k, a] of entries) {
-    console.log(k.padEnd(bySource ? 30 : 18), mean(a, 'psnr').toFixed(2).padStart(7), mean(a, 'ssim').toFixed(4).padStart(7), mean(a, 'gmsd').toFixed(4).padStart(7), mean(a, 'ms').toFixed(0).padStart(7));
+    console.log(k.padEnd(bySource || byAspect ? 30 : 18), mean(a, 'psnr').toFixed(2).padStart(7), mean(a, 'ssim').toFixed(4).padStart(7), mean(a, 'gmsd').toFixed(4).padStart(7), mean(a, 'ms').toFixed(0).padStart(7));
   }
 })();
