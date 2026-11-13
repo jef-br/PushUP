@@ -658,7 +658,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   read `process.memoryUsage()` between stages using public/test exports only, or compute the sizes
   of the big whole-image arrays from `src/index.js` arithmetic) that prints, for `high` at 400 and
   800 px (factor 1.0, fresh child process each), RSS after `require`, after session creation (one
-  tiny call) and the peak of one full call, plus the computed byte sizes of the whole-image arrays
+  call on a thin 400×12 image, since inputs under 400 px are rejected) and the peak of one full call, plus the computed byte sizes of the whole-image arrays
   (input tensor, 4× output tensor, packed output). `docs/PERF.md` "Memory" gets a short paragraph
   stating how much of the 400→800 px growth those arrays explain, and says plainly if they explain
   less than half. If the script would need a `src/` change to see stage boundaries, record that
