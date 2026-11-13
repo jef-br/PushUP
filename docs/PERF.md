@@ -270,9 +270,9 @@ again with `enableCpuMemArena: false` and `enableMemPattern: false` added, max R
 | 400×300 (6 tiles) | 906 | 642 |
 | 800×600 (20 tiles) | 1450 | 732 |
 
-With the arena off the 400 → 800 px growth drops from about 540 MB to about 90 MB, and the 800 px
-peak from about 1.45 GB to about 0.73 GB (ORT inference alone; the full call adds the sharp and
-output buffers, a few tens of MB by the arithmetic above). So the extra memory is blocks the
+With the arena off the 400 → 800 px growth drops from about 540–570 MB to about 60–90 MB (two
+runs), and the 800 px peak from about 1.45 GB to about 0.7 GB (ORT inference alone; the full call
+adds the sharp and output buffers, estimated at a few tens of MB from the arrays above). So the extra memory is blocks the
 arena keeps while tiles of varying shapes run; it is not any one array. Not measured: whether
 turning the arena off costs latency, whether it changes output bytes, and what it does for
 `fast` mode. `src/` is unchanged and no default is proposed here: changing the session options
