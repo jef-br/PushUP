@@ -226,8 +226,8 @@ the command also runs one cheap `fast` 400 px job).
 - `high` at 400 px peaks near 0.9 GB (the 67 MB model plus tiles) and at 800 px near 1.5 GB
   (1.48–1.50 GB in two runs). So tiling does **not** keep memory flat: it still grows with the
   input size (about +0.6 GB from 400 to 800 px; `fast` grows by about +0.35 GB over the same
-  range). The README's older "around 1.6 GB" figure was a design
-  note; the measured 800 px peak is close to it. Not broken down further (whole-image buffers
+  range). An earlier README figure of "around 1.6 GB" for tiling was a design
+  note (removed in DOC1); the measured 800 px peak is close to it. Not broken down further (whole-image buffers
   held next to the per-tile ones are the likely cause, unverified).
 - Calls run one at a time inside a process, so a process needs about the peak of its largest
   call, not the sum. Several processes (see "Throughput") each need their own copy: four
