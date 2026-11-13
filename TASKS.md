@@ -598,7 +598,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   input. No `src/` change. `npm test` passes. If the outputs are not identical, do not weaken the
   test: record the finding on the task and mark `[blocked]`.
 
-### [ ] DOC1 — README: replace the unmeasured "memory around 1.6 GB" and old speed figures with measured ones
+### [x] DOC1 — (done 2026-11-13, README) README: replace the unmeasured "memory around 1.6 GB" and old speed figures with measured ones
 - **Goal:** README line ~103 still says Remacri tiling keeps "memory around 1.6 GB" (a design note;
   `docs/PERF.md` "Memory (M1)" measured ~0.9 GB for `high` at 400 px and states 800 px is unmeasured),
   and "Known limits → Speed" says ~1 s at 400 px / ~4 s at 800 px, while `docs/PERF.md` (D4) measured 0.42 s at 400×300 and 1.8 s at 800×600

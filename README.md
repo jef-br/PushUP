@@ -100,8 +100,10 @@ only**; see `models/LICENSES.md`.
    [4xLSDIRCompactC3](https://openmodeldb.info/models/4x-LSDIRCompactC3)
    (2.5 MB ONNX) does the whole image in one pass, so there are no tile seams.
    In `high` mode, Remacri runs in 192 px tiles with 16 px of overlap to keep
-   memory around 1.6 GB. It's a community model by Philip Hofmann (helaman), trained
-   on real photos with JPEG damage. License: CC BY 4.0.
+   memory down (about 0.9 GB at a 400 px input; 800 px is not measured, see
+   [docs/PERF.md](docs/PERF.md#memory-m1-2026-11-12)). It's a community model by
+   foolhardy, trained on real photos with JPEG damage. License:
+   CC BY-NC-SA 4.0, non-commercial only (see `models/LICENSES.md`).
 2. sharp's Lanczos resize takes that down to the target size.
 3. 20% of a plain Lanczos upscale is mixed in (`DEFAULT_LANCZOS_MIX` in
    `src/index.js`). Both images agree on the coarse shapes, so the mix only
@@ -239,8 +241,10 @@ case, so the model always gets the full-size input.
 
 ## Known limits / next steps
 
-- **Speed:** time grows with the number of input pixels (~1 s at 400 px,
-  ~4 s at 800 px on 4 cores).
+- **Speed:** time grows with the number of input pixels. `fast` mode on CPU takes
+  about 0.44 s for a 400×300 image and 1.85 s for 800×600 (median, 4 vCPU cloud
+  container; [docs/PERF.md](docs/PERF.md#results-median-ms)). `high` mode on CPU is
+  about 30x slower.
 - **Memory:** one `fast` call peaks at about 0.2 GB (400 px) to 0.57 GB (800 px); `high`
   at 400 px about 0.9 GB ([docs/PERF.md](docs/PERF.md#memory-m1-2026-11-12)).
 - **Fine texture** (fabric weave, suede grain) that isn't present in a small input
