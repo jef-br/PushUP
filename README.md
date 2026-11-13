@@ -102,7 +102,7 @@ only**; see `models/LICENSES.md`.
    In `high` mode, Remacri runs in 192 px tiles with 16 px of overlap to keep
    memory down (about 0.9 GB at a 400 px input; 800 px is not measured, see
    [docs/PERF.md](docs/PERF.md#memory-m1-2026-11-12)). It's a community model by
-   Philip Hofmann (helaman), trained on real photos with JPEG damage. License:
+   foolhardy, trained on real photos with JPEG damage. License:
    CC BY-NC-SA 4.0, non-commercial only (see `models/LICENSES.md`).
 2. sharp's Lanczos resize takes that down to the target size.
 3. 20% of a plain Lanczos upscale is mixed in (`DEFAULT_LANCZOS_MIX` in

@@ -218,8 +218,8 @@ to use). Same machine as above (4 vCPU Xeon @ 2.1 GHz, 16 GB, Node 22.23). MB:
   alone is 3200×2400×3 floats ≈ 92 MB at 800 px; the rest is ONNX Runtime's intermediate
   buffers and the image copies, which were not broken down).
 - `high` at 400 px peaks near 0.9 GB: the 67 MB model plus tiles. `high` at 800 px was not
-  measured here (about 60 s per call); the README's "around 1.6 GB" for tiling is a design
-  note, not one of these measurements.
+  measured here (about 60 s per call); tiling is meant to keep memory flat, but that is a
+  design intent, not a measurement.
 - Calls run one at a time inside a process, so a process needs about the peak of its largest
   call, not the sum. Several processes (see "Throughput") each need their own copy: four
   `fast` processes at 800 px need about 2.3 GB, plus headroom for the input and output buffers.
