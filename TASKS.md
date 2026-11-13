@@ -629,3 +629,37 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   patterns) and checks each result equals, byte for byte, the result of the same call made alone
   afterwards, and has the contract size and stride (assert against the contract rule `round(side * target / longest)`, not hand-computed heights). No `src/` change unless the test exposes a real
   bug (say so in the PR). `npm test` passes.
+
+### [ ] DOC2 — `docs/CONTRACT_TESTS.md`: add the tests landed since D2 (R8 determinism, R9 mixed queue)
+- **Goal:** `test/determinism.test.js` (R8) and `test/mixed-queue.test.js` (R9) pin contract-relevant
+  behaviour (same input → same bytes; queued calls of mixed sizes get their own outputs) but are not
+  in the contract-to-tests map.
+- **Accept:** list both files' tests (literal names as bullets, generated names in prose, per the
+  file's format) under the matching contract rows (Output; the "async, one at a time" sentence;
+  `stride` for the padded case in R8); `test/contract-tests.test.js` passes and, as a check, fails when one
+  listed name is misspelt (try it locally, don't commit that). Docs only; no test or `CLAUDE.md`
+  change. `npm test` passes.
+
+### [ ] R10 — Test: an invalid call in the middle of a batch rejects alone and does not disturb the others
+- **Goal:** `queue.test.js` covers a failure *inside* the queue; nothing checks a call that is
+  rejected *before* the queue (bad size, bad stride, bad factor) while valid calls are queued around it.
+- **Accept:** a new test (`test/batch-reject.test.js`, `fast` model on CPU, thin images with short side
+  ≤ 16) starts 3 calls with `Promise.allSettled`: valid 400 px, then an invalid one (largest side 399 →
+  `RangeError`), then valid 500 px. The middle call is rejected with `RangeError`; the other two
+  fulfil with the contract size and stride and bytes equal to the same calls made alone afterwards;
+  a further valid call still works. Repeat with a `TypeError` trigger (stride `1.5`) in the middle.
+  No `src/` change unless the test exposes a real bug (say so in the PR). `npm test` passes.
+
+### [ ] M4 — Where does `high` mode's extra memory at 800 px come from? (docs only)
+- **Goal:** M3 measured `high` at 0.9 GB (400 px) and 1.5 GB (800 px), so tiling does not keep memory
+  flat; the cause is an unverified guess. A server owner choosing between sizes needs to know whether
+  it is the whole-image buffers (input/output float tensors) or per-tile work.
+- **Accept:** a short script `bench/memory-breakdown.js` (no `src/` change; it may call `_run` and
+  read `process.memoryUsage()` between stages using public/test exports only, or compute the sizes
+  of the big whole-image arrays from `src/index.js` arithmetic) that prints, for `high` at 400 and
+  800 px (factor 1.0, fresh child process each), RSS after `require`, after session creation (one
+  tiny call) and the peak of one full call, plus the computed byte sizes of the whole-image arrays
+  (input tensor, 4× output tensor, packed output). `docs/PERF.md` "Memory" gets a short paragraph
+  stating how much of the 400→800 px growth those arrays explain, and says plainly if they explain
+  less than half. If the script would need a `src/` change to see stage boundaries, record that
+  and stop at the arithmetic estimate. `npm test` passes.
