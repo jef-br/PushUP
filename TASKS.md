@@ -577,7 +577,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   "Known limits" gets one bullet linking it. No `src/` change. `npm test` passes (the README link
   must resolve).
 
-### [ ] B3 — `bench/bench.js --by-aspect`: per-aspect-ratio rows
+### [~] B3 — (in progress 2026-11-13, branch overnight/2026-11-13-B3) `bench/bench.js --by-aspect`: per-aspect-ratio rows
 - **Goal:** the set mixes portrait, square and landscape images (Q4 split by source only); a
   regression could hide in one orientation.
 - **Accept:** a `--by-aspect` flag adds rows grouped by `portrait` (h > w), `landscape` (w > h)
