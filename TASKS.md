@@ -663,3 +663,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   stating how much of the 400→800 px growth those arrays explain, and says plainly if they explain
   less than half. If the script would need a `src/` change to see stage boundaries, record that
   and stop at the arithmetic estimate. `npm test` passes.
+- **Done (2026-11-13, PR #74):** the whole-image arrays explain 3% of the `high` growth; the ORT CPU
+  arena explains most of it (800 px, ORT-only loop: 1.45 GB with the shipped options, 0.73 GB with
+  `enableCpuMemArena: false` + `enableMemPattern: false`). **Owner decision (not a task):** whether
+  to set those options for `high` (and `fast`) sessions — first measure latency and output bytes
+  with the arena off (`bench/memory-breakdown.js --arena` shows only memory). No `src/` change made.

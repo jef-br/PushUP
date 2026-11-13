@@ -1,6 +1,9 @@
 'use strict';
 // Task M4: where does `high` mode's extra memory at 800 px come from? No src/ change.
-// Usage: node bench/memory-breakdown.js [--sizes 400,800]
+// Usage: node bench/memory-breakdown.js [--sizes 400,800] [--arena]
+// --arena adds an ORT-only comparison: the same tile loop run directly on the Remacri model with the
+// shipped session options (_sessionOptions) with and without the CPU memory arena (enableCpuMemArena /
+// enableMemPattern false). It is bench-only: src/ is not changed and no default is proposed here.
 // Per size (fresh child process each, `high` on CPU, factor 1.0, 4:3 synthetic image), reports RSS (MB)
 // after `require`, after session creation (one call on a thin 400x12 image: inputs under 400 px are
 // rejected), the peak during one full call (sampled every 10 ms, plus process.resourceUsage().maxRSS),
@@ -46,7 +49,29 @@ function geometry(w, h, tile) {
   };
 }
 
-if (process.argv[2] === '--child') {
+if (process.argv[2] === '--tiles') {
+  // node bench/memory-breakdown.js --tiles <size> <arena|noarena>: ORT inference only, no sharp, no whole-image output.
+  const size = Number(process.argv[3]), arena = process.argv[4] === 'arena';
+  (async () => {
+    const ort = require('onnxruntime-node');
+    const { _sessionOptions, _toTensor, _MODES } = require('../src/index.js');
+    const opts = _sessionOptions(['cpu']);
+    if (!arena) { opts.enableCpuMemArena = false; opts.enableMemPattern = false; }
+    const session = await ort.InferenceSession.create(_MODES.high.modelPath, opts);
+    const w = size, h = Math.round(size * 0.75), rgb = synth(w, h);
+    const step = Math.min(_MODES.high.tile, Math.max(w, h));
+    let n = 0;
+    for (let ty = 0; ty < h; ty += step) {
+      for (let tx = 0; tx < w; tx += step) {
+        const px0 = Math.max(tx - TILE_PAD, 0), py0 = Math.max(ty - TILE_PAD, 0);
+        const px1 = Math.min(tx + step + TILE_PAD, w), py1 = Math.min(ty + step + TILE_PAD, h);
+        await session.run({ [session.inputNames[0]]: _toTensor(rgb, w, px0, py0, px1 - px0, py1 - py0) });
+        n++;
+      }
+    }
+    console.log(JSON.stringify({ w, h, arena, tiles: n, maxRss: process.resourceUsage().maxRSS * 1024 }));
+  })();
+} else if (process.argv[2] === '--child') {
   const size = Number(process.argv[3]);
   process.env.PUSHUP_QUALITY = 'high';
   process.env.PUSHUP_DEVICE = 'cpu';
@@ -92,5 +117,20 @@ if (process.argv[2] === '--child') {
     const arrays = MB((b.geo.packedInput + b.geo.srOutput) - (a.geo.packedInput + a.geo.srOutput));
     console.log(`\nmax_rss growth ${a.w}->${b.w}: ${growth.toFixed(0)} MB; growth of packed input + 4x output arrays: ${arrays.toFixed(0)} MB ` +
       `(${(100 * arrays / growth).toFixed(0)}% of the growth)`);
+  }
+  if (process.argv.includes('--arena')) {
+    console.log('\nORT-only tile loop on the Remacri model, max RSS (MB), shipped session options vs CPU arena off:');
+    console.log('input   arena_on  arena_off');
+    for (const size of sizes) {
+      const res = {};
+      for (const mode of ['arena', 'noarena']) {
+        const r = spawnSync(process.execPath, [__filename, '--tiles', size, mode], { encoding: 'utf8' });
+        if (r.status !== 0) { console.log(size, mode, 'FAILED', r.stderr.slice(-300)); process.exitCode = 1; continue; }
+        res[mode] = JSON.parse(r.stdout.trim().split('\n').pop());
+      }
+      if (res.arena && res.noarena) {
+        console.log(`${String(res.arena.w + 'x' + res.arena.h).padEnd(8)}${MB(res.arena.maxRss).toFixed(0).padStart(8)}${MB(res.noarena.maxRss).toFixed(0).padStart(11)}   (${res.arena.tiles} tiles)`);
+      }
+    }
   }
 }

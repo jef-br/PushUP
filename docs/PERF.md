@@ -258,10 +258,23 @@ call are not observable without a `src/` change):
 the same size at both inputs (largest tile 224×208 vs 224×224). RSS after the call equals the
 peak (the process keeps what it grew to), and a second `high` call at 800 px in the same process
 moved RSS from 1459 to 1521 MB (max 1510 → 1533 MB; ad-hoc check, not in the script), so
-memory is retained, not freed between calls, and creeps up a little more. What is left is memory
-that scales with the number of tiles processed rather than with any one array; the likely
-suspects are ONNX Runtime's allocator arena (it keeps blocks and grows when tile shapes differ)
-and sharp/libvips buffers for the final resize from 3200×2400 to the output size (800×600 at factor 1.0). Neither was measured
-here, so this is a hypothesis. Practical reading: budget about 1.5 GB per `high` process at
-800 px and expect it to stay allocated; the only way to test the allocator guess is a
-`src/` change (e.g. disabling the CPU arena), which is an owner decision.
+memory is retained, not freed between calls, and creeps up a little more.
+
+**The ONNX Runtime CPU memory arena is the main cause.** `node bench/memory-breakdown.js --arena`
+runs only the tile loop (ORT inference on the Remacri model, no sharp, no whole-image buffers)
+with the shipped session options (`_sessionOptions`, a bench-only use of an existing export) and
+again with `enableCpuMemArena: false` and `enableMemPattern: false` added, max RSS in MB:
+
+| Input | Shipped options (arena on) | Arena and mem-pattern off |
+| --- | ---: | ---: |
+| 400×300 (6 tiles) | 906 | 642 |
+| 800×600 (20 tiles) | 1450 | 732 |
+
+With the arena off the 400 → 800 px growth drops from about 540 MB to about 90 MB, and the 800 px
+peak from about 1.45 GB to about 0.73 GB (ORT inference alone; the full call adds the sharp and
+output buffers, a few tens of MB by the arithmetic above). So the extra memory is blocks the
+arena keeps while tiles of varying shapes run; it is not any one array. Not measured: whether
+turning the arena off costs latency, whether it changes output bytes, and what it does for
+`fast` mode. `src/` is unchanged and no default is proposed here: changing the session options
+is an owner decision (see the note on task M4 in `TASKS.md`). Until then: budget about 1.5 GB per
+`high` process at 800 px and expect it to stay allocated.
