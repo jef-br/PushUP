@@ -650,7 +650,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   a further valid call still works. Repeat with a `TypeError` trigger (stride `1.5`) in the middle.
   No `src/` change unless the test exposes a real bug (say so in the PR). `npm test` passes.
 
-### [ ] M4 — Where does `high` mode's extra memory at 800 px come from? (docs only)
+### [x] M4 — (done 2026-11-13, bench/memory-breakdown.js + docs/PERF.md) Where does `high` mode's extra memory at 800 px come from? (docs only)
 - **Goal:** M3 measured `high` at 0.9 GB (400 px) and 1.5 GB (800 px), so tiling does not keep memory
   flat; the cause is an unverified guess. A server owner choosing between sizes needs to know whether
   it is the whole-image buffers (input/output float tensors) or per-tile work.
@@ -663,3 +663,8 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   stating how much of the 400→800 px growth those arrays explain, and says plainly if they explain
   less than half. If the script would need a `src/` change to see stage boundaries, record that
   and stop at the arithmetic estimate. `npm test` passes.
+- **Done (2026-11-13, PR #74):** the whole-image arrays explain 3% of the `high` growth; the ORT CPU
+  arena explains most of it (800 px, ORT-only loop: 1.45 GB with the shipped options, 0.73 GB with
+  `enableCpuMemArena: false` + `enableMemPattern: false`). **Owner decision (not a task):** whether
+  to set those options for `high` (and `fast`) sessions — first measure latency and output bytes
+  with the arena off (`bench/memory-breakdown.js --arena` shows only memory). No `src/` change made.
