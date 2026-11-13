@@ -227,8 +227,41 @@ the command also runs one cheap `fast` 400 px job).
   (1.48–1.50 GB in two runs). So tiling does **not** keep memory flat: it still grows with the
   input size (about +0.6 GB from 400 to 800 px; `fast` grows by about +0.35 GB over the same
   range). An earlier README figure of "around 1.6 GB" for tiling was a design
-  note (removed in DOC1); the measured 800 px peak is close to it. Not broken down further (whole-image buffers
-  held next to the per-tile ones are the likely cause, unverified).
+  note (removed in DOC1); the measured 800 px peak is close to it. Where the growth comes from:
+  see "`high` memory breakdown (M4)" below.
 - Calls run one at a time inside a process, so a process needs about the peak of its largest
   call, not the sum. Several processes (see "Throughput") each need their own copy: four
   `fast` processes at 800 px need about 2.3 GB, plus headroom for the input and output buffers.
+
+### `high` memory breakdown (M4, 2026-11-13)
+
+`node bench/memory-breakdown.js` (one fresh process per size, `high` on CPU, factor 1.0; same
+machine as above; MB):
+
+| Input | RSS after `require` | RSS after session creation | Peak (sampled) | Max RSS | RSS after the call |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 67 | 281 | 890 | 895 | 886 |
+| 800×600 | 67 | 281 | 1493 | 1493 | 1493 |
+
+"Session creation" is one call on a thin 400×12 image (inputs under 400 px are rejected), which
+loads the 67 MB model and runs three small tiles. Arrays held by `src/index.js`, from the
+image size (arithmetic, not measured: `infer()` is not exported, so stage boundaries inside a
+call are not observable without a `src/` change):
+
+| Input | Tiles (192 px + 16 px pad) | Largest tile | Packed input | Whole-image 4× output (uint8) | Largest tile, float32 in / out |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 6 | 224×208 | 0.3 | 5.5 | 0.5 / 8.5 |
+| 800×600 | 20 | 224×224 | 1.4 | 22.0 | 0.6 / 9.2 |
+
+**Result:** the whole-image arrays grow by 18 MB from 400 to 800 px, which is **3%** of the
+598 MB growth in max RSS, so they explain far less than half. The per-tile tensors are nearly
+the same size at both inputs (largest tile 224×208 vs 224×224). RSS after the call equals the
+peak (the process keeps what it grew to), and a second `high` call at 800 px in the same process
+moved RSS from 1459 to 1521 MB (max 1510 → 1533 MB; ad-hoc check, not in the script), so
+memory is retained, not freed between calls, and creeps up a little more. What is left is memory
+that scales with the number of tiles processed rather than with any one array; the likely
+suspects are ONNX Runtime's allocator arena (it keeps blocks and grows when tile shapes differ)
+and sharp/libvips buffers for the final resize from 3200×2400 to 1000×750. Neither was measured
+here, so this is a hypothesis. Practical reading: budget about 1.5 GB per `high` process at
+800 px and expect it to stay allocated; the only way to test the allocator guess is a
+`src/` change (e.g. disabling the CPU arena), which is an owner decision.

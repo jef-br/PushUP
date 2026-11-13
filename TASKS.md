@@ -650,7 +650,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   a further valid call still works. Repeat with a `TypeError` trigger (stride `1.5`) in the middle.
   No `src/` change unless the test exposes a real bug (say so in the PR). `npm test` passes.
 
-### [~] M4 — (in progress 2026-11-13, branch overnight/2026-11-13-M4) Where does `high` mode's extra memory at 800 px come from? (docs only)
+### [x] M4 — (done 2026-11-13, bench/memory-breakdown.js + docs/PERF.md) Where does `high` mode's extra memory at 800 px come from? (docs only)
 - **Goal:** M3 measured `high` at 0.9 GB (400 px) and 1.5 GB (800 px), so tiling does not keep memory
   flat; the cause is an unverified guess. A server owner choosing between sizes needs to know whether
   it is the whole-image buffers (input/output float tensors) or per-tile work.
