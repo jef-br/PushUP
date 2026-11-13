@@ -212,14 +212,23 @@ to use). Same machine as above (4 vCPU Xeon @ 2.1 GHz, 16 GB, Node 22.23). MB:
 | `fast` | 800×600 | 1.5 | 68 | 566 | 566 | 566 |
 | `high` | 400×300 | 1.0 | 69 | 898 | 902 | 915 |
 | `high` | 400×300 | 1.5 | 68 | 898 | 902 | 915 |
+| `high` | 800×600 | 1.0 | 67 | 1468 | 1501 | 1501 |
+| `high` | 800×600 | 1.0 (2nd run) | 67 | 1454 | 1481 | 1481 |
+
+The two `high` 800×600 rows were added by M3 (2026-11-13), same machine, with
+`node bench/memory.js --sizes 400 --factors 1 --high-sizes 800` (the call takes about 47 s;
+the command also runs one cheap `fast` 400 px job).
 
 - `fast` needs roughly 0.2 GB at 400 px and 0.57 GB at 800 px for one call; the factor (1.0 vs
   1.5) changes it by under 1%. It grows with the input pixel count (the 4× model output
   alone is 3200×2400×3 floats ≈ 92 MB at 800 px; the rest is ONNX Runtime's intermediate
   buffers and the image copies, which were not broken down).
-- `high` at 400 px peaks near 0.9 GB: the 67 MB model plus tiles. `high` at 800 px was not
-  measured here (about 60 s per call); tiling is meant to keep memory flat, but that is a
-  design intent, not a measurement.
+- `high` at 400 px peaks near 0.9 GB (the 67 MB model plus tiles) and at 800 px near 1.5 GB
+  (1.48–1.50 GB in two runs). So tiling does **not** keep memory flat: it still grows with the
+  input size (about +0.6 GB from 400 to 800 px; `fast` grows by about +0.35 GB over the same
+  range). An earlier README figure of "around 1.6 GB" for tiling was a design
+  note (removed in DOC1); the measured 800 px peak is close to it. Not broken down further (whole-image buffers
+  held next to the per-tile ones are the likely cause, unverified).
 - Calls run one at a time inside a process, so a process needs about the peak of its largest
   call, not the sum. Several processes (see "Throughput") each need their own copy: four
   `fast` processes at 800 px need about 2.3 GB, plus headroom for the input and output buffers.
