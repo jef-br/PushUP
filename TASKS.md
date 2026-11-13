@@ -609,7 +609,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   link to the section) and the licence line to `models/LICENSES.md`; nothing is claimed for `high` at 800 px beyond "not measured"; README tests
   (R2, Q6, D3, D6) still pass; docs only. `npm test` passes.
 
-### [~] M3 — (in progress 2026-11-13, branch overnight/2026-11-13-M3) Measure peak memory of `high` at 800 px (docs only)
+### [x] M3 — (done 2026-11-13, docs/PERF.md Memory) Measure peak memory of `high` at 800 px (docs only)
 - **Goal:** M1 measured `high` at 400 px only; a server owner on a GPU-less box forcing
   `PUSHUP_QUALITY=high` has no 800 px number (the 192 px tiling should keep it near the 400 px
   figure, but this is unmeasured).
