@@ -630,7 +630,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   afterwards, and has the contract size and stride (assert against the contract rule `round(side * target / longest)`, not hand-computed heights). No `src/` change unless the test exposes a real
   bug (say so in the PR). `npm test` passes.
 
-### [ ] DOC2 — `docs/CONTRACT_TESTS.md`: add the tests landed since D2 (R8 determinism, R9 mixed queue)
+### [x] DOC2 — (done 2026-11-13, docs/CONTRACT_TESTS.md) `docs/CONTRACT_TESTS.md`: add the tests landed since D2 (R8 determinism, R9 mixed queue)
 - **Goal:** `test/determinism.test.js` (R8) and `test/mixed-queue.test.js` (R9) pin contract-relevant
   behaviour (same input → same bytes; queued calls of mixed sizes get their own outputs) but are not
   in the contract-to-tests map.
