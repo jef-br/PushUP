@@ -669,7 +669,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   to set those options for `high` (and `fast`) sessions — first measure latency and output bytes
   with the arena off (`bench/memory-breakdown.js --arena` shows only memory). No `src/` change made.
 
-### [~] P6 — (claimed 2026-11-13, branch overnight/2026-11-13-P6) Measure latency and output bytes with the ORT CPU arena off (research, no `src/` change)
+### [x] P6 — (done 2026-11-13, bench/arena.js + docs/PERF.md "Arena") Measure latency and output bytes with the ORT CPU arena off (research, no `src/` change)
 - **Goal:** M4 found that the ORT CPU memory arena accounts for most of `high` mode's memory growth
   (800 px, ORT-only loop: 1.45 GB with the shipped options, 0.73 GB with `enableCpuMemArena: false` +
   `enableMemPattern: false`). Whether turning it off is acceptable depends on speed and output, which M4
@@ -682,6 +682,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   absolute byte difference. A section "Arena (P6, <date>)" in `docs/PERF.md` with the table, machine line
   and how to run, and a plain sentence on whether the arena-off option looks free, costly or lossy.
   No `src/` change and no recommendation to change a default (owner decision). `npm test` passes.
+- **Done (2026-11-13, PR #77):** `bench/arena.js` + `docs/PERF.md` "Arena (P6)". Arena off is lossless (bytes
+  identical, max diff 0, all 3 cases) but costly: model call 1.2x (`high` 400 px) to 1.75-1.86x (`fast` 800 px)
+  slower, peak RSS ~40% lower at 800 px `fast` / 400 px `high`. Owner decision (no change made).
 
 ### [x] R11 — (done 2026-11-13, test/batch-reject.test.js) Test: a bad `upscale_factor` or `arr` type mid-batch rejects alone (extends R10)
 - **Goal:** R10 covered a bad size (RangeError) and bad stride (TypeError) rejected before the queue; the
