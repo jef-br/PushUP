@@ -564,7 +564,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   checks the tarball).
 
 
-### [ ] M1 — Measure peak memory (RSS) of `upscale` and document it (docs only)
+### [x] M1 — (done 2026-11-12, bench/memory.js + docs/PERF.md "Memory") Measure peak memory (RSS) of `upscale` and document it (docs only)
 - **Goal:** the README only quotes "memory around 1.6 GB" for `high` tiling (a design note, not a
   measurement); a server owner has no measured number for how much RAM one `fast` call needs at
   400 and 800 px, or how much the 67 MB `high` model adds.

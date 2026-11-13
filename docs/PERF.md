@@ -196,3 +196,30 @@ default (one process, all cores, one call at a time) is the right choice for int
 where latency matters. A batch user who wants the extra ~10% would need a way to set the
 thread count, which PushUP doesn't offer; adding one is an owner decision. Only one 4-vCPU
 machine was measured; re-run on the target hardware.
+
+## Memory (M1, 2026-11-12)
+
+`node bench/memory.js` runs each measurement in a **fresh process** (CPU, synthetic 4:3 image,
+one `upscale()` call). `peak sampled` = `process.memoryUsage().rss` read every 10 ms during the
+call; `max RSS` = `process.resourceUsage().maxRSS` (the OS peak for the whole process, the figure
+to use). Same machine as above (4 vCPU Xeon @ 2.1 GHz, 16 GB, Node 22.23). MB:
+
+| Mode | Input | Factor | RSS after `require` | RSS after call | Peak sampled | Max RSS |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `fast` | 400×300 | 1.0 | 68 | 202 | 222 | 222 |
+| `fast` | 400×300 | 1.5 | 69 | 205 | 205 | 223 |
+| `fast` | 800×600 | 1.0 | 68 | 564 | 564 | 564 |
+| `fast` | 800×600 | 1.5 | 68 | 566 | 566 | 566 |
+| `high` | 400×300 | 1.0 | 69 | 898 | 902 | 915 |
+| `high` | 400×300 | 1.5 | 68 | 898 | 902 | 915 |
+
+- `fast` needs roughly 0.2 GB at 400 px and 0.57 GB at 800 px for one call; the factor (1.0 vs
+  1.5) changes it by under 1%. It grows with the input pixel count (the 4× model output
+  alone is 3200×2400×3 floats ≈ 92 MB at 800 px; the rest is ONNX Runtime's intermediate
+  buffers and the image copies, which were not broken down).
+- `high` at 400 px peaks near 0.9 GB: the 67 MB model plus tiles. `high` at 800 px was not
+  measured here (about 60 s per call); the README's "around 1.6 GB" for tiling is a design
+  note, not one of these measurements.
+- Calls run one at a time inside a process, so a process needs about the peak of its largest
+  call, not the sum. Several processes (see "Throughput") each need their own copy: four
+  `fast` processes at 800 px need about 2.3 GB, plus headroom for the input and output buffers.
