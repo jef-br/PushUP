@@ -57,3 +57,9 @@ test('a call with a too-small largest side (RangeError) in the middle of a batch
 
 test('a call with a non-integer stride (TypeError) in the middle of a batch rejects alone', () =>
   withFast(() => checkBatch(() => upscale(image(400, 12, 2), 1.5, 1.0), TypeError, 'stride 1.5')));
+
+test('a call with upscale_factor 0 (RangeError) in the middle of a batch rejects alone', () =>
+  withFast(() => checkBatch(() => upscale(image(400, 12, 2), 400 * 3, 0), RangeError, 'factor 0')));
+
+test('a call with a string instead of a byte array (TypeError) in the middle of a batch rejects alone', () =>
+  withFast(() => checkBatch(() => upscale('not bytes', 400 * 3, 1.0), TypeError, 'arr string')));

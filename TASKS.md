@@ -683,7 +683,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   and how to run, and a plain sentence on whether the arena-off option looks free, costly or lossy.
   No `src/` change and no recommendation to change a default (owner decision). `npm test` passes.
 
-### [ ] R11 — Test: a bad `upscale_factor` or `arr` type mid-batch rejects alone (extends R10)
+### [x] R11 — (done 2026-11-13, test/batch-reject.test.js) Test: a bad `upscale_factor` or `arr` type mid-batch rejects alone (extends R10)
 - **Goal:** R10 covered a bad size (RangeError) and bad stride (TypeError) rejected before the queue; the
   other two pre-queue checks (factor, `arr` type) are untested in a batch.
 - **Accept:** extend `test/batch-reject.test.js` (same helper, same checks: the valid neighbours keep
