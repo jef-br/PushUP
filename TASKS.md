@@ -696,7 +696,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   after a call, that the ORT arena (not the image arrays) drives the growth, and that a second call
   creeps up a little.
 - **Accept:** the bullet (and nothing else in the README) gets one or two sentences saying: memory is
-  not returned between calls; `high` grows with input size mainly because of the ONNX Runtime
+  not returned between calls; `high` grows with input size mainly (not only) because of the ONNX Runtime
   arena; budget ~1.5 GB per `high` process at 800 px; link to `docs/PERF.md` "`high` memory breakdown
   (M4)" (the link must resolve). Wording matches `docs/PERF.md`; no recommendation to change
   settings. README tests (R2, Q6, D3, D6) still pass; docs only. `npm test` passes.
