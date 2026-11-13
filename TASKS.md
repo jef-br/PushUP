@@ -668,3 +668,35 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `enableCpuMemArena: false` + `enableMemPattern: false`). **Owner decision (not a task):** whether
   to set those options for `high` (and `fast`) sessions — first measure latency and output bytes
   with the arena off (`bench/memory-breakdown.js --arena` shows only memory). No `src/` change made.
+
+### [ ] P6 — Measure latency and output bytes with the ORT CPU arena off (research, no `src/` change)
+- **Goal:** M4 found that the ORT CPU memory arena accounts for most of `high` mode's memory growth
+  (800 px, ORT-only loop: 1.45 GB with the shipped options, 0.73 GB with `enableCpuMemArena: false` +
+  `enableMemPattern: false`). Whether turning it off is acceptable depends on speed and output, which M4
+  did not measure. The owner needs the numbers before deciding (no default change here).
+- **Accept:** a bench-only script (e.g. `bench/arena.js`, session options taken from `_sessionOptions`
+  with the two flags added; the model call only, like `bench/threads.js`) that, for the `fast` model at
+  400×300 and 800×600 and the `high` model at 400×300, in fresh processes, reports for arena on / off:
+  median `session.run` time (≥ 5 runs after 1 warm-up; one tile loop for `high`), max RSS, and whether the
+  output tensors are byte-identical after the same byte conversion as `src/` (`_copyFromTensor`), with the max
+  absolute byte difference. A section "Arena (P6, <date>)" in `docs/PERF.md` with the table, machine line
+  and how to run, and a plain sentence on whether the arena-off option looks free, costly or lossy.
+  No `src/` change and no recommendation to change a default (owner decision). `npm test` passes.
+
+### [ ] R11 — Test: a bad `upscale_factor` or `arr` type mid-batch rejects alone (extends R10)
+- **Goal:** R10 covered a bad size (RangeError) and bad stride (TypeError) rejected before the queue; the
+  other two pre-queue checks (factor, `arr` type) are untested in a batch.
+- **Accept:** extend `test/batch-reject.test.js` (same helper, same checks: the valid neighbours keep
+  contract size/stride and bytes equal to solo calls, a later call still works) with `upscale_factor = 0`
+  (RangeError) and `arr` = a string (TypeError) in the middle call. No `src/` change unless a test
+  exposes a real bug (say so in the PR). `npm test` passes.
+
+### [ ] DOC3 — README "Known limits → Memory": say that memory is retained and what drives `high`'s growth
+- **Goal:** the bullet gives only peak numbers; M3/M4 found that a `high` process keeps ~1.5 GB at 800 px
+  after a call, that the ORT arena (not the image arrays) drives the growth, and that a second call
+  creeps up a little.
+- **Accept:** the bullet (and nothing else in the README) gets one or two sentences saying: memory is
+  not returned between calls; `high` grows with input size mainly because of the ONNX Runtime
+  arena; budget ~1.5 GB per `high` process at 800 px; link to `docs/PERF.md` "`high` memory breakdown
+  (M4)" (the link must resolve). Wording matches `docs/PERF.md`; no recommendation to change
+  settings. README tests (R2, Q6, D3, D6) still pass; docs only. `npm test` passes.
