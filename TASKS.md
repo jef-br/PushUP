@@ -669,7 +669,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   to set those options for `high` (and `fast`) sessions — first measure latency and output bytes
   with the arena off (`bench/memory-breakdown.js --arena` shows only memory). No `src/` change made.
 
-### [ ] P6 — Measure latency and output bytes with the ORT CPU arena off (research, no `src/` change)
+### [~] P6 — (claimed 2026-11-13, branch overnight/2026-11-13-P6) Measure latency and output bytes with the ORT CPU arena off (research, no `src/` change)
 - **Goal:** M4 found that the ORT CPU memory arena accounts for most of `high` mode's memory growth
   (800 px, ORT-only loop: 1.45 GB with the shipped options, 0.73 GB with `enableCpuMemArena: false` +
   `enableMemPattern: false`). Whether turning it off is acceptable depends on speed and output, which M4
