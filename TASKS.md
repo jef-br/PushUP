@@ -640,7 +640,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   listed name is misspelt (try it locally, don't commit that). Docs only; no test or `CLAUDE.md`
   change. `npm test` passes.
 
-### [ ] R10 — Test: an invalid call in the middle of a batch rejects alone and does not disturb the others
+### [~] R10 — (in progress 2026-11-13, branch overnight/2026-11-13-R10) Test: an invalid call in the middle of a batch rejects alone and does not disturb the others
 - **Goal:** `queue.test.js` covers a failure *inside* the queue; nothing checks a call that is
   rejected *before* the queue (bad size, bad stride, bad factor) while valid calls are queued around it.
 - **Accept:** a new test (`test/batch-reject.test.js`, `fast` model on CPU, thin images with short side
