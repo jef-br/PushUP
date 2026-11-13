@@ -45,6 +45,10 @@ Also covered by `test/input.test.js` (generated names, not checked): padding 0 a
 odd-width image, input bytes untouched, `Buffer` slices and `Uint8Array` views with a
 non-zero `byteOffset`.
 
+Also covered by `test/determinism.test.js` (generated names, not checked): at factors 1.0 and
+1.5, an input with +2 bytes of stride padding gives the same output bytes as the tightly packed
+input.
+
 ## `upscale_factor` — default 1.0; output largest side = `min(round(input_largest * factor), 1000)`
 
 - `test/upscale.test.js`: "default factor 1.0 keeps the size"
@@ -61,8 +65,13 @@ non-zero `byteOffset`.
 - `test/upscale.test.js`: "output colours stay close to input (no shift)"
 - `test/readme.test.js`: "the README upscale example runs and returns the documented shape"
 
+Also covered by `test/determinism.test.js` (generated names, not checked): at factors 1.0 and
+1.5 the same call twice in a row, and once more after a fresh session (`_reset()`), returns equal
+`arr_out` bytes and equal `stride_out`.
+
 ## Async, one at a time (the sentence under the table)
 
 - `test/upscale.test.js`: "concurrent calls resolve"
 - `test/queue.test.js`: "an inference that fails inside the queue does not poison later calls"
 - `test/queue.test.js`: "calls run one at a time, in the order they were made"
+- `test/mixed-queue.test.js`: "four queued calls of mixed sizes and factors return their own result, equal to a solo call"
