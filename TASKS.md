@@ -893,7 +893,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   change. Add a table next to the M7 table in `docs/PERF.md` (RSS after calls 1, 2, 5, 10, 20, 30, max RSS, median call time) and one
   plain sentence per size: does the step after call 1 disappear (call 2 within 15% of call 1), and what does the median call time do
   against the arena-on rows of M6? No recommendation to change a default (owner decision). `npm test` passes.
-- **Done (2026-11-14, PR #99):** 600 px: the step disappears with the arena off (settled ~0.19 GB vs 0.61 GB; median ~1.9× slower). 400 px: the step shrinks but stays (call 2 +25% over call 1 in both runs; settled 0.20–0.23 GB vs 0.37–0.39 GB; median ~1.2–1.6× slower). DOC11 must say that, not "confirmed at both sizes".
+- **Done (2026-11-14, PR #99):** 600 px: the step disappears with the arena off (settled ~0.19 GB vs 0.61 GB; median ~1.9× slower). 400 px: the step shrinks but stays (call 2 +25% over call 1 in both runs; settled 0.20–0.23 GB vs 0.37–0.39 GB; median ~1.2–1.6× slower). DOC11 must say that, not "confirmed at both sizes", and must not quote a firm 400 px settled saving (check runs settled at 0.20–0.39 GB with the arena off).
 
 ### [ ] DOC11 — README "Known limits → Memory": say whether the arena step was confirmed at 400 and 600 px (after M9)
 - **Goal:** DOC8 left the README saying the arena cause was traced at 800 px only; M9 produces the 400 and 600 px answer.

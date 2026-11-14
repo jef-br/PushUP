@@ -334,8 +334,10 @@ two runs each, same machine and settings, 30 calls (MB; the arena-on rows are th
   15% test fails there because call 1 was low, not because call 2 grew), RSS is flat from call 5 (192–193 MB, call 30 within 0.2% of call 5), against 0.61 GB
   with the arena on. The median call is 1925–1957 ms against 994–1010 ms (about 1.9×).
 
-So the arena explains most of the memory the `fast` process keeps at every size (about 0.4 GB less at 600 px and about 0.17 GB less at 400 px),
-but at 400 px a smaller step after call 1 remains with the arena off. No default is proposed (owner decision).
+So the arena explains most of the memory the `fast` process keeps at 600 px (about 0.4 GB less), and the step after call 1 is smaller at 400 px,
+where a smaller step still remains with the arena off. The settled value with the arena off is not stable at 400 px: the two runs above settle at 0.20 and 0.23 GB,
+and two further check runs by the reviewer settled at 0.26 and 0.39 GB (the latter equal to the arena-on value), so "about 0.17 GB less at 400 px" is not a firm
+figure. At 600 px a third check run ended 8.9% above call 5 (210 vs 193 MB; call 20 was 229 MB), so the "flat" reading rests on two clean runs. No default is proposed (owner decision).
 
 ### `high` memory breakdown (M4, 2026-11-13)
 
