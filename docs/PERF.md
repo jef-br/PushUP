@@ -259,8 +259,25 @@ rows above measure), after the second call it is 908 MB in both runs, and it the
 0.91–0.93 GB (max RSS 1.02–1.04 GB). So a `fast` process serving 800 px images settles at roughly
 **0.93 GB resident (about 1 GB peak), not 0.57 GB**: the first-call figure understates a server that
 has handled more than one call. The cause of the extra ~0.35–0.45 GB after call 2 was not investigated
-(it could be ONNX Runtime keeping buffers, as M4 found for `high`, but that was not measured for `fast`). Only 800×600 was run. How to run
+(it could be ONNX Runtime keeping buffers, as M4 found for `high`, but that was not measured for `fast`). Only 800×600 was run here (400 and 600 px: see M6 below). How to run
 (about 1 minute): `node bench/memory-creep.js [--calls 30] [--size 800]`.
+
+**Smaller sizes (M6, 2026-11-14).** `node bench/memory-creep.js --size 400` and `--size 600`, two runs each,
+same machine and settings (4:3 images, MB):
+
+| Input | Run | After call 1 | 2 | 5 | 10 | 20 | 30 | Max RSS | Call 30 vs call 5 | Median call |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 1 | 199 | 312 | 359 | 368 | 369 | 369 | 369 | +10 MB (2.7%) | 442 ms |
+| 400×300 | 2 | 200 | 313 | 360 | 383 | 386 | 386 | 386 | +26 MB (7.2%) | 415 ms |
+| 600×450 | 1 | 346 | 590 | 605 | 606 | 606 | 606 | 656 | +1 MB (0.2%) | 994 ms |
+| 600×450 | 2 | 395 | 540 | 604 | 605 | 605 | 605 | 655 | +1 MB (0.1%) | 1010 ms |
+
+- **400 px:** the step after call 1 appears (about +0.11 GB at call 2, 0.20 → 0.31 GB), but it is not
+  flat by the 5% rule: call 30 is 2.7% above call 5 in run 1 and 7.2% above it in run 2 (over the 5% limit). Both runs
+  rise only until call 10 (run 2: 360 → 383) and are unchanged from call 20 on, so it settles at about
+  0.37–0.39 GB rather than growing without bound; two runs are too few to say more.
+- **600 px:** the step appears too (about +0.15–0.24 GB, 0.35–0.40 → 0.54–0.59 GB at call 2) and it is flat
+  after it: call 30 is within 0.2% of call 5 in both runs; it settles at about 0.61 GB (max RSS 0.66 GB).
 
 ### `high` memory breakdown (M4, 2026-11-13)
 
