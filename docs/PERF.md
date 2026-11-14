@@ -258,8 +258,8 @@ table shows instead is a **warm-up step**: RSS after the first call is 473–561
 rows above measure), after the second call it is 908 MB in both runs, and it then stays at about
 0.91–0.93 GB (max RSS 1.02–1.04 GB). So a `fast` process serving 800 px images settles at roughly
 **0.93 GB resident (about 1 GB peak), not 0.57 GB**: the first-call figure understates a server that
-has handled more than one call. The extra ~0.35–0.45 GB after call 2 is not explained here (the same
-kind of retained buffers M4 found for `high`; not broken down). Only 800×600 was run. How to run
+has handled more than one call. The cause of the extra ~0.35–0.45 GB after call 2 was not investigated
+(it could be ONNX Runtime keeping buffers, as M4 found for `high`, but that was not measured for `fast`). Only 800×600 was run. How to run
 (about 1 minute): `node bench/memory-creep.js [--calls 30] [--size 800]`.
 
 ### `high` memory breakdown (M4, 2026-11-13)
