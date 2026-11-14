@@ -804,7 +804,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   Memory" says one `fast` call peaks at about 0.57 GB at 800 px; a process that has handled two or more calls
   sits at ~0.93 GB. Reword with the steady-state number and link "Does `fast` mode creep" in `docs/PERF.md`.
 
-### [ ] DOC7 — README "Known limits → Memory": say what a `fast` process uses after more than one call
+### [~] DOC7 (started 2026-11-14, branch overnight/2026-11-14-DOC7) — README "Known limits → Memory": say what a `fast` process uses after more than one call
 - **Goal:** M5 (`docs/PERF.md` "Does `fast` mode creep over repeated calls? (M5, 2026-11-14)") found that RSS after the
   first `fast` call at 800 px is ~0.5 GB, after the second ~0.91 GB, and then stays flat at ~0.93 GB (max RSS ~1.03 GB).
   The README bullet quotes only the single-call figure (0.2 GB at 400 px to 0.57 GB at 800 px), which understates
