@@ -248,8 +248,8 @@ case, so the model always gets the full-size input.
 - **Memory:** one `fast` call peaks at about 0.2 GB (400 px) to 0.57 GB (800 px); `high`
   about 0.9 GB (400 px) to 1.5 GB (800 px) ([docs/PERF.md](docs/PERF.md#memory-m1-2026-11-12)).
   A process does not give memory back between calls (a second `high` call creeps up a little
-  more). `high` grows with input size mainly because of the ONNX Runtime memory arena, not
-  because of the image arrays (details: [docs/PERF.md](docs/PERF.md#high-memory-breakdown-m4-2026-11-13));
+  more). `high` grows with input size mainly (not only) because of the ONNX Runtime memory
+  arena; the image arrays explain only a few percent of it (details: [docs/PERF.md](docs/PERF.md#high-memory-breakdown-m4-2026-11-13));
   budget about 1.5 GB per `high` process at 800 px.
 - **Fine texture** (fabric weave, suede grain) that isn't present in a small input
   can't be restored faithfully. A model can only invent it. Compared with Claid.ai's
