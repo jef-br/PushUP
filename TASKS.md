@@ -848,7 +848,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `npm test` passes.
 - **Done (2026-11-14, PR #93):** three 100-call runs at 400×300: call 100 vs call 20 is +1.9%, +4.9%, +0.5%, so flat by the rule (run 2 close to the limit); settles ~0.37–0.39 GB. No owner note needed (no run above 2× call 5). DOC8 can use ~0.37–0.39 GB.
 
-### [ ] DOC8 — README "Known limits → Memory": add the 400/600 px steady state and the arena finding
+### [x] DOC8 — (done 2026-11-14, README Known limits Memory) README "Known limits → Memory": add the 400/600 px steady state and the arena finding
 - **Goal:** after DOC7 the README bullet gives the 800 px steady state only. M6 measured 400 and 600 px, and M7
   found the call-2 step is the ONNX Runtime arena (`docs/PERF.md`, "Is the call-2 step the ONNX Runtime arena? (M7)").
 - **Accept:** the README Memory bullet (and nothing else in the README) gets one or two more sentences: a

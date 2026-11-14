@@ -251,9 +251,13 @@ case, so the model always gets the full-size input.
   more). `high` grows with input size mainly (not only) because of the ONNX Runtime memory
   arena; the image arrays explain only a few percent of it (details: [docs/PERF.md](docs/PERF.md#high-memory-breakdown-m4-2026-11-13));
   budget about 1.5 GB per `high` process at 800 px.
-  A `fast` process that has made two or more calls at 800 px holds about 0.93 GB (about 1 GB
-  peak) and stays flat afterwards (no creep over 30 calls); only 800×600 was measured
-  ([docs/PERF.md](docs/PERF.md#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14)).
+  A `fast` process that has made two or more calls settles at about 0.37–0.39 GB (400 px),
+  0.61 GB (600 px) and 0.93 GB (800 px, about 1 GB peak), and stays flat afterwards (no creep
+  over 30 calls at 600 and 800 px, 100 calls at 400 px). At 800 px the step above the first-call
+  figure was traced to the ONNX Runtime memory arena (arena-off run; the same step appears at
+  400 and 600 px, not tested with the arena off; sizes measured on 4:3 images 400×300, 600×450 and
+  800×600; tables and the arena-off run:
+  [docs/PERF.md](docs/PERF.md#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14)).
 - **Fine texture** (fabric weave, suede grain) that isn't present in a small input
   can't be restored faithfully. A model can only invent it. Compared with Claid.ai's
   own published sample, PushUP is clean and faithful but behind on perceived texture
