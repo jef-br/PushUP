@@ -1,7 +1,7 @@
 'use strict';
 // Task M5: does memory creep up over repeated calls? One fresh process, `fast` on CPU, the public
 // upscale() on a synthetic 800x600 image at factor 1.0, `--calls` sequential calls.
-// Usage: node bench/memory-creep.js [--calls 30] [--size 800] [--arena on|off]
+// Usage: node bench/memory-creep.js [--calls 30] [--size 800] [--arena on|off]   (--size: integer 400-800, the contract range)
 // Task M7: `--arena off` wraps ort.InferenceSession.create in this process so every session also gets
 // enableCpuMemArena=false and enableMemPattern=false (bench-only, like bench/arena.js; src/ unchanged).
 // Prints the RSS (MB, process.memoryUsage().rss) after calls 1, 2, 5, 10, 20 and the last, the
@@ -30,8 +30,10 @@ function synth(longest) {
 
 (async () => {
   const calls = Number(arg('calls', '30'));
-  const size = Number(arg('size', '800'));
+  const sizeArg = String(arg('size', '800'));
+  const size = Number(sizeArg);
   if (!Number.isInteger(calls) || calls < 6) fail('--calls must be an integer >= 6');
+  if (!/^\d+$/.test(sizeArg) || size < 400 || size > 800) fail('--size must be an integer from 400 to 800');
   if (arena === 'off') {
     const ort = require('onnxruntime-node');
     const create = ort.InferenceSession.create.bind(ort.InferenceSession);
