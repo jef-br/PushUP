@@ -279,6 +279,19 @@ same machine and settings (4:3 images, MB):
 - **600 px:** the step appears too (about +0.15–0.24 GB, 0.35–0.40 → 0.54–0.59 GB at call 2) and it is flat
   after it: call 30 is within 0.2% of call 5 in both runs; it settles at about 0.61 GB (max RSS 0.66 GB).
 
+**More 400 px runs (M8, 2026-11-14).** `node bench/memory-creep.js --size 400 --calls 100`, three runs, same
+machine and settings (MB):
+
+| Run | After call 1 | 2 | 5 | 10 | 20 | 100 | Max RSS | Call 100 vs call 20 | Median call |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 198 | 311 | 358 | 359 | 362 | 369 | 369 | +7 MB (1.9%) | 460 ms |
+| 2 | 200 | 313 | 360 | 367 | 370 | 388 | 388 | +18 MB (4.9%) | 457 ms |
+| 3 | 200 | 314 | 361 | 367 | 369 | 371 | 371 | +2 MB (0.5%) | 473 ms |
+
+By the rule (call 100 within 5% of call 20 in all three runs) the 400 px steady state is **flat**: it settles
+at about 0.37–0.39 GB and no run ends above 2× the RSS of call 5. Run 2 is close to the limit (4.9%, about 0.2 MB per call between calls 20 and 100),
+so a slow rise of the order of 0.1–0.2 MB per call is not ruled out by three runs; max RSS never exceeded 0.39 GB.
+
 **Is the call-2 step the ONNX Runtime arena? (M7, 2026-11-14).** `node bench/memory-creep.js --arena off`
 wraps `ort.InferenceSession.create` in the benchmark process so the CPU session also gets
 `enableCpuMemArena: false` and `enableMemPattern: false` (bench-only; `src/` is unchanged). Two runs, 800×600,

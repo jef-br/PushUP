@@ -837,7 +837,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 
 
-### [ ] M8 — More `fast` 400 px runs: is the steady state flat or does it creep? (docs only)
+### [x] M8 — (done 2026-11-14, docs/PERF.md Memory) More `fast` 400 px runs: is the steady state flat or does it creep? (docs only)
 - **Goal:** M6 ran 400×300 twice: call 30 was 2.7% and 7.2% above call 5 (5% rule), so "flat" is unclear
   at that size (600 and 800 px are flat). Two runs are too few to tell noise from a slow rise.
 - **Accept:** run `node bench/memory-creep.js --size 400 --calls 100` three times (about 45 s each; the
@@ -846,6 +846,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   sentence: flat (call 100 within 5% of call 20 in all three runs), creeping (give MB per call from the three runs), or
   unclear. If any run ends more than 2× the RSS of call 5, add an owner note on this task. No `src/` or script change.
   `npm test` passes.
+- **Done (2026-11-14, PR #93):** three 100-call runs at 400×300: call 100 vs call 20 is +1.9%, +4.9%, +0.5%, so flat by the rule (run 2 close to the limit); settles ~0.37–0.39 GB. No owner note needed (no run above 2× call 5). DOC8 can use ~0.37–0.39 GB.
 
 ### [ ] DOC8 — README "Known limits → Memory": add the 400/600 px steady state and the arena finding
 - **Goal:** after DOC7 the README bullet gives the 800 px steady state only. M6 measured 400 and 600 px, and M7
