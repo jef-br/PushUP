@@ -23,6 +23,8 @@ option (`//`-commented lines, `test.skip(` and `test.todo(` are caught).
 - `test/arr-types.test.js`: "a whole Buffer is accepted and gives the same output as a Uint8Array"
 - `test/arr-types.test.js`: "other typed arrays, DataView, ArrayBuffer and strings reject with TypeError"
 - `test/arr-types.test.js`: "a plain Array holding a Symbol or a BigInt rejects with TypeError"
+- `test/batch-reject.test.js`: "a call with a too-small largest side (RangeError) in the middle of a batch rejects alone"
+- `test/batch-reject.test.js`: "a call with a string instead of a byte array (TypeError) in the middle of a batch rejects alone"
 
 Also covered by `test/arr-types.test.js` (name with escaped quotes, not checked): a plain `Array`
 is converted as by `Uint8Array.from` (300 → 44, `'x'` → 0).
@@ -35,6 +37,7 @@ such as 800×1 and 4×800 resolve with the right shape.
 - `test/upscale.test.js`: "row padding in stride is handled"
 - `test/upscale.test.js`: "stride padding of 0, 1 and 2 bytes works for odd and even widths"
 - `test/length.test.js`: "arr shorter than one row rejects with RangeError"
+- `test/batch-reject.test.js`: "a call with a non-integer stride (TypeError) in the middle of a batch rejects alone"
 - `test/readme-errors.test.js`: "every row of the README Errors list rejects with the documented error class"
 
 Also covered by `test/length.test.js` (generated names, not checked): with padding 1 and 2, a
@@ -58,6 +61,7 @@ input.
 - `test/upscale.test.js`: "invalid upscale_factor values are rejected"
 - `test/readme-errors.test.js`: "every row of the README Errors list rejects with the documented error class"
 - `test/aspect.test.js`: "literal expected shapes for thin inputs (guards the formula in this file)"
+- `test/batch-reject.test.js`: "a call with upscale_factor 0 (RangeError) in the middle of a batch rejects alone"
 
 ## Output — `[arr_out, stride_out]`, tightly packed RGB, `stride_out = out_width * 3`
 
@@ -75,3 +79,7 @@ Also covered by `test/determinism.test.js` (generated names, not checked): at fa
 - `test/queue.test.js`: "an inference that fails inside the queue does not poison later calls"
 - `test/queue.test.js`: "calls run one at a time, in the order they were made"
 - `test/mixed-queue.test.js`: "four queued calls of mixed sizes and factors return their own result, equal to a solo call"
+- `test/batch-reject.test.js`: "a call with a too-small largest side (RangeError) in the middle of a batch rejects alone"
+- `test/batch-reject.test.js`: "a call with a non-integer stride (TypeError) in the middle of a batch rejects alone"
+- `test/batch-reject.test.js`: "a call with upscale_factor 0 (RangeError) in the middle of a batch rejects alone"
+- `test/batch-reject.test.js`: "a call with a string instead of a byte array (TypeError) in the middle of a batch rejects alone"

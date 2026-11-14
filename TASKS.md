@@ -710,7 +710,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   (M4)" (the link must resolve). Wording matches `docs/PERF.md`; no recommendation to change
   settings. README tests (R2, Q6, D3, D6) still pass; docs only. `npm test` passes.
 
-### [ ] DOC4 — `docs/CONTRACT_TESTS.md`: add the batch-reject tests (R10, R11)
+### [x] DOC4 — (done 2026-11-14, docs/CONTRACT_TESTS.md) `docs/CONTRACT_TESTS.md`: add the batch-reject tests (R10, R11)
 - **Goal:** `test/batch-reject.test.js` pins that an invalid call (size, stride, factor, `arr` type)
   rejects alone while valid calls queued around it keep their own results; the file isn't in the
   contract-to-tests map (0 mentions).
