@@ -1,0 +1,50 @@
+'use strict';
+// Task M5: does memory creep up over repeated calls? One fresh process, `fast` on CPU, the public
+// upscale() on a synthetic 800x600 image at factor 1.0, `--calls` sequential calls.
+// Usage: node bench/memory-creep.js [--calls 30] [--size 800]
+// Prints the RSS (MB, process.memoryUsage().rss) after calls 1, 2, 5, 10, 20 and the last, the
+// OS-reported max RSS (process.resourceUsage().maxRSS), and the change from call 5 to the last call.
+// Run it as `node bench/memory-creep.js` (it is its own fresh process; no child is spawned).
+process.env.PUSHUP_QUALITY = 'fast';
+process.env.PUSHUP_DEVICE = 'cpu';
+
+const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
+const MB = (b) => b / 1048576;
+
+function synth(longest) {
+  const w = longest, h = Math.round(longest * 0.75);
+  const b = Buffer.alloc(w * h * 3);
+  let s = 12345;
+  for (let i = 0; i < b.length; i++) {
+    s = (s * 1103515245 + 12345) & 0x7fffffff;
+    b[i] = ((i / 3) % w) * 255 / w + (s >> 16) % 16;
+  }
+  return { b, w, h };
+}
+
+(async () => {
+  const calls = Number(arg('calls', '30'));
+  const size = Number(arg('size', '800'));
+  if (!Number.isInteger(calls) || calls < 6) throw new Error('--calls must be an integer >= 6');
+  const { upscale } = require('../src/index.js');
+  const { b, w, h } = synth(size);
+  const rss = [];
+  const ms = [];
+  for (let i = 1; i <= calls; i++) {
+    const t0 = process.hrtime.bigint();
+    await upscale(b, w * 3, 1.0);
+    ms.push(Number(process.hrtime.bigint() - t0) / 1e6);
+    rss.push(process.memoryUsage().rss);
+  }
+  const at = (n) => MB(rss[n - 1]);
+  const marks = [...new Set([1, 2, 5, 10, 20, calls].filter((n) => n <= calls))];
+  console.log(`fast, CPU, ${w}x${h}, factor 1.0, ${calls} sequential calls (MB)`);
+  console.log('after call   ' + marks.map((n) => String(n).padStart(7)).join(''));
+  console.log('RSS          ' + marks.map((n) => at(n).toFixed(0).padStart(7)).join(''));
+  const maxRss = MB(process.resourceUsage().maxRSS * 1024);
+  const delta = at(calls) - at(5);
+  console.log(`max RSS ${maxRss.toFixed(0)} MB; RSS last vs call 5: ${delta >= 0 ? '+' : ''}${delta.toFixed(0)} MB ` +
+    `(${((delta / at(5)) * 100).toFixed(1)}%), ${(delta / (calls - 5)).toFixed(2)} MB per call`);
+  const sorted = [...ms].sort((a, c) => a - c);
+  console.log(`median call ${sorted[Math.floor(sorted.length / 2)].toFixed(0)} ms`);
+})().catch((e) => { console.error(e); process.exit(1); });
