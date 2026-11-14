@@ -895,7 +895,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   against the arena-on rows of M6? No recommendation to change a default (owner decision). `npm test` passes.
 - **Done (2026-11-14, PR #99):** 600 px: call 2 is steady at 177 MB with the arena off (call 1 varied 122–172 MB, so the literal 15% test passes in 1 of 2 runs); settled ~0.19 GB vs 0.61 GB; median ~1.9× slower. 400 px: the step shrinks but stays (call 2 +25% over call 1 in both runs; settled 0.20–0.23 GB vs 0.37–0.39 GB; median ~1.2–1.6× slower). DOC11 must say that, not "confirmed at both sizes", and must not quote a firm 400 px settled saving (check runs settled at 0.20–0.39 GB with the arena off).
 
-### [~] DOC11 (started 2026-11-14, branch overnight/2026-11-14-DOC11) — README "Known limits → Memory": say whether the arena step was confirmed at 400 and 600 px (after M9)
+### [x] DOC11 — (done 2026-11-14, README Known limits Memory) README "Known limits → Memory": say whether the arena step was confirmed at 400 and 600 px (after M9)
 - **Goal:** DOC8 left the README saying the arena cause was traced at 800 px only; M9 produces the 400 and 600 px answer.
 - **Accept:** only after M9 is merged: the README Memory bullet (and nothing else in the README) replaces the clause "the same step appears at
   400 and 600 px, not tested with the arena off" by what M9 found (one sentence, numbers equal those in `docs/PERF.md`; if M9 found
