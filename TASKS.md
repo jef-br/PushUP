@@ -731,7 +731,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   the stub and call `_reset()` afterwards. No `src/` change unless the test exposes a real bug (say so
   in the PR). `npm test` passes.
 
-### [ ] R13 — Test: the env settings are read on every call, not once
+### [~] R13 (claimed 2026-11-14, branch overnight/2026-11-14-R13) — Test: the env settings are read on every call, not once
 - **Goal:** `CLAUDE.md` says the mode is "chosen per call" from `PUSHUP_QUALITY` / `PUSHUP_DEVICE`.
   `test/device-fallback.test.js` (lines ~89–109) already switches `PUSHUP_QUALITY` between calls
   and compares output bytes, but no test asserts *which model session is created or reused*.
