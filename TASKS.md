@@ -886,7 +886,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   validation and is out of scope). `npm test` passes.
 - **Done (2026-11-14, PR #97):** `test/memory-creep-args.test.js` (3 cases, ~0.3 s each) asserts exit 1, the exact one-line first stderr line naming the flag, and < 5 s. `bench/memory-creep.js` changed (bench file only, no `src/`): flag errors now print one line via a small `fail()` instead of a stack trace. Against the old script the 3 tests fail.
 
-### [ ] M9 — Is the call-2 memory step also the arena at 400 and 600 px? (research, bench-only, no `src/` change)
+### [~] M9 (started 2026-11-14, branch overnight/2026-11-14-M9) — Is the call-2 memory step also the arena at 400 and 600 px? (research, bench-only, no `src/` change)
 - **Goal:** M7 traced the `fast` call-2 step to the ONNX Runtime arena at 800×600 only; the README (DOC8) says the same step
   at 400 and 600 px "was not tested with the arena off". Close that gap.
 - **Accept:** run `node bench/memory-creep.js --arena off --size 400` and `--size 600`, twice each (about 30 s per run), no script
