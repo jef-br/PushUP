@@ -754,7 +754,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   and links "Arena (P6, 2026-11-13)" and "`high` memory breakdown (M4)". No numbers that aren't in
   those sections. Docs only. `npm test` passes.
 
-### [ ] R14 — Test: a tiny `upscale_factor` gives a 1-pixel largest side, not an empty image
+### [x] R14 — (done 2026-11-14, test/tiny-factor.test.js) Test: a tiny `upscale_factor` gives a 1-pixel largest side, not an empty image
 - **Goal:** `src/index.js` clamps the target with `Math.max(1, …)`, so `upscale(400 px image, …, 0.001)`
   returns a 1×1 image (observed 2026-11-14: stride 3, 3 bytes) whereas the `CLAUDE.md` formula
   `min(round(input_largest * factor), 1000)` would give 0. `test/aspect.test.js` covers `0.4` on a 1 px
@@ -766,6 +766,14 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   contract change. Add a note on this task (not to `CLAUDE.md`, which is an owner file) that the formula
   in `CLAUDE.md` says 0 for these inputs while the code returns 1, for the owner to decide whether
   the contract text should mention the floor. `npm test` passes.
+- **Done (2026-11-14, PR #85):** `test/tiny-factor.test.js` pins factors `0.001`, `0.00124`, `Number.MIN_VALUE`
+  and `0.0025` on a 400×12 input: all give a 1×1 image (`stride_out` 3, 3 bytes). No `src/` bug. Mutation
+  check: removing the `Math.max(1, …)` on `outH` makes it fail (sharp rejects a 0 height); removing it
+  on `target` alone changes nothing (the per-side floors still give 1×1).
+- **Owner note (no change made):** the `CLAUDE.md` contract formula `min(round(input_largest * factor), 1000)`
+  gives 0 for these factors, while the code floors every side at 1 (so the output largest side is 1, not 0). Whether
+  the contract text or the README should mention the floor is the owner's call.
+
 
 ### [ ] DOC6 — README "Development": list every runnable `bench/` script, with a test that keeps it so
 - **Goal:** the README names `bench/profile.js`, `cold.js`, `threads.js`, `bench.js`, `gate.js` and
