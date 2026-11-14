@@ -1,7 +1,9 @@
 'use strict';
 // Task M5: does memory creep up over repeated calls? One fresh process, `fast` on CPU, the public
 // upscale() on a synthetic 800x600 image at factor 1.0, `--calls` sequential calls.
-// Usage: node bench/memory-creep.js [--calls 30] [--size 800]
+// Usage: node bench/memory-creep.js [--calls 30] [--size 800] [--arena on|off]
+// Task M7: `--arena off` wraps ort.InferenceSession.create in this process so every session also gets
+// enableCpuMemArena=false and enableMemPattern=false (bench-only, like bench/arena.js; src/ unchanged).
 // Prints the RSS (MB, process.memoryUsage().rss) after calls 1, 2, 5, 10, 20 and the last, the
 // OS-reported max RSS (process.resourceUsage().maxRSS), and the change from call 5 to the last call.
 // Run it as `node bench/memory-creep.js` (it is its own fresh process; no child is spawned).
@@ -10,6 +12,8 @@ process.env.PUSHUP_DEVICE = 'cpu';
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const MB = (b) => b / 1048576;
+const arena = arg('arena', 'on');
+if (arena !== 'on' && arena !== 'off') throw new Error('--arena must be on or off');
 
 function synth(longest) {
   const w = longest, h = Math.round(longest * 0.75);
@@ -26,6 +30,11 @@ function synth(longest) {
   const calls = Number(arg('calls', '30'));
   const size = Number(arg('size', '800'));
   if (!Number.isInteger(calls) || calls < 6) throw new Error('--calls must be an integer >= 6');
+  if (arena === 'off') {
+    const ort = require('onnxruntime-node');
+    const create = ort.InferenceSession.create.bind(ort.InferenceSession);
+    ort.InferenceSession.create = (path, o) => create(path, { ...o, enableCpuMemArena: false, enableMemPattern: false });
+  }
   const { upscale } = require('../src/index.js');
   const { b, w, h } = synth(size);
   const rss = [];
@@ -38,7 +47,7 @@ function synth(longest) {
   }
   const at = (n) => MB(rss[n - 1]);
   const marks = [...new Set([1, 2, 5, 10, 20, calls].filter((n) => n <= calls))];
-  console.log(`fast, CPU, ${w}x${h}, factor 1.0, ${calls} sequential calls (MB)`);
+  console.log(`fast, CPU, ${w}x${h}, factor 1.0, ${calls} sequential calls, arena ${arena} (MB)`);
   console.log('after call   ' + marks.map((n) => String(n).padStart(7)).join(''));
   console.log('RSS          ' + marks.map((n) => at(n).toFixed(0).padStart(7)).join(''));
   const maxRss = MB(process.resourceUsage().maxRSS * 1024);

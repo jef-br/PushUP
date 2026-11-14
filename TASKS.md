@@ -823,7 +823,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   warm-up step also appear, and is it flat after it (call 30 within 5% of call 5)? No `src/` change. `npm test` passes.
 - **Done (2026-11-14, PR #90):** the call-2 step appears at both sizes. 600 px settles at ~0.61 GB (flat, within 0.2%). 400 px settles at ~0.37–0.39 GB, but run 2 ended 7.2% above call 5 (over the 5% limit; rise stops by call 10–20), so it is borderline, not flat by the rule. A cheap follow-up would be more 400 px runs.
 
-### [ ] M7 — Is the call-2 memory step the ONNX Runtime arena? (research, bench-only, no `src/` change; run after M5)
+### [x] M7 — (done 2026-11-14, bench/memory-creep.js --arena + docs/PERF.md) Is the call-2 memory step the ONNX Runtime arena? (research, bench-only, no `src/` change; run after M5)
 - **Goal:** M5 left the cause of the ~0.4 GB rise between call 1 and call 2 unexplained; M4/P6 showed the arena
   matters for `high`. Check it for `fast` before anyone guesses.
 - **Accept:** `bench/memory-creep.js` gets an `--arena off` option (default `on`, behaviour unchanged) that wraps
@@ -833,4 +833,6 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   call time next to the M5 table in `docs/PERF.md`, with one plain sentence: with the arena off, does the step after
   call 1 disappear, shrink, or stay (and what does the median call time do)? No recommendation to change a default
   (owner decision). The README bench list (DOC6 test) still names the script. `npm test` passes.
+- **Done (2026-11-14, PR #91):** `--arena on|off` added to `bench/memory-creep.js`. With the arena off the call-2 step disappears (222 → 231 MB; settles ~0.26 GB, max RSS 0.60 GB vs 0.93/1.03 GB); median call ~3.2 s vs ~2.0 s (~1.65×). The step is the arena. Owner decision (no change made).
+
 

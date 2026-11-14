@@ -279,6 +279,24 @@ same machine and settings (4:3 images, MB):
 - **600 px:** the step appears too (about +0.15–0.24 GB, 0.35–0.40 → 0.54–0.59 GB at call 2) and it is flat
   after it: call 30 is within 0.2% of call 5 in both runs; it settles at about 0.61 GB (max RSS 0.66 GB).
 
+**Is the call-2 step the ONNX Runtime arena? (M7, 2026-11-14).** `node bench/memory-creep.js --arena off`
+wraps `ort.InferenceSession.create` in the benchmark process so the CPU session also gets
+`enableCpuMemArena: false` and `enableMemPattern: false` (bench-only; `src/` is unchanged). Two runs, 800×600,
+30 calls, same machine, MB (the "arena on" rows are the M5 runs above):
+
+| Arena | Run | After call 1 | 2 | 5 | 10 | 20 | 30 | Max RSS | Median call |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| on | M5 1 | 561 | 908 | 934 | 934 | 934 | 934 | 1022 | 1990 ms |
+| on | M5 2 | 473 | 908 | 934 | 907 | 929 | 929 | 1039 | 1966 ms |
+| off | 1 | 222 | 231 | 263 | 275 | 258 | 258 | 597 | 3243 ms |
+| off | 2 | 222 | 231 | 263 | 264 | 258 | 258 | 597 | 3255 ms |
+
+With the arena off the step after call 1 **disappears** (222 → 231 MB instead of 473–561 → 908 MB), so the
+step is the arena; RSS settles at about 0.26 GB (call 30 is 1.9–2.0% below call 5 in both runs; a third check run by the reviewer was 5.8% below, so the exact figure is noisy; max RSS 0.60 GB,
+against 0.93 GB and 1.02–1.04 GB with the arena on). The cost is speed: the median call goes from about 2.0 s to
+about 3.2 s (about 1.65×; "Arena (P6)" measured 1.75–1.86× for the model call alone). Whether to change the session
+options is an owner decision; nothing was changed.
+
 ### `high` memory breakdown (M4, 2026-11-13)
 
 `node bench/memory-breakdown.js` (one fresh process per size, `high` on CPU, factor 1.0; same
