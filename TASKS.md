@@ -776,7 +776,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   measures, as the existing lines do), pointing to the `docs/PERF.md` section that has its results
   ("Memory", "Throughput", "Arena (P6)"; the links must resolve). Extend `test/readme-bench.test.js` (or a
   new test): every `bench/*.js` file that has a `Usage:` comment line near its top must be named in
-  README.md; `bench/metrics.js` and `bench/aspect.js` are exempt, listed in the test with the reason. The test fails on the
+  README.md by its full path `bench/<name>.js` (a bare word like "arena" in prose does not count); `bench/metrics.js` and `bench/aspect.js` are exempt, listed in the test with the reason. The test fails on the
   current README and passes after. Docs and test only; README tests R2 / Q6 / D3 / D6 still pass; the
   README must not gain a ```js block calling `upscale(`. `npm test` passes.
 
