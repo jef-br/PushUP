@@ -744,7 +744,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   reuses the cached fast session (no new `create`). Restore env and `_reset()` afterwards. No `src/`
   change unless the test exposes a real bug. `npm test` passes.
 
-### [ ] DOC5 — `docs/PERF.md` "Follow-up ideas": add the arena result (P6)
+### [~] DOC5 (claimed 2026-11-14, branch overnight/2026-11-14-DOC5) — `docs/PERF.md` "Follow-up ideas": add the arena result (P6)
 - **Goal:** the "Follow-up ideas" list ends at the throughput idea; M4/P6 produced a second idea
   (turn the ONNX Runtime CPU arena off to cut `high`/`fast` memory) whose numbers sit in "Arena (P6)"
   and aren't linked from there.
