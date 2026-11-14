@@ -253,8 +253,9 @@ case, so the model always gets the full-size input.
   budget about 1.5 GB per `high` process at 800 px.
   A `fast` process that has made two or more calls settles at about 0.37–0.39 GB (400 px),
   0.61 GB (600 px) and 0.93 GB (800 px, about 1 GB peak), and stays flat afterwards (no creep
-  over 30 calls at 600 and 800 px, 100 calls at 400 px). The step above the first-call figure
-  comes from the ONNX Runtime memory arena (sizes measured on 4:3 images 400×300, 600×450 and
+  over 30 calls at 600 and 800 px, 100 calls at 400 px). At 800 px the step above the first-call
+  figure was traced to the ONNX Runtime memory arena (arena-off run; the same step appears at
+  400 and 600 px, not tested with the arena off; sizes measured on 4:3 images 400×300, 600×450 and
   800×600; tables and the arena-off run:
   [docs/PERF.md](docs/PERF.md#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14)).
 - **Fine texture** (fabric weave, suede grain) that isn't present in a small input
