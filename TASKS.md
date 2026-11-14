@@ -915,5 +915,5 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Accept:** a new subsection "Summary: settled RSS" at the top of "Memory" in `docs/PERF.md` with one table (rows: `fast` 400×300, 600×450, 800×600 with the
   arena on; `fast` 800×600 with the arena off; `high` 400×300 and 800×600 with the arena on) giving the first-call RSS, the settled RSS (after the
   second call or later) and max RSS in MB, each cell copied from an existing table (no new runs; a cell with no measurement says "not measured"), and
-  a link per row to the section it comes from (anchors must resolve). One plain sentence on what the table does not cover (other shapes, other machines).
+  a link per row to the section it comes from (anchors must resolve; M6, M7 and M8 sit under the M5 heading, so link that). Source rule, so cells do not mix runs: the first-call and settled columns come from the multi-call runs (M5/M6/M8/M7 tables, the first run listed for the row), max RSS from that same run, and `high` rows from the M1 and M4 tables; say in one line under the table which section each column was taken from. One plain sentence on what the table does not cover (other shapes, other machines).
   No README, `src/` or `CLAUDE.md` change. `npm test` passes.
