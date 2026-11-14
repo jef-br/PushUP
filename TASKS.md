@@ -775,7 +775,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   the contract text or the README should mention the floor is the owner's call.
 
 
-### [ ] DOC6 — README "Development": list every runnable `bench/` script, with a test that keeps it so
+### [~] DOC6 (claimed 2026-11-14, branch overnight/2026-11-14-DOC6) — README "Development": list every runnable `bench/` script, with a test that keeps it so
 - **Goal:** the README names `bench/profile.js`, `cold.js`, `threads.js`, `bench.js`, `gate.js` and
   `fetch_testset.sh`, but not `bench/memory.js`, `memory-breakdown.js`, `throughput.js` and `arena.js`
   (0 mentions each, checked 2026-11-14); `bench/metrics.js` and `bench/aspect.js` are library modules (no
