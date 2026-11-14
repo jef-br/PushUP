@@ -836,3 +836,50 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Done (2026-11-14, PR #91):** `--arena on|off` added to `bench/memory-creep.js`. With the arena off the call-2 step disappears (222 → 231 MB; settles ~0.26 GB, max RSS 0.60 GB vs 0.93/1.03 GB); median call ~3.2 s vs ~2.0 s (~1.65×). The step is the arena. Owner decision (no change made).
 
 
+
+### [ ] M8 — More `fast` 400 px runs: is the steady state flat or does it creep? (docs only)
+- **Goal:** M6 ran 400×300 twice: call 30 was 2.7% and 7.2% above call 5 (5% rule), so "flat" is unclear
+  at that size (600 and 800 px are flat). Two runs are too few to tell noise from a slow rise.
+- **Accept:** run `node bench/memory-creep.js --size 400 --calls 100` three times (about 45 s each; the
+  script's table marks 1, 2, 5, 10, 20 and the last call, so with `--calls 100` the last mark is call 100).
+  In the M6 bullets of `docs/PERF.md` "Memory" add a row per run (RSS after calls 1, 2, 5, 10, 20, 100, max RSS) and one plain
+  sentence: flat (call 100 within 5% of call 20 in all three runs), creeping (give MB per call from the three runs), or
+  unclear. If any run ends more than 2× the RSS of call 5, add an owner note on this task. No `src/` or script change.
+  `npm test` passes.
+
+### [ ] DOC8 — README "Known limits → Memory": add the 400/600 px steady state and the arena finding
+- **Goal:** after DOC7 the README bullet gives the 800 px steady state only. M6 measured 400 and 600 px, and M7
+  found the call-2 step is the ONNX Runtime arena (`docs/PERF.md`, "Is the call-2 step the ONNX Runtime arena? (M7)").
+- **Accept:** the README Memory bullet (and nothing else in the README) gets one or two more sentences: a
+  `fast` process that has made two or more calls settles at about 0.37–0.39 GB (400 px) and 0.61 GB (600 px), and
+  the step after the first call comes from the ONNX Runtime arena; link the M7 paragraph and the M6 text (anchors must
+  resolve; if the M7/M6 text sits under the M5 heading, link that heading). Numbers equal those in `docs/PERF.md`; no
+  recommendation to change settings (owner decision). If M8 landed first and changed the 400 px figure, use its
+  numbers. README tests (R2, Q6, D3, D6, DOC6) still pass; docs only. `npm test` passes.
+
+### [ ] DOC9 — `docs/PERF.md` "Follow-up ideas": add the M7 result to the arena bullet
+- **Goal:** the arena bullet in "Follow-up ideas" (from DOC5) cites `high` and `fast` numbers from M4/P6 but not that M7
+  traced `fast` mode's call-2 memory step to the arena (arena off: 0.26 GB settled vs 0.93 GB; median call about 1.65× slower).
+- **Accept:** one added sentence on that bullet with the M7 numbers, copied from the M7 paragraph (no new runs), and a link to
+  it (anchor must resolve; it sits under the M5 heading). The bullet still says changing the session options is an owner
+  decision. Docs only. `npm test` passes.
+
+### [ ] DOC10 — `docs/OWNER_DECISIONS.md`: one list of what is waiting for the owner
+- **Goal:** owner decisions are scattered over `TASKS.md` task notes, `docs/PERF.md` and `docs/DECISIONS.md`; the owner has to
+  read the whole backlog to find them.
+- **Accept:** a new file `docs/OWNER_DECISIONS.md` with one short entry per open decision, each with a link to where the
+  evidence is (links to files must resolve; name `TASKS.md` tasks by their ID instead of an anchor): T8 (UltraSharpV2-Lite as `high`), T1a (protocol choice (a) or (b)), T3c (vendor hosts for
+  the network allowlist), raising `engines` to `>=22` (I5 note), a thread/process setting (D15), turning the ORT arena off
+  (M4, P6, M7), and whether the contract text should mention the 1 px floor for tiny factors (R14 note). One line each on what
+  the owner would need to say to unblock it. No decision is made in the file, no change to `CLAUDE.md`, the playbook or `.claude/`.
+  The package tarball test (`test/package.test.js`) still passes (docs/ is not shipped). Docs only. `npm test` passes.
+
+### [ ] R15 — Test: `bench/memory-creep.js` rejects bad `--arena` / `--calls` values with a clear error
+- **Goal:** M7 added `--arena` validation that throws at the top level of the script (a stack trace on stdout/stderr,
+  exit code 1). Nothing tests the argument checks of the bench scripts' flags, so a refactor could silently drop them.
+- **Accept:** a new test (`test/memory-creep-args.test.js`) spawns `node bench/memory-creep.js` with `--arena bogus`, `--calls 3`
+  and `--calls abc` and asserts each exits non-zero within a few seconds and that stderr names the flag (`--arena`, `--calls`);
+  it must not start the model (no `upscale` call happens: assert it ends in under 5 s). Today the `--arena` check is a top-level `throw`, so stderr starts with a file:line and source excerpt, not the
+  message: make the minimal change in `bench/memory-creep.js` so the first stderr line of each rejected run is a one-line message
+  naming the flag, and assert that first line in the test (bench file only, no `src/` change; say so in the PR; `--size` has no
+  validation and is out of scope). `npm test` passes.
