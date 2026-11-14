@@ -83,3 +83,34 @@ test('calls run one at a time, in the order they were made', async () => {
     },
   );
 });
+
+test('good / failing / good calls started together: the failure stays in the middle, outputs are unchanged (BK3)', async () => {
+  let runs = 0;
+  let outs;
+  await withSessionHook(
+    (feeds, real) => { if (++runs === 2) throw new Error('mid-queue boom'); return real(); },
+    async () => {
+      const p1 = pushup.upscale(image(1), W * 3, 1);
+      const p2 = pushup.upscale(image(2), W * 3, 1);
+      const p3 = pushup.upscale(image(3), W * 3, 1);
+      const settled = await Promise.allSettled([p1, p2, p3]);
+      assert.strictEqual(settled[0].status, 'fulfilled');
+      assert.strictEqual(settled[1].status, 'rejected');
+      assert.match(settled[1].reason.message, /mid-queue boom/);
+      assert.strictEqual(settled[2].status, 'fulfilled');
+      assert.strictEqual(runs, 3);
+      outs = [settled[0].value, settled[2].value];
+    },
+  );
+  // The same inputs, alone and without a failing call, give the same bytes.
+  await withSessionHook(
+    (feeds, real) => real(),
+    async () => {
+      for (const [k, tag] of [[0, 1], [1, 3]]) {
+        const [ref, refStride] = await pushup.upscale(image(tag), W * 3, 1);
+        assert.strictEqual(outs[k][1], refStride);
+        assert.ok(Buffer.from(outs[k][0]).equals(Buffer.from(ref)), `call with image(${tag}) differs from its solo run`);
+      }
+    },
+  );
+});
