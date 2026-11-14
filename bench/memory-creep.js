@@ -13,7 +13,9 @@ process.env.PUSHUP_DEVICE = 'cpu';
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const MB = (b) => b / 1048576;
 const arena = arg('arena', 'on');
-if (arena !== 'on' && arena !== 'off') throw new Error('--arena must be on or off');
+// A rejected flag prints one line naming it and exits 1 (R15: tested by test/memory-creep-args.test.js).
+const fail = (msg) => { console.error(msg); process.exit(1); };
+if (arena !== 'on' && arena !== 'off') fail('--arena must be on or off');
 
 function synth(longest) {
   const w = longest, h = Math.round(longest * 0.75);
@@ -29,7 +31,7 @@ function synth(longest) {
 (async () => {
   const calls = Number(arg('calls', '30'));
   const size = Number(arg('size', '800'));
-  if (!Number.isInteger(calls) || calls < 6) throw new Error('--calls must be an integer >= 6');
+  if (!Number.isInteger(calls) || calls < 6) fail('--calls must be an integer >= 6');
   if (arena === 'off') {
     const ort = require('onnxruntime-node');
     const create = ort.InferenceSession.create.bind(ort.InferenceSession);
