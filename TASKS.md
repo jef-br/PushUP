@@ -246,7 +246,13 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   description. If the dataset fetch fails, mark D5 `[blocked]` with the error. No code change.
   `npm test` passes. (`high` mode is out of scope: ~30x slower on CPU.)
 
-### [ ] T1a — Measure how well text on packaging survives (research, no product code)
+### [blocked] T1a — Measure how well text on packaging survives (research, no product code)
+- **Blocked (noted on `main` 2026-11-14 by this PR; details on branch `overnight/2026-11-10-T1a`, PR #19):** the fixed protocol
+  finds only 7 usable crops (needs ≥ 15). Fixing it means changing the test set or the confidence
+  threshold, i.e. the protocol, which this task fixes on purpose. **Needs an owner-written choice:**
+  (a) add a text-rich image source to the set by an OCR-independent rule, or (b) lower the
+  threshold to 0.80. Then a run can continue on PR #19's branch (it has no merge base with `main`:
+  cherry-pick `bench/text/*` instead).
 - **Goal:** Decide with data whether text needs special handling. Text on labels
   (ingredients, brand names, sizes) is where upscalers fail most visibly.
 - **Accept:**
@@ -703,3 +709,47 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   arena; budget ~1.5 GB per `high` process at 800 px; link to `docs/PERF.md` "`high` memory breakdown
   (M4)" (the link must resolve). Wording matches `docs/PERF.md`; no recommendation to change
   settings. README tests (R2, Q6, D3, D6) still pass; docs only. `npm test` passes.
+
+### [ ] DOC4 — `docs/CONTRACT_TESTS.md`: add the batch-reject tests (R10, R11)
+- **Goal:** `test/batch-reject.test.js` pins that an invalid call (size, stride, factor, `arr` type)
+  rejects alone while valid calls queued around it keep their own results; the file isn't in the
+  contract-to-tests map (0 mentions).
+- **Accept:** list the file's tests (literal names as bullets, generated names in prose, per the
+  file's format) under the matching rows (Input / `stride` / `upscale_factor` error rows and the
+  "async, one at a time" sentence); `test/contract-tests.test.js` passes and, as a check, fails when
+  one listed name is misspelt (try it locally, don't commit that). Docs only; no test or
+  `CLAUDE.md` change. `npm test` passes.
+
+### [ ] R12 — Test: a failed session creation is not cached (the next call retries)
+- **Goal:** `getSession` in `src/index.js` deletes a rejected session promise from `cpuSessions`
+  (`p.catch(() => cpuSessions.delete(modelPath))`). No test shows that a later call recovers
+  (nothing in `test/` touches that path).
+- **Accept:** a new test (`test/session-retry.test.js`, same stubbing style as
+  `test/device.test.js`, `fast` model on CPU, thin image 400×12): the first `ort.InferenceSession.create`
+  call for the CPU session rejects, so `upscale` rejects; the next `upscale` call calls `create` again
+  and resolves with the contract size and stride and bytes equal to a run without any stub. Restore
+  the stub and call `_reset()` afterwards. No `src/` change unless the test exposes a real bug (say so
+  in the PR). `npm test` passes.
+
+### [ ] R13 — Test: the env settings are read on every call, not once
+- **Goal:** `CLAUDE.md` says the mode is "chosen per call" from `PUSHUP_QUALITY` / `PUSHUP_DEVICE`.
+  `test/device-fallback.test.js` (lines ~89–109) already switches `PUSHUP_QUALITY` between calls
+  and compares output bytes, but no test asserts *which model session is created or reused*.
+- **Accept:** first search `test/*.js` for a test that already asserts the created/reused session
+  per call; if one does, close R13 with a note naming it. Otherwise add `test/env-per-call.test.js` (400×12 images, wrap
+  `InferenceSession.create` to record the model path (as `test/device.test.js` does) and make the
+  `high` create reject or return a stub session, so the real 67 MB model never runs): with
+  `PUSHUP_DEVICE=cpu`, a call with `PUSHUP_QUALITY=fast` creates a session for `_MODES.fast.modelPath`,
+  then a call with `PUSHUP_QUALITY=high` creates one for `_MODES.high.modelPath`, then `fast` again
+  reuses the cached fast session (no new `create`). Restore env and `_reset()` afterwards. No `src/`
+  change unless the test exposes a real bug. `npm test` passes.
+
+### [ ] DOC5 — `docs/PERF.md` "Follow-up ideas": add the arena result (P6)
+- **Goal:** the "Follow-up ideas" list ends at the throughput idea; M4/P6 produced a second idea
+  (turn the ONNX Runtime CPU arena off to cut `high`/`fast` memory) whose numbers sit in "Arena (P6)"
+  and aren't linked from there.
+- **Accept:** one new bullet in "Follow-up ideas" that states what the idea is, the measured result in
+  one sentence (bytes identical; arena off 1.2×–1.8× slower; peak RSS about 40% lower at 800 px `fast` and 400 px `high`; numbers copied
+  from the "Arena (P6)" table, not new runs), that changing the session options is an owner decision,
+  and links "Arena (P6, 2026-11-13)" and "`high` memory breakdown (M4)". No numbers that aren't in
+  those sections. Docs only. `npm test` passes.
