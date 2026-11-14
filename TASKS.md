@@ -886,13 +886,14 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   validation and is out of scope). `npm test` passes.
 - **Done (2026-11-14, PR #97):** `test/memory-creep-args.test.js` (3 cases, ~0.3 s each) asserts exit 1, the exact one-line first stderr line naming the flag, and < 5 s. `bench/memory-creep.js` changed (bench file only, no `src/`): flag errors now print one line via a small `fail()` instead of a stack trace. Against the old script the 3 tests fail.
 
-### [ ] M9 — Is the call-2 memory step also the arena at 400 and 600 px? (research, bench-only, no `src/` change)
+### [x] M9 — (done 2026-11-14, docs/PERF.md Memory) Is the call-2 memory step also the arena at 400 and 600 px? (research, bench-only, no `src/` change)
 - **Goal:** M7 traced the `fast` call-2 step to the ONNX Runtime arena at 800×600 only; the README (DOC8) says the same step
   at 400 and 600 px "was not tested with the arena off". Close that gap.
 - **Accept:** run `node bench/memory-creep.js --arena off --size 400` and `--size 600`, twice each (about 30 s per run), no script
   change. Add a table next to the M7 table in `docs/PERF.md` (RSS after calls 1, 2, 5, 10, 20, 30, max RSS, median call time) and one
   plain sentence per size: does the step after call 1 disappear (call 2 within 15% of call 1), and what does the median call time do
   against the arena-on rows of M6? No recommendation to change a default (owner decision). `npm test` passes.
+- **Done (2026-11-14, PR #99):** 600 px: call 2 is steady at 177 MB with the arena off (call 1 varied 122–172 MB, so the literal 15% test passes in 1 of 2 runs); settled ~0.19 GB vs 0.61 GB; median ~1.9× slower. 400 px: the step shrinks but stays (call 2 +25% over call 1 in both runs; settled 0.20–0.23 GB vs 0.37–0.39 GB; median ~1.2–1.6× slower). DOC11 must say that, not "confirmed at both sizes", and must not quote a firm 400 px settled saving (check runs settled at 0.20–0.39 GB with the arena off).
 
 ### [ ] DOC11 — README "Known limits → Memory": say whether the arena step was confirmed at 400 and 600 px (after M9)
 - **Goal:** DOC8 left the README saying the arena cause was traced at 800 px only; M9 produces the 400 and 600 px answer.

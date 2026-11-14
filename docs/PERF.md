@@ -313,6 +313,32 @@ against 0.93 GB and 1.02–1.04 GB with the arena on). The cost is speed: the me
 about 3.2 s (about 1.65×; "Arena (P6)" measured 1.75–1.86× for the model call alone). Whether to change the session
 options is an owner decision; nothing was changed.
 
+**Arena off at 400 and 600 px (M9, 2026-11-14).** `node bench/memory-creep.js --arena off --size 400` and `--size 600`,
+two runs each, same machine and settings, 30 calls (MB; the arena-on rows are the M6 runs above):
+
+| Input | Arena | Run | After call 1 | 2 | 5 | 10 | 20 | 30 | Max RSS | Median call |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | on | M6 1 | 199 | 312 | 359 | 368 | 369 | 369 | 369 | 442 ms |
+| 400×300 | on | M6 2 | 200 | 313 | 360 | 383 | 386 | 386 | 386 | 415 ms |
+| 400×300 | off | 1 | 113 | 141 | 223 | 195 | 198 | 198 | 288 | 695 ms |
+| 400×300 | off | 2 | 115 | 144 | 255 | 258 | 230 | 230 | 318 | 503 ms |
+| 600×450 | on | M6 1 | 346 | 590 | 605 | 606 | 606 | 606 | 656 | 994 ms |
+| 600×450 | on | M6 2 | 395 | 540 | 604 | 605 | 605 | 605 | 655 | 1010 ms |
+| 600×450 | off | 1 | 172 | 177 | 192 | 193 | 193 | 193 | 374 | 1925 ms |
+| 600×450 | off | 2 | 122 | 177 | 192 | 192 | 192 | 192 | 373 | 1957 ms |
+
+- **400 px:** the step after call 1 shrinks but does not disappear: call 2 is 25% above call 1 in both runs (141 vs 113, 144 vs 115; arena on: +56%),
+  so the "within 15%" test fails; RSS also moves around until call 5 to 10 (223 and 255 MB at call 5) and then settles at about
+  0.20–0.23 GB, against 0.37–0.39 GB with the arena on. The median call is 503–695 ms against 415–442 ms (about 1.2–1.6×; the two off runs differ a lot).
+- **600 px:** the step disappears: call 2 is 177 MB in both runs (call 1 is 172 in run 1, within 3%; in run 2 call 1 was 122, so the
+  15% test fails there because call 1 was low, not because call 2 grew), RSS is flat from call 5 (192–193 MB, call 30 within 0.2% of call 5), against 0.61 GB
+  with the arena on. The median call is 1925–1957 ms against 994–1010 ms (about 1.9×).
+
+So the arena explains most of the memory the `fast` process keeps at 600 px (about 0.4 GB less), and the step after call 1 is smaller at 400 px,
+where a smaller step still remains with the arena off. The settled value with the arena off is not stable at 400 px: the two runs above settle at 0.20 and 0.23 GB,
+and two further check runs by the reviewer settled at 0.26 and 0.39 GB (the latter equal to the arena-on value), so "about 0.17 GB less at 400 px" is not a firm
+figure. At 600 px a third check run ended 8.9% above call 5 (210 vs 193 MB; call 20 was 229 MB), so the "flat" reading rests on two clean runs. No default is proposed (owner decision).
+
 ### `high` memory breakdown (M4, 2026-11-13)
 
 `node bench/memory-breakdown.js` (one fresh process per size, `high` on CPU, factor 1.0; same
