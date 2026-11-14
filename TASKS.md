@@ -788,7 +788,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   current README and passes after. Docs and test only; README tests R2 / Q6 / D3 / D6 still pass; the
   README must not gain a ```js block calling `upscale(`. `npm test` passes.
 
-### [ ] M5 — Measure whether `fast` mode's memory creeps up over repeated calls (docs only)
+### [~] M5 (claimed 2026-11-14, branch overnight/2026-11-14-M5) — Measure whether `fast` mode's memory creeps up over repeated calls (docs only)
 - **Goal:** M4 saw a second `high` call raise RSS a little (1459 → 1521 MB), measured ad hoc. A server
   that runs `fast` for days needs to know whether memory stays flat over many calls; unmeasured.
 - **Accept:** a bench-only script `bench/memory-creep.js` (no `src/` change; fresh process; public
