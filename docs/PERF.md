@@ -101,6 +101,13 @@ call, and the output bytes don't depend on the thread count.
   image takes ~3.5× longer. Worth it only for batch jobs where
   per-image latency doesn't matter; it would need a way to set the thread count (a new setting
   or API: an owner decision).
+- **Turn the ONNX Runtime CPU memory arena off (measured in M4 and P6).** M4 found the arena is the
+  main reason `high` mode's memory grows with input size. P6 measured the option (`enableCpuMemArena:
+  false` and `enableMemPattern: false`): output bytes identical (max difference 0), the model call
+  1.2× (`high` 400 px) to 1.75–1.86× (`fast` 800 px) slower, peak RSS about 40% lower at 800 px
+  `fast` and 400 px `high`. Changing the session options is an owner decision. Numbers and method:
+  [Arena (P6, 2026-11-13)](#arena-p6-2026-11-13) and
+  [`high` memory breakdown (M4, 2026-11-13)](#high-memory-breakdown-m4-2026-11-13).
 
 ## Cold start (Q3, 2026-11-10)
 
