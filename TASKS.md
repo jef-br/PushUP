@@ -921,7 +921,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   No README, `src/` or `CLAUDE.md` change. `npm test` passes.
 - **Done (2026-11-14, PR #102):** "Summary: settled RSS" added at the top of "Memory" in `docs/PERF.md`. Reading of the source rule: the M4 "RSS after the call" cell is one call per process, so it is shown as First call and `high` Settled is "not measured" in both rows (an ad-hoc second call quoted in the M4 text is a different process, so it is not used).
 
-### [ ] BK1 — Test: tiled inference matches whole-image inference (no visible seams)
+### [~] BK1 — (claimed 2026-11-14, branch overnight/2026-11-14-BK1) Test: tiled inference matches whole-image inference (no visible seams)
 - **Goal:** `high` mode runs 192 px tiles with 16 px padding. `test/convert.test.js` (tile test, `tilePad: 1000`, 400×300) only shows that tiling with a huge pad equals the whole frame. The shipped pad, sizes that are not a multiple of the tile, and the seams themselves are not tested. Check on the real `fast` model, which is cheap.
 - **Accept:** a new file `test/tiling.test.js` using `_run` with `lanczosMix: 0` on a 401×301 and a 400×400 synthetic gradient-plus-noise image (fixed seed): once with `tile: Infinity`, once with `tile: 192` and the shipped pad (16). Assert same output size, mean absolute byte difference below a threshold, and largest per-pixel difference below a second threshold. Measure first, then set each threshold to about 2× the measured value and state the measured numbers in a comment. Also assert the mean absolute difference on the 4 px either side of each tile seam is at most 2× the mean difference elsewhere. No `src/` change. `npm test` passes and takes under 2 minutes more than now.
 
