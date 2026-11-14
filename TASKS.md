@@ -788,7 +788,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   current README and passes after. Docs and test only; README tests R2 / Q6 / D3 / D6 still pass; the
   README must not gain a ```js block calling `upscale(`. `npm test` passes.
 
-### [~] M5 (claimed 2026-11-14, branch overnight/2026-11-14-M5) — Measure whether `fast` mode's memory creeps up over repeated calls (docs only)
+### [x] M5 — (done 2026-11-14, bench/memory-creep.js + docs/PERF.md "Memory") Measure whether `fast` mode's memory creeps up over repeated calls (docs only)
 - **Goal:** M4 saw a second `high` call raise RSS a little (1459 → 1521 MB), measured ad hoc. A server
   that runs `fast` for days needs to know whether memory stays flat over many calls; unmeasured.
 - **Accept:** a bench-only script `bench/memory-creep.js` (no `src/` change; fresh process; public
@@ -798,4 +798,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   one plain sentence: flat (RSS after the last call within 5% of RSS after call 5), creeping (more than that;
   give MB per call), or unclear. If the process grows without bound (> 2× RSS after call 5), say so and add an
   owner note on this task; do not change `src/`. Run it twice and report both. About 1 minute per run. `npm test` passes.
+- **Done (2026-11-14, PR #87):** two runs of 30 calls at 800×600: flat (call 30 within 1% of call 5), but
+  RSS steps from ~0.5 GB after call 1 to ~0.93 GB after call 2 and stays there (max RSS ~1.03 GB).
+- **Follow-up for the next BACKLOG (not done here, README outside M5's scope):** README "Known limits →
+  Memory" says one `fast` call peaks at about 0.57 GB at 800 px; a process that has handled two or more calls
+  sits at ~0.93 GB. Reword with the steady-state number and link "Does `fast` mode creep" in `docs/PERF.md`.
 

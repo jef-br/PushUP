@@ -240,6 +240,28 @@ the command also runs one cheap `fast` 400 px job).
   call, not the sum. Several processes (see "Throughput") each need their own copy: four
   `fast` processes at 800 px need about 2.3 GB, plus headroom for the input and output buffers.
 
+### Does `fast` mode creep over repeated calls? (M5, 2026-11-14)
+
+`node bench/memory-creep.js` (one fresh process; `fast` on CPU; the public `upscale()` on a synthetic
+800×600 image at factor 1.0; 30 sequential calls) prints the RSS after calls 1, 2, 5, 10, 20 and 30.
+Same machine as above (`Intel(R) Xeon(R) Processor @ 2.10GHz`, 4 vCPU, Node v22.23.4, onnxruntime-node
+1.31.1). Two runs, MB:
+
+| Run | After call 1 | 2 | 5 | 10 | 20 | 30 | Max RSS | Call 30 vs call 5 | Median call |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 561 | 908 | 934 | 934 | 934 | 934 | 1022 | +0 MB (0.0%) | 1990 ms |
+| 2 | 473 | 908 | 934 | 907 | 929 | 929 | 1039 | −5 MB (−0.6%) | 1966 ms |
+
+**Flat after the second call: no creep.** RSS after call 30 is within 1% of RSS after call 5 in both
+runs (+0.02 and −0.21 MB per call), so a long-running `fast` process does not keep growing. What the
+table shows instead is a **warm-up step**: RSS after the first call is 473–561 MB (what the single-call
+rows above measure), after the second call it is 908 MB in both runs, and it then stays at about
+0.91–0.93 GB (max RSS 1.02–1.04 GB). So a `fast` process serving 800 px images settles at roughly
+**0.93 GB resident (about 1 GB peak), not 0.57 GB**: the first-call figure understates a server that
+has handled more than one call. The extra ~0.35–0.45 GB after call 2 is not explained here (the same
+kind of retained buffers M4 found for `high`; not broken down). Only 800×600 was run. How to run
+(about 1 minute): `node bench/memory-creep.js [--calls 30] [--size 800]`.
+
 ### `high` memory breakdown (M4, 2026-11-13)
 
 `node bench/memory-breakdown.js` (one fresh process per size, `high` on CPU, factor 1.0; same

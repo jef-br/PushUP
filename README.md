@@ -279,6 +279,7 @@ node bench/throughput.js              # model calls per second: one N-thread pro
 node bench/memory.js                  # peak memory (RSS) of one call, each size in a fresh process
 node bench/memory-breakdown.js        # where `high` mode's extra memory comes from (add --arena for the arena test)
 node bench/arena.js                   # latency, memory and output bytes with the ONNX Runtime CPU arena on vs off
+node bench/memory-creep.js            # does memory keep growing over repeated `fast` calls? (30 calls, one process)
 ```
 
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
