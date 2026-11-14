@@ -736,8 +736,9 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `test/device-fallback.test.js` (lines ~89–109) already switches `PUSHUP_QUALITY` between calls
   and compares output bytes, but no test asserts *which model session is created or reused*.
 - **Accept:** first search `test/*.js` for a test that already asserts the created/reused session
-  per call; if one does, close R13 with a note naming it. Otherwise add `test/env-per-call.test.js` (400×12 images, stubbed
-  `InferenceSession.create` as in `test/device.test.js`, so `high` costs nothing): with
+  per call; if one does, close R13 with a note naming it. Otherwise add `test/env-per-call.test.js` (400×12 images, wrap
+  `InferenceSession.create` to record the model path (as `test/device.test.js` does) and make the
+  `high` create reject or return a stub session, so the real 67 MB model never runs): with
   `PUSHUP_DEVICE=cpu`, a call with `PUSHUP_QUALITY=fast` creates a session for `_MODES.fast.modelPath`,
   then a call with `PUSHUP_QUALITY=high` creates one for `_MODES.high.modelPath`, then `fast` again
   reuses the cached fast session (no new `create`). Restore env and `_reset()` afterwards. No `src/`
