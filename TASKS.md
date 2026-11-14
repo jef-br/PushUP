@@ -875,7 +875,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   the owner would need to say to unblock it. No decision is made in the file, no change to `CLAUDE.md`, the playbook or `.claude/`.
   The package tarball test (`test/package.test.js`) still passes (docs/ is not shipped). Docs only. `npm test` passes.
 
-### [~] R15 (started 2026-11-14, branch overnight/2026-11-14-R15) — Test: `bench/memory-creep.js` rejects bad `--arena` / `--calls` values with a clear error
+### [x] R15 — (done 2026-11-14, test/memory-creep-args.test.js) Test: `bench/memory-creep.js` rejects bad `--arena` / `--calls` values with a clear error
 - **Goal:** M7 added `--arena` validation that throws at the top level of the script (a stack trace on stdout/stderr,
   exit code 1). Nothing tests the argument checks of the bench scripts' flags, so a refactor could silently drop them.
 - **Accept:** a new test (`test/memory-creep-args.test.js`) spawns `node bench/memory-creep.js` with `--arena bogus`, `--calls 3`
@@ -884,3 +884,4 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   message: make the minimal change in `bench/memory-creep.js` so the first stderr line of each rejected run is a one-line message
   naming the flag, and assert that first line in the test (bench file only, no `src/` change; say so in the PR; `--size` has no
   validation and is out of scope). `npm test` passes.
+- **Done (2026-11-14, PR #97):** `test/memory-creep-args.test.js` (3 cases, ~0.3 s each) asserts exit 1, the exact one-line first stderr line naming the flag, and < 5 s. `bench/memory-creep.js` changed (bench file only, no `src/`): flag errors now print one line via a small `fail()` instead of a stack trace. Against the old script the 3 tests fail.
