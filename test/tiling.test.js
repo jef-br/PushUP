@@ -12,7 +12,11 @@
 // absolute bound instead (about 2x the measured seam mean).
 const test = require('node:test');
 const assert = require('node:assert');
-const { _run } = require('../src');
+const { _run, _MODES } = require('../src');
+
+// Pin the model: without modelPath the engine follows PUSHUP_QUALITY / PUSHUP_DEVICE and a GPU
+// would pick the 67 MB `high` model, which makes this comparison meaningless and slow.
+const FAST = { modelPath: _MODES.fast.modelPath, lanczosMix: 0 };
 
 const TILE = 192;
 const FACTOR = 2.5;
@@ -39,8 +43,8 @@ function image(w, h, seed) {
 for (const [w, h] of [[401, 301], [400, 400]]) {
   test(`tiled (tile ${TILE}, shipped pad) matches whole-image inference, ${w}x${h}`, async () => {
     const arr = image(w, h, 7);
-    const [whole, stride] = await _run(arr, w * 3, FACTOR, { lanczosMix: 0 });
-    const [tiled, strideT] = await _run(arr, w * 3, FACTOR, { lanczosMix: 0, tile: TILE });
+    const [whole, stride] = await _run(arr, w * 3, FACTOR, { ...FAST, tile: Infinity });
+    const [tiled, strideT] = await _run(arr, w * 3, FACTOR, { ...FAST, tile: TILE });
     assert.strictEqual(strideT, stride);
     assert.strictEqual(tiled.length, whole.length);
 
