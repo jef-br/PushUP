@@ -720,7 +720,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   one listed name is misspelt (try it locally, don't commit that). Docs only; no test or
   `CLAUDE.md` change. `npm test` passes.
 
-### [ ] R12 — Test: a failed session creation is not cached (the next call retries)
+### [x] R12 — (done 2026-11-14, test/session-retry.test.js) Test: a failed session creation is not cached (the next call retries)
 - **Goal:** `getSession` in `src/index.js` deletes a rejected session promise from `cpuSessions`
   (`p.catch(() => cpuSessions.delete(modelPath))`). No test shows that a later call recovers
   (nothing in `test/` touches that path).
