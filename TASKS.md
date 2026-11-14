@@ -754,7 +754,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   and links "Arena (P6, 2026-11-13)" and "`high` memory breakdown (M4)". No numbers that aren't in
   those sections. Docs only. `npm test` passes.
 
-### [ ] R14 — Test: a tiny `upscale_factor` gives a 1-pixel largest side, not an empty image
+### [~] R14 (claimed 2026-11-14, branch overnight/2026-11-14-R14) — Test: a tiny `upscale_factor` gives a 1-pixel largest side, not an empty image
 - **Goal:** `src/index.js` clamps the target with `Math.max(1, …)`, so `upscale(400 px image, …, 0.001)`
   returns a 1×1 image (observed 2026-11-14: stride 3, 3 bytes) whereas the `CLAUDE.md` formula
   `min(round(input_largest * factor), 1000)` would give 0. `test/aspect.test.js` covers `0.4` on a 1 px
