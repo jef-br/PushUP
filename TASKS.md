@@ -247,7 +247,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `npm test` passes. (`high` mode is out of scope: ~30x slower on CPU.)
 
 ### [blocked] T1a — Measure how well text on packaging survives (research, no product code)
-- **Blocked (noted on `main` 2026-11-14; details on branch `overnight/2026-11-10-T1a`, PR #19):** the fixed protocol
+- **Blocked (noted on `main` 2026-11-14 by this PR; details on branch `overnight/2026-11-10-T1a`, PR #19):** the fixed protocol
   finds only 7 usable crops (needs ≥ 15). Fixing it means changing the test set or the confidence
   threshold, i.e. the protocol, which this task fixes on purpose. **Needs an owner-written choice:**
   (a) add a text-rich image source to the set by an OCR-independent rule, or (b) lower the
@@ -733,10 +733,10 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 ### [ ] R13 — Test: the env settings are read on every call, not once
 - **Goal:** `CLAUDE.md` says the mode is "chosen per call" from `PUSHUP_QUALITY` / `PUSHUP_DEVICE`.
-  Existing tests set the variables before a call; none changes them between two calls in one
-  process.
-- **Accept:** first search `test/*.js` for a test that already does this; if one does, close R13
-  with a note naming it. Otherwise add `test/env-per-call.test.js` (400×12 images, stubbed
+  `test/device-fallback.test.js` (lines ~89–109) already switches `PUSHUP_QUALITY` between calls
+  and compares output bytes, but no test asserts *which model session is created or reused*.
+- **Accept:** first search `test/*.js` for a test that already asserts the created/reused session
+  per call; if one does, close R13 with a note naming it. Otherwise add `test/env-per-call.test.js` (400×12 images, stubbed
   `InferenceSession.create` as in `test/device.test.js`, so `high` costs nothing): with
   `PUSHUP_DEVICE=cpu`, a call with `PUSHUP_QUALITY=fast` creates a session for `_MODES.fast.modelPath`,
   then a call with `PUSHUP_QUALITY=high` creates one for `_MODES.high.modelPath`, then `fast` again
@@ -748,7 +748,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   (turn the ONNX Runtime CPU arena off to cut `high`/`fast` memory) whose numbers sit in "Arena (P6)"
   and aren't linked from there.
 - **Accept:** one new bullet in "Follow-up ideas" that states what the idea is, the measured result in
-  one sentence (bytes identical; arena off 1.2×–1.8× slower; peak RSS about 40% lower; numbers copied
+  one sentence (bytes identical; arena off 1.2×–1.8× slower; peak RSS about 40% lower at 800 px `fast` and 400 px `high`; numbers copied
   from the "Arena (P6)" table, not new runs), that changing the session options is an owner decision,
   and links "Arena (P6, 2026-11-13)" and "`high` memory breakdown (M4)". No numbers that aren't in
   those sections. Docs only. `npm test` passes.
