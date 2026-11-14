@@ -868,17 +868,18 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Goal:** owner decisions are scattered over `TASKS.md` task notes, `docs/PERF.md` and `docs/DECISIONS.md`; the owner has to
   read the whole backlog to find them.
 - **Accept:** a new file `docs/OWNER_DECISIONS.md` with one short entry per open decision, each with a link to where the
-  evidence is (links must resolve): T8 (UltraSharpV2-Lite as `high`), T1a (protocol choice (a) or (b)), T3c (vendor hosts for
+  evidence is (links to files must resolve; name `TASKS.md` tasks by their ID instead of an anchor): T8 (UltraSharpV2-Lite as `high`), T1a (protocol choice (a) or (b)), T3c (vendor hosts for
   the network allowlist), raising `engines` to `>=22` (I5 note), a thread/process setting (D15), turning the ORT arena off
   (M4, P6, M7), and whether the contract text should mention the 1 px floor for tiny factors (R14 note). One line each on what
   the owner would need to say to unblock it. No decision is made in the file, no change to `CLAUDE.md`, the playbook or `.claude/`.
   The package tarball test (`test/package.test.js`) still passes (docs/ is not shipped). Docs only. `npm test` passes.
 
-### [ ] R15 — Test: `bench/memory-creep.js` rejects bad `--arena` / `--calls` / `--size` values with a clear error
+### [ ] R15 — Test: `bench/memory-creep.js` rejects bad `--arena` / `--calls` values with a clear error
 - **Goal:** M7 added `--arena` validation that throws at the top level of the script (a stack trace on stdout/stderr,
   exit code 1). Nothing tests the argument checks of the bench scripts' flags, so a refactor could silently drop them.
 - **Accept:** a new test (`test/memory-creep-args.test.js`) spawns `node bench/memory-creep.js` with `--arena bogus`, `--calls 3`
   and `--calls abc` and asserts each exits non-zero within a few seconds and that stderr names the flag (`--arena`, `--calls`);
-  it must not start the model (no `upscale` call happens: assert it ends in under 5 s). If `--arena bogus` currently throws
-  before the flag is named in a message only in the stack, make the minimal change in `bench/memory-creep.js` so the first
-  stderr line is a one-line message naming the flag (bench file only, no `src/` change; say so in the PR). `npm test` passes.
+  it must not start the model (no `upscale` call happens: assert it ends in under 5 s). Today the `--arena` check is a top-level `throw`, so stderr starts with a file:line and source excerpt, not the
+  message: make the minimal change in `bench/memory-creep.js` so the first stderr line of each rejected run is a one-line message
+  naming the flag, and assert that first line in the test (bench file only, no `src/` change; say so in the PR; `--size` has no
+  validation and is out of scope). `npm test` passes.
