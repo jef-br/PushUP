@@ -691,7 +691,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   (RangeError) and `arr` = a string (TypeError) in the middle call. No `src/` change unless a test
   exposes a real bug (say so in the PR). `npm test` passes.
 
-### [ ] DOC3 — README "Known limits → Memory": say that memory is retained and what drives `high`'s growth
+### [x] DOC3 — (done 2026-11-14, README Known limits) README "Known limits → Memory": say that memory is retained and what drives `high`'s growth
 - **Goal:** the bullet gives only peak numbers; M3/M4 found that a `high` process keeps ~1.5 GB at 800 px
   after a call, that the ORT arena (not the image arrays) drives the growth, and that a second call
   creeps up a little.
