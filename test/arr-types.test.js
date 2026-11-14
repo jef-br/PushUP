@@ -72,7 +72,7 @@ test('a Uint8Array over a SharedArrayBuffer is accepted and gives the same outpu
   const [out, stride] = await upscale(shared, STRIDE, 1);
   assert.strictEqual(stride, refStride);
   assert.ok(Buffer.from(out).equals(Buffer.from(ref)));
-  // Padded rows and a view at an offset inside the shared memory go through the same path.
+  // A view at an offset inside a larger shared buffer works too.
   const sab = new SharedArrayBuffer(N + 37);
   const view = new Uint8Array(sab, 13, N);
   view.set(px);
