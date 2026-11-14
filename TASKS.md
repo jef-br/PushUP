@@ -902,7 +902,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   the step does not disappear at a size, say that instead). No recommendation to change settings. README tests (R2, Q6, D3, D6, DOC6) still
   pass; docs only. `npm test` passes. If M9 is not merged, mark this task `[blocked]` on M9 and move on.
 
-### [ ] Q9 — `bench/memory-creep.js`: validate `--size` against the contract range (400–800)
+### [~] Q9 (started 2026-11-14, branch overnight/2026-11-14-Q9) — `bench/memory-creep.js`: validate `--size` against the contract range (400–800)
 - **Goal:** R15 left `--size` unvalidated; `--size 10` or `--size abc` fails later with an unrelated error from `upscale` or `Buffer.alloc`
   (a `RangeError` from the contract bounds, or a crash on `NaN`), after the flag parsing.
 - **Accept:** `bench/memory-creep.js` rejects a `--size` that is not an integer in 400–800 with a one-line message naming the flag
