@@ -106,7 +106,7 @@ call, and the output bytes don't depend on the thread count.
   false` and `enableMemPattern: false`): output bytes identical (max difference 0), the model call
   1.2× (`high` 400 px) to 1.75–1.86× (`fast` 800 px) slower, peak RSS about 40% lower at 800 px
   `fast` and 400 px `high`. M7 then traced `fast` mode's memory step after the first call to the arena: with
-  it off, a 800×600 process settled at about 0.26 GB instead of 0.93 GB (median call about 1.65× slower).
+  it off, an 800×600 process settled at about 0.26 GB instead of 0.93 GB (median call about 1.65× slower).
   Changing the session options is an owner decision. Numbers and method:
   [Arena (P6, 2026-11-13)](#arena-p6-2026-11-13),
   [`high` memory breakdown (M4, 2026-11-13)](#high-memory-breakdown-m4-2026-11-13) and
