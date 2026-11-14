@@ -257,8 +257,8 @@ case, so the model always gets the full-size input.
   figure comes from the ONNX Runtime memory arena: with the arena switched off in a test run it
   disappears at 800 px (about 0.26 GB settled instead of 0.93 GB) and at 600 px (about 0.19 GB
   instead of 0.61 GB), and shrinks but does not disappear at 400 px (the settled value varied
-  between 0.20 and 0.39 GB over four runs); calls were about 1.65× (800 px) to 1.9× (600 px)
-  slower (sizes measured on 4:3 images 400×300, 600×450 and 800×600; tables and the arena-off runs:
+  between 0.20 and 0.39 GB over four runs); calls were about 1.2–1.6× (400 px), 1.9× (600 px)
+  and 1.65× (800 px) slower (sizes measured on 4:3 images 400×300, 600×450 and 800×600; tables and the arena-off runs:
   [docs/PERF.md](docs/PERF.md#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14)).
 - **Fine texture** (fabric weave, suede grain) that isn't present in a small input
   can't be restored faithfully. A model can only invent it. Compared with Claid.ai's
