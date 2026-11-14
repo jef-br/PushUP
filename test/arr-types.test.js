@@ -62,3 +62,20 @@ test('a plain Array holding a Symbol or a BigInt rejects with TypeError', async 
     await assert.rejects(upscale(arr, STRIDE, 1), TypeError, name);
   }
 });
+
+test('a Uint8Array over a SharedArrayBuffer is accepted and gives the same output (BK2)', async () => {
+  const px = pixels();
+  const shared = new Uint8Array(new SharedArrayBuffer(N));
+  shared.set(px);
+  assert.ok(shared.buffer instanceof SharedArrayBuffer);
+  const [ref, refStride] = await upscale(Uint8Array.from(px), STRIDE, 1);
+  const [out, stride] = await upscale(shared, STRIDE, 1);
+  assert.strictEqual(stride, refStride);
+  assert.ok(Buffer.from(out).equals(Buffer.from(ref)));
+  // Padded rows and a view at an offset inside the shared memory go through the same path.
+  const sab = new SharedArrayBuffer(N + 37);
+  const view = new Uint8Array(sab, 13, N);
+  view.set(px);
+  const [out2] = await upscale(view, STRIDE, 1);
+  assert.ok(Buffer.from(out2).equals(Buffer.from(ref)));
+});
