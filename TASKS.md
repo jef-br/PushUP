@@ -753,3 +753,41 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   from the "Arena (P6)" table, not new runs), that changing the session options is an owner decision,
   and links "Arena (P6, 2026-11-13)" and "`high` memory breakdown (M4)". No numbers that aren't in
   those sections. Docs only. `npm test` passes.
+
+### [ ] R14 — Test: a tiny `upscale_factor` gives a 1-pixel largest side, not an empty image
+- **Goal:** `src/index.js` clamps the target with `Math.max(1, …)`, so `upscale(400 px image, …, 0.001)`
+  returns a 1×1 image (observed 2026-11-14: stride 3, 3 bytes) whereas the `CLAUDE.md` formula
+  `min(round(input_largest * factor), 1000)` would give 0. `test/aspect.test.js` covers `0.4` on a 1 px
+  side, but nothing covers a factor so small that the *largest* side rounds to 0.
+- **Accept:** a new test (`test/tiny-factor.test.js`, `fast` model on CPU, thin image 400×12) pins today's
+  behaviour: factors `0.001`, `0.00124` (round(400 × f) = 0) and `Number.MIN_VALUE` resolve with
+  `stride_out = out_width * 3`, `out.length = stride_out * out_height`, `out_width = 1` and
+  `out_height = 1`; and factor `0.0025` (round(400 × f) = 1) gives the same 1×1 shape. No `src/` change and no
+  contract change. Add a note on this task (not to `CLAUDE.md`, which is an owner file) that the formula
+  in `CLAUDE.md` says 0 for these inputs while the code returns 1, for the owner to decide whether
+  the contract text should mention the floor. `npm test` passes.
+
+### [ ] DOC6 — README "Development": list every runnable `bench/` script, with a test that keeps it so
+- **Goal:** the README names `bench/profile.js`, `cold.js`, `threads.js`, `bench.js`, `gate.js` and
+  `fetch_testset.sh`, but not `bench/memory.js`, `memory-breakdown.js`, `throughput.js` and `arena.js`
+  (0 mentions each, checked 2026-11-14); `bench/metrics.js` and `bench/aspect.js` are library modules (no
+  command line).
+- **Accept:** README "Development" gets one line per missing script (command, one phrase on what it
+  measures, as the existing lines do), pointing to the `docs/PERF.md` section that has its results
+  ("Memory", "Throughput", "Arena (P6)"; the links must resolve). Extend `test/readme-bench.test.js` (or a
+  new test): every `bench/*.js` file that has a `Usage:` comment line near its top must be named in
+  README.md by its full path `bench/<name>.js` (a bare word like "arena" in prose does not count); `bench/metrics.js` and `bench/aspect.js` are exempt, listed in the test with the reason. The test fails on the
+  current README and passes after. Docs and test only; README tests R2 / Q6 / D3 / D6 still pass; the
+  README must not gain a ```js block calling `upscale(`. `npm test` passes.
+
+### [ ] M5 — Measure whether `fast` mode's memory creeps up over repeated calls (docs only)
+- **Goal:** M4 saw a second `high` call raise RSS a little (1459 → 1521 MB), measured ad hoc. A server
+  that runs `fast` for days needs to know whether memory stays flat over many calls; unmeasured.
+- **Accept:** a bench-only script `bench/memory-creep.js` (no `src/` change; fresh process; public
+  `upscale` on a synthetic 800×600 image at factor 1.0; `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu`) that makes
+  `--calls` (default 30) sequential calls and prints RSS after calls 1, 2, 5, 10, 20 and the last, plus the
+  max RSS, in MB. A paragraph in `docs/PERF.md` "Memory" with the table, the machine line, how to run, and
+  one plain sentence: flat (RSS after the last call within 5% of RSS after call 5), creeping (more than that;
+  give MB per call), or unclear. If the process grows without bound (> 2× RSS after call 5), say so and add an
+  owner note on this task; do not change `src/`. Run it twice and report both. About 1 minute per run. `npm test` passes.
+
