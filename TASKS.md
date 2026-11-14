@@ -865,7 +865,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   it (anchor must resolve; it sits under the M5 heading). The bullet still says changing the session options is an owner
   decision. Docs only. `npm test` passes.
 
-### [ ] DOC10 — `docs/OWNER_DECISIONS.md`: one list of what is waiting for the owner
+### [x] DOC10 — (done 2026-11-14, docs/OWNER_DECISIONS.md) `docs/OWNER_DECISIONS.md`: one list of what is waiting for the owner
 - **Goal:** owner decisions are scattered over `TASKS.md` task notes, `docs/PERF.md` and `docs/DECISIONS.md`; the owner has to
   read the whole backlog to find them.
 - **Accept:** a new file `docs/OWNER_DECISIONS.md` with one short entry per open decision, each with a link to where the
