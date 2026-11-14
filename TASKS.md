@@ -815,12 +815,13 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   subsection (the anchor must resolve). Numbers equal those in `docs/PERF.md`; no recommendation to change settings.
   README tests (R2, Q6, D3, D6, DOC6) still pass; docs only. `npm test` passes.
 
-### [~] M6 (started 2026-11-14, branch overnight/2026-11-14-M6) — Steady-state memory of `fast` at 400 and 600 px (docs only; run after M5)
+### [x] M6 — (done 2026-11-14, docs/PERF.md Memory) Steady-state memory of `fast` at 400 and 600 px (docs only; run after M5)
 - **Goal:** M5 measured only 800×600. DOC7 and server sizing need the settled RSS at the smaller sizes too.
 - **Accept:** run `node bench/memory-creep.js --size 400` and `--size 600` twice each (about 30 s per run;
   no script change unless a run shows `--size` is broken), put the RSS after calls 1, 2, 5, 10, 20, 30 and max RSS in
   a table in the M5 subsection of `docs/PERF.md` (same machine line), and one plain sentence per size: does the call-2
   warm-up step also appear, and is it flat after it (call 30 within 5% of call 5)? No `src/` change. `npm test` passes.
+- **Done (2026-11-14, PR #90):** the call-2 step appears at both sizes. 600 px settles at ~0.61 GB (flat, within 0.2%). 400 px settles at ~0.37–0.39 GB, but run 2 ended 7.2% above call 5 (over the 5% limit; rise stops by call 10–20), so it is borderline, not flat by the rule. A cheap follow-up would be more 400 px runs.
 
 ### [ ] M7 — Is the call-2 memory step the ONNX Runtime arena? (research, bench-only, no `src/` change; run after M5)
 - **Goal:** M5 left the cause of the ~0.4 GB rise between call 1 and call 2 unexplained; M4/P6 showed the arena
