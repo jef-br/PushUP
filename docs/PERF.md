@@ -105,9 +105,12 @@ call, and the output bytes don't depend on the thread count.
   main reason `high` mode's memory grows with input size. P6 measured the option (`enableCpuMemArena:
   false` and `enableMemPattern: false`): output bytes identical (max difference 0), the model call
   1.2× (`high` 400 px) to 1.75–1.86× (`fast` 800 px) slower, peak RSS about 40% lower at 800 px
-  `fast` and 400 px `high`. Changing the session options is an owner decision. Numbers and method:
-  [Arena (P6, 2026-11-13)](#arena-p6-2026-11-13) and
-  [`high` memory breakdown (M4, 2026-11-13)](#high-memory-breakdown-m4-2026-11-13).
+  `fast` and 400 px `high`. M7 then traced `fast` mode's memory step after the first call to the arena: with
+  it off, an 800×600 process settled at about 0.26 GB instead of 0.93 GB (median call about 1.65× slower).
+  Changing the session options is an owner decision. Numbers and method:
+  [Arena (P6, 2026-11-13)](#arena-p6-2026-11-13),
+  [`high` memory breakdown (M4, 2026-11-13)](#high-memory-breakdown-m4-2026-11-13) and
+  [the M7 paragraph](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) (bold "Is the call-2 step the ONNX Runtime arena? (M7)" under that heading).
 
 ## Cold start (Q3, 2026-11-10)
 

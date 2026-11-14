@@ -858,7 +858,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   recommendation to change settings (owner decision). If M8 landed first and changed the 400 px figure, use its
   numbers. README tests (R2, Q6, D3, D6, DOC6) still pass; docs only. `npm test` passes.
 
-### [ ] DOC9 — `docs/PERF.md` "Follow-up ideas": add the M7 result to the arena bullet
+### [x] DOC9 — (done 2026-11-14, docs/PERF.md Follow-up ideas) `docs/PERF.md` "Follow-up ideas": add the M7 result to the arena bullet
 - **Goal:** the arena bullet in "Follow-up ideas" (from DOC5) cites `high` and `fast` numbers from M4/P6 but not that M7
   traced `fast` mode's call-2 memory step to the arena (arena off: 0.26 GB settled vs 0.93 GB; median call about 1.65× slower).
 - **Accept:** one added sentence on that bullet with the M7 numbers, copied from the M7 paragraph (no new runs), and a link to
