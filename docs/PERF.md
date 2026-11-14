@@ -278,3 +278,43 @@ turning the arena off costs latency, whether it changes output bytes, and what i
 `fast` mode. `src/` is unchanged and no default is proposed here: changing the session options
 is an owner decision (see the note on task M4 in `TASKS.md`). Until then: budget about 1.5 GB per
 `high` process at 800 px and expect it to stay allocated.
+
+## Arena (P6, 2026-11-13)
+
+M4 found the ONNX Runtime CPU memory arena to be the main reason `high` grows with input size. This
+section measures what turning it off (`enableCpuMemArena: false` and `enableMemPattern: false`, added to
+`_sessionOptions(['cpu'])`) costs in time and output. Bench-only; `src/` is unchanged and no default is
+proposed here (an owner decision).
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, N = 4 (4 vCPU cloud container), Node v22.23.4,
+onnxruntime-node 1.31.1. How to run (about 4 minutes):
+
+```bash
+node bench/arena.js                              # --runs 5 --cases fast:400,fast:800,high:400
+node bench/arena.js --runs 7 --cases fast:800    # one case
+```
+
+Each case runs in a fresh child process per setting: 1 warm-up, then `--runs` timed model calls
+(`fast`: one whole-image `session.run`; `high`: one pass of the 192 px tile loop, 6 tiles at 400×300).
+Median ms is the model call only. Max RSS is the child's `resourceUsage().maxRSS`. Bytes are the
+warm-up output after the shipped `_copyFromTensor`, compared across the two settings.
+
+| Case | Arena | Median ms | Max RSS MB | Time vs on | Bytes equal to on | Max abs byte diff |
+| --- | --- | ---: | ---: | ---: | --- | ---: |
+| `fast` 400×300 | on | 481 | 331 | 1.00× | – | – |
+| `fast` 400×300 | off | 699 | 286 | 1.45× | yes | 0 |
+| `fast` 800×600 | on | 1892 | 1012 | 1.00× | – | – |
+| `fast` 800×600 | off | 3308 | 569 | 1.75× | yes | 0 |
+| `high` 400×300 (6 tiles) | on | 13567 | 1239 | 1.00× | – | – |
+| `high` 400×300 (6 tiles) | off | 16505 | 729 | 1.22× | yes | 0 |
+
+A first run of the `fast` cases gave 493 / 525 ms at 400×300 (1.07×) and 1829 / 3402 ms at 800×600
+(1.86×), with max RSS 357 / 431 MB and 990 / 569 MB, so the 400 px time ratio varies a lot between runs
+(1.07× to 1.45×); the 800 px ratio (1.75× to 1.86×) and the memory figures are stable.
+
+Reading: the output is **lossless** (every byte equal in all three cases) but turning the arena off is
+**costly** in time: the model call is about 1.2× (`high`) to 1.8× (`fast` at 800 px) slower, while
+peak memory falls by about 40% (`fast` 800 px: ~1.0 GB to ~0.57 GB; `high` 400 px: ~1.24 GB to ~0.73 GB).
+At 400×300 `fast` the memory was not lower in one of two runs (431 vs 357 MB), so there is no
+reliable saving there. The option is not free; whether the memory is worth the time is the owner's
+decision (see the note on task M4 in `TASKS.md`).
