@@ -902,7 +902,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   the step does not disappear at a size, say that instead). No recommendation to change settings. README tests (R2, Q6, D3, D6, DOC6) still
   pass; docs only. `npm test` passes. If M9 is not merged, mark this task `[blocked]` on M9 and move on.
 
-### [ ] Q9 — `bench/memory-creep.js`: validate `--size` against the contract range (400–800)
+### [x] Q9 — (done 2026-11-14, bench/memory-creep.js + test/memory-creep-args.test.js) `bench/memory-creep.js`: validate `--size` against the contract range (400–800)
 - **Goal:** R15 left `--size` unvalidated; `--size 10` or `--size abc` fails later with an unrelated error from `upscale` or `Buffer.alloc`
   (a `RangeError` from the contract bounds, or a crash on `NaN`), after the flag parsing.
 - **Accept:** `bench/memory-creep.js` rejects a `--size` that is not an integer in 400–800 with a one-line message naming the flag
@@ -910,6 +910,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   loaded; the usage line mentions the range. Extend `test/memory-creep-args.test.js` with `--size 399`, `--size 801` and `--size abc` (exact first
   stderr line, exit 1, under 5 s) and one valid-size case that is not run to completion (e.g. assert that `--size 400 --calls 3` fails on `--calls`, not on
   `--size`). No `src/` change; bench file and its test only. `npm test` passes.
+- **Done (2026-11-14, PR #101):** `--size` must match `^\d+$` and be 400–800, else one line `--size must be an integer from 400 to 800` and exit 1 before the model loads (so `4e2`, `400.5`, a missing value and `abc` are rejected too). Test file now has 7 cases (4 new); against the old script the 3 `--size` cases fail. Bench file and test only, no `src/`.
 
 ### [ ] DOC12 — `docs/PERF.md`: one summary table of settled memory (RSS) per mode and size, linking the detail sections
 - **Goal:** the memory numbers are spread over M1, M3, M4, M5, M6, M7 and M8 paragraphs; a server owner sizing a box has to read all of them.
