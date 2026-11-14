@@ -253,10 +253,12 @@ case, so the model always gets the full-size input.
   budget about 1.5 GB per `high` process at 800 px.
   A `fast` process that has made two or more calls settles at about 0.37–0.39 GB (400 px),
   0.61 GB (600 px) and 0.93 GB (800 px, about 1 GB peak), and stays flat afterwards (no creep
-  over 30 calls at 600 and 800 px, 100 calls at 400 px). At 800 px the step above the first-call
-  figure was traced to the ONNX Runtime memory arena (arena-off run; the same step appears at
-  400 and 600 px, not tested with the arena off; sizes measured on 4:3 images 400×300, 600×450 and
-  800×600; tables and the arena-off run:
+  over 30 calls at 600 and 800 px, 100 calls at 400 px). The step above the first-call
+  figure comes from the ONNX Runtime memory arena: with the arena switched off in a test run it
+  disappears at 800 px (about 0.26 GB settled instead of 0.93 GB) and at 600 px (about 0.19 GB
+  instead of 0.61 GB), and shrinks but does not disappear at 400 px (the settled value varied
+  between 0.20 and 0.39 GB over four runs); calls were about 1.2–1.6× (400 px), 1.9× (600 px)
+  and 1.65× (800 px) slower (sizes measured on 4:3 images 400×300, 600×450 and 800×600; tables and the arena-off runs:
   [docs/PERF.md](docs/PERF.md#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14)).
 - **Fine texture** (fabric weave, suede grain) that isn't present in a small input
   can't be restored faithfully. A model can only invent it. Compared with Claid.ai's
