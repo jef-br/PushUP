@@ -912,7 +912,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   `--size`). No `src/` change; bench file and its test only. `npm test` passes.
 - **Done (2026-11-14, PR #101):** `--size` must match `^\d+$` and be 400–800, else one line `--size must be an integer from 400 to 800` and exit 1 before the model loads (so `4e2`, `400.5`, a missing value and `abc` are rejected too). Test file now has 7 cases (4 new); against the old script the 3 `--size` cases fail. Bench file and test only, no `src/`.
 
-### [~] DOC12 (started 2026-11-14, branch overnight/2026-11-14-DOC12) — `docs/PERF.md`: one summary table of settled memory (RSS) per mode and size, linking the detail sections
+### [x] DOC12 — (done 2026-11-14, docs/PERF.md Memory summary) `docs/PERF.md`: one summary table of settled memory (RSS) per mode and size, linking the detail sections
 - **Goal:** the memory numbers are spread over M1, M3, M4, M5, M6, M7 and M8 paragraphs; a server owner sizing a box has to read all of them.
 - **Accept:** a new subsection "Summary: settled RSS" at the top of "Memory" in `docs/PERF.md` with one table (rows: `fast` 400×300, 600×450, 800×600 with the
   arena on; `fast` 800×600 with the arena off; `high` 400×300 and 800×600 with the arena on) giving the first-call RSS, the settled RSS (after the

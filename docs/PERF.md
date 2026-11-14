@@ -209,6 +209,28 @@ machine was measured; re-run on the target hardware.
 
 ## Memory (M1, 2026-11-12)
 
+### Summary: settled RSS
+
+One table for sizing a box (MB, `fast`/`high` on CPU, synthetic 4:3 images, factor 1.0, the machine described in this section). Every cell is copied from the
+section named in the last column; nothing here is a new run. "First call" = RSS after the first call; "settled" = RSS after call 30 (`fast`) or the
+value named in the cell (`high`); "max RSS" = OS peak of the same run.
+
+| Mode | Input | Arena | First call | Settled | Max RSS | Source |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| `fast` | 400×300 | on | 199 | 369 | 369 | [M6 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 400×300 | off | 113 | 198 | 288 | [M9 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 600×450 | on | 346 | 606 | 656 | [M6 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 600×450 | off | 172 | 193 | 374 | [M9 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 800×600 | on | 561 | 934 | 1022 | [M5 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 800×600 | off | 222 | 258 | 597 | [M7 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `high` | 400×300 | on | 886 | not measured | 895 | [M4](#high-memory-breakdown-m4-2026-11-13) |
+| `high` | 800×600 | on | 1493 | 1521 (2nd call, ad hoc) | 1493 | [M4](#high-memory-breakdown-m4-2026-11-13) |
+
+Where each column comes from: `fast` first-call, settled and max RSS are the "after call 1", "call 30" and "max RSS" cells of run 1 of the named multi-call table
+(M6, M5, M7 and M9 sit under the M5 heading); `high` rows come from the M4 table ("RSS after the call", "Max RSS"), the 800×600 settled cell is the ad-hoc second call
+described in the M4 text, and `high` was measured with one call per process, so no other settled value exists (the M1 table below has other single-call peaks). Run-to-run noise is large at 400 px (M6, M8, M9 show settled values from 0.20 to 0.39 GB), and
+this table does not cover other image shapes or other machines.
+
 `node bench/memory.js` runs each measurement in a **fresh process** (CPU, synthetic 4:3 image,
 one `upscale()` call). `peak sampled` = `process.memoryUsage().rss` read every 10 ms during the
 call; `max RSS` = `process.resourceUsage().maxRSS` (the OS peak for the whole process, the figure
