@@ -837,7 +837,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 
 
 
-### [ ] M8 — More `fast` 400 px runs: is the steady state flat or does it creep? (docs only)
+### [~] M8 (started 2026-11-14, branch overnight/2026-11-14-M8) — More `fast` 400 px runs: is the steady state flat or does it creep? (docs only)
 - **Goal:** M6 ran 400×300 twice: call 30 was 2.7% and 7.2% above call 5 (5% rule), so "flat" is unclear
   at that size (600 and 800 px are flat). Two runs are too few to tell noise from a slow rise.
 - **Accept:** run `node bench/memory-creep.js --size 400 --calls 100` three times (about 45 s each; the
