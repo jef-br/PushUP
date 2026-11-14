@@ -823,7 +823,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   warm-up step also appear, and is it flat after it (call 30 within 5% of call 5)? No `src/` change. `npm test` passes.
 - **Done (2026-11-14, PR #90):** the call-2 step appears at both sizes. 600 px settles at ~0.61 GB (flat, within 0.2%). 400 px settles at ~0.37–0.39 GB, but run 2 ended 7.2% above call 5 (over the 5% limit; rise stops by call 10–20), so it is borderline, not flat by the rule. A cheap follow-up would be more 400 px runs.
 
-### [ ] M7 — Is the call-2 memory step the ONNX Runtime arena? (research, bench-only, no `src/` change; run after M5)
+### [~] M7 (started 2026-11-14, branch overnight/2026-11-14-M7) — Is the call-2 memory step the ONNX Runtime arena? (research, bench-only, no `src/` change; run after M5)
 - **Goal:** M5 left the cause of the ~0.4 GB rise between call 1 and call 2 unexplained; M4/P6 showed the arena
   matters for `high`. Check it for `fast` before anyone guesses.
 - **Accept:** `bench/memory-creep.js` gets an `--arena off` option (default `on`, behaviour unchanged) that wraps
