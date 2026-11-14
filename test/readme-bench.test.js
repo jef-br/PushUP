@@ -47,3 +47,28 @@ test('README "Development" lists the dev scripts and the CUDA-skip install flag'
     assert.ok(dev.includes(cmd), `README "Development" does not mention ${cmd}`);
   }
 });
+
+// DOC6: every runnable bench script (one with a "// Usage:" comment near its top) is named in the
+// README by its full path. Library modules without a command line are exempt.
+test('README names every runnable bench/*.js script by its full path', () => {
+  const exempt = new Map([
+    ['metrics.js', 'library: PSNR/SSIM/GMSD functions used by bench.js, no command line'],
+    ['aspect.js', 'library: aspect-group helper used by bench.js, no command line'],
+  ]);
+  const files = fs.readdirSync(path.join(root, 'bench')).filter((f) => f.endsWith('.js'));
+  const runnable = files.filter((f) => {
+    if (exempt.has(f)) return false;
+    const head = fs.readFileSync(path.join(root, 'bench', f), 'utf8').split('\n').slice(0, 15);
+    return head.some((l) => /^\/\/ Usage:/.test(l));
+  });
+  assert.ok(runnable.length >= 9, `expected at least 9 runnable bench scripts, found ${runnable.join(', ')}`);
+  for (const f of files) {
+    if (!exempt.has(f) && !runnable.includes(f)) {
+      assert.fail(`bench/${f} has no "// Usage:" line in its first 15 lines and is not on the exempt list; add one or exempt it with a reason`);
+    }
+  }
+  for (const f of runnable) {
+    assert.ok(readme.includes(`bench/${f}`), `README does not name bench/${f}`);
+  }
+});
+

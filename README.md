@@ -275,6 +275,10 @@ bash scripts/pack-smoke.sh            # pack the package, install it in a temp d
 node bench/profile.js                 # per-stage latency of the fast pipeline (synthetic images)
 node bench/cold.js --modes fast       # first-call vs warm latency, each in a fresh process
 node bench/threads.js                 # inference time vs ONNX Runtime thread count
+node bench/throughput.js              # model calls per second: one N-thread process vs several smaller ones
+node bench/memory.js                  # peak memory (RSS) of one call, each size in a fresh process
+node bench/memory-breakdown.js        # where `high` mode's extra memory comes from (add --arena for the arena test)
+node bench/arena.js                   # latency, memory and output bytes with the ONNX Runtime CPU arena on vs off
 ```
 
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
@@ -284,5 +288,9 @@ node bench/threads.js                 # inference time vs ONNX Runtime thread co
   takes minutes on a CPU).
 - `scripts/pack-smoke.sh` is what CI's `pack-smoke` job runs; pass extra `npm install`
   arguments in `PUSHUP_SMOKE_NPM_ARGS` (e.g. the CUDA skip flag above).
+- The results of the throughput, memory and arena scripts are in [docs/PERF.md](docs/PERF.md#throughput-p4-2026-11-11)
+  ("Throughput"), [Memory](docs/PERF.md#memory-m1-2026-11-12) (with the
+  [`high` breakdown](docs/PERF.md#high-memory-breakdown-m4-2026-11-13)) and
+  [Arena](docs/PERF.md#arena-p6-2026-11-13).
 - The latency scripts, their options and results are in [docs/PERF.md](docs/PERF.md).
   Quality benchmarking is described under "Benchmark" above.
