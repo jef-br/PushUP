@@ -804,3 +804,32 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
   Memory" says one `fast` call peaks at about 0.57 GB at 800 px; a process that has handled two or more calls
   sits at ~0.93 GB. Reword with the steady-state number and link "Does `fast` mode creep" in `docs/PERF.md`.
 
+### [ ] DOC7 — README "Known limits → Memory": say what a `fast` process uses after more than one call
+- **Goal:** M5 (`docs/PERF.md` "Does `fast` mode creep over repeated calls? (M5, 2026-11-14)") found that RSS after the
+  first `fast` call at 800 px is ~0.5 GB, after the second ~0.91 GB, and then stays flat at ~0.93 GB (max RSS ~1.03 GB).
+  The README bullet quotes only the single-call figure (0.2 GB at 400 px to 0.57 GB at 800 px), which understates
+  what a server process holds.
+- **Accept:** the README Memory bullet (and nothing else in the README) gets one or two sentences: a `fast`
+  process that has made two or more calls at 800 px holds about 0.93 GB (about 1 GB peak), flat afterwards (no
+  creep over 30 calls); only 800×600 was measured (say so; the 400 px steady state is M6); link to the M5
+  subsection (the anchor must resolve). Numbers equal those in `docs/PERF.md`; no recommendation to change settings.
+  README tests (R2, Q6, D3, D6, DOC6) still pass; docs only. `npm test` passes.
+
+### [ ] M6 — Steady-state memory of `fast` at 400 and 600 px (docs only; run after M5)
+- **Goal:** M5 measured only 800×600. DOC7 and server sizing need the settled RSS at the smaller sizes too.
+- **Accept:** run `node bench/memory-creep.js --size 400` and `--size 600` twice each (about 30 s per run;
+  no script change unless a run shows `--size` is broken), put the RSS after calls 1, 2, 5, 10, 20, 30 and max RSS in
+  a table in the M5 subsection of `docs/PERF.md` (same machine line), and one plain sentence per size: does the call-2
+  warm-up step also appear, and is it flat after it (call 30 within 5% of call 5)? No `src/` change. `npm test` passes.
+
+### [ ] M7 — Is the call-2 memory step the ONNX Runtime arena? (research, bench-only, no `src/` change; run after M5)
+- **Goal:** M5 left the cause of the ~0.4 GB rise between call 1 and call 2 unexplained; M4/P6 showed the arena
+  matters for `high`. Check it for `fast` before anyone guesses.
+- **Accept:** `bench/memory-creep.js` gets an `--arena off` option (default `on`, behaviour unchanged) that wraps
+  `ort.InferenceSession.create` in that process so the CPU session options also get `enableCpuMemArena: false` and
+  `enableMemPattern: false` (bench-only, like `bench/arena.js`; no `src/` change; usage line updated). Run
+  `--calls 30` at 800×600 twice with `--arena off`. Add the RSS rows after calls 1, 2, 5, 10, 20, 30, max RSS and median
+  call time next to the M5 table in `docs/PERF.md`, with one plain sentence: with the arena off, does the step after
+  call 1 disappear, shrink, or stay (and what does the median call time do)? No recommendation to change a default
+  (owner decision). The README bench list (DOC6 test) still names the script. `npm test` passes.
+
