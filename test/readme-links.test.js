@@ -45,3 +45,17 @@ test('README has links to docs/*.md and each one resolves (file and anchor)', ()
     if (anchor) assert.ok(anchorsOf(p).has(anchor), `README links ${file}#${anchor}, but ${file} has no such heading`);
   }
 });
+
+// DOC14: the links inside docs/OWNER_DECISIONS.md (relative to docs/) resolve too: file and anchor.
+test('docs/OWNER_DECISIONS.md links resolve (file and anchor)', () => {
+  const file = path.join(root, 'docs', 'OWNER_DECISIONS.md');
+  const text = fs.readFileSync(file, 'utf8');
+  const links = [...text.matchAll(/\]\(([\w.-]+\.md)(?:#([^)\s]*))?\)/g)].map((m) => ({ file: m[1], anchor: m[2] }));
+  assert.ok(links.length >= 8, `expected several links in OWNER_DECISIONS.md, found ${links.length}`);
+  assert.ok(links.some((l) => l.file === 'PAD.md') && links.some((l) => l.file === 'EDGES.md' && l.anchor), 'new entries link PAD.md and EDGES.md#...');
+  for (const { file: f, anchor } of links) {
+    const p = path.join(root, 'docs', f);
+    assert.ok(fs.existsSync(p), `OWNER_DECISIONS.md links ${f}, which does not exist`);
+    if (anchor) assert.ok(anchorsOf(p).has(anchor), `OWNER_DECISIONS.md links ${f}#${anchor}, but ${f} has no such heading`);
+  }
+});
