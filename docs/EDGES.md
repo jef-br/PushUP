@@ -48,7 +48,7 @@ Whether it is a defect or just "crisper" is an owner judgement; no code change i
 ## Reading
 
 - **Overshoot:** `fast` is worse than Lanczos in every row: step +4 / +8 (factor 1.5 / 2.5),
-  line +2 / +18, disc +14 / +14. The dark side dominates (undershoot below 40). On the 1 px line at 1.5 the dip stays above the dark level
+  line +2 / +18, disc +14 / +14. The dark side is the larger one for `fast` on the step (14 vs 8, 21 vs 7) and the line at 2.5 (31 vs 14); on the disc the two sides are close (34/31, 37/34). On the 1 px line at 1.5 the dip stays above the dark level
   for both methods, so only the light side overshoots there.
 - **Sharpness:** `fast` edges are sharper: step 0.97 to 0.99 px against 1.44 to 1.81 for Lanczos,
   disc 0.87 against 1.44 to 1.81. The model buys crispness with a halo of the same order as
