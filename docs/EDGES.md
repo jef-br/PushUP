@@ -62,7 +62,7 @@ meets the image border (BK8); `--include-border` keeps them (the first version o
 - **Mixed comparison:** the `fast` rows are the shipped pipeline (model + 20 % Lanczos mix), the
   Lanczos rows are a plain resize of the original, not of the 4x output.
 - **Limits:** synthetic edges at one contrast (175 bytes), one 400×300 size, one disc size, `fast` only.
-  Natural product photos have softer edges; `high` mode was not measured. Check with crops
+  Natural product photos have softer edges; `high` mode is in the section below. Check with crops
   before drawing any conclusion for real photos.
 
 
@@ -75,7 +75,8 @@ Tile seams: `high` cuts the input into 192 px tiles with a 16 px pad, so the sea
 and y = 192. The step edge and the line (x = 200) and the disc (x 194 to 206) all lie in the second tile column, 8 px
 past the seam and inside the 16 px pad of that tile; none sits on a seam, and the disc and the horizontal profile
 rows (y = 150, disc y 144 to 156) are above the y = 192 seam. So these numbers measure the model's edge
-behaviour, not a seam artefact.
+behaviour, not a seam artefact at x = 192. The step and the line run the full image height, so their overshoot
+windows also cross the horizontal seam at input y = 192; that crossing was not isolated (no run with those rows left out).
 
 | feature | factor | method | below 40 | above 215 | overshoot | width (output px) |
 |---|---|---|---|---|---|---|

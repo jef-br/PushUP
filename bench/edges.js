@@ -11,7 +11,6 @@
 //   image border (BK8); --include-border keeps them. The disc never reaches the border.
 const sharp = require('sharp');
 
-
 const fi = process.argv.indexOf('--factors');
 const factorsRaw = fi > 0 ? process.argv[fi + 1] : '1.5,2.5'; // undefined: --factors without a value
 const factors = typeof factorsRaw === 'string' ? factorsRaw.split(',').map(Number) : [];
