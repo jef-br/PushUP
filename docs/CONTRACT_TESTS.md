@@ -62,6 +62,11 @@ input.
 - `test/readme-errors.test.js`: "every row of the README Errors list rejects with the documented error class"
 - `test/aspect.test.js`: "literal expected shapes for thin inputs (guards the formula in this file)"
 - `test/batch-reject.test.js`: "a call with upscale_factor 0 (RangeError) in the middle of a batch rejects alone"
+- `test/tiny-factor.test.js`: "a factor that rounds the largest side to 0 or 1 gives a 1x1 image with a consistent stride"
+
+Also covered by `test/downscale.test.js` (generated names, not checked): at factors below 1 the
+output has the formula's size and its content matches a plain Lanczos downscale, not shifted by
+1 px.
 
 ## Output — `[arr_out, stride_out]`, tightly packed RGB, `stride_out = out_width * 3`
 
@@ -73,6 +78,14 @@ Also covered by `test/determinism.test.js` (generated names, not checked): at fa
 1.5 the same call twice in a row, and once more after a fresh session (`_reset()`), returns equal
 `arr_out` bytes and equal `stride_out`.
 
+Also covered by `test/extremes.test.js` (generated names, not checked): flat white, black and
+pure red, green and blue stay in their own channels at factors 1 and 1.5, and a half white / half
+black image keeps its columns far from the seam.
+
+Also covered by `test/tiling.test.js` (generated names, not checked): tiled inference (192 px tiles,
+16 px pad, on the `fast` model) gives the same output size as whole-image inference, with a mean and a maximum pixel
+difference under fixed bounds, also next to the tile seams.
+
 ## Async, one at a time (the sentence under the table)
 
 - `test/upscale.test.js`: "concurrent calls resolve"
@@ -83,3 +96,4 @@ Also covered by `test/determinism.test.js` (generated names, not checked): at fa
 - `test/batch-reject.test.js`: "a call with a non-integer stride (TypeError) in the middle of a batch rejects alone"
 - `test/batch-reject.test.js`: "a call with upscale_factor 0 (RangeError) in the middle of a batch rejects alone"
 - `test/batch-reject.test.js`: "a call with a string instead of a byte array (TypeError) in the middle of a batch rejects alone"
+- `test/session-retry.test.js`: "a failed CPU session creation is not cached: the next call retries and succeeds"
