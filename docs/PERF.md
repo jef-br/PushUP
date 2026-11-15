@@ -503,8 +503,8 @@ and 143 ticks, longest gap 2 ms):
 | `tile.run` | one 224×224 tile | 4059 / 3897 | 0 / 0 | 4059 / 3897 | 4059 / 3897 |
 
 - **`high` mode blocks the loop too:** for 99.9% of the call (the time in gaps above 10 ms is 12127 of 12136 ms and
-  11497 of 11504 ms). Only 8–9 ticks fired (about 16–18 ms), so the loop is free for a few milliseconds at most between
-  tile runs, not in a useful way.
+  11497 of 11504 ms). Only 8–9 ticks fired in about 11–12 s (the probe does not say where in the call), so timers ran
+  at most a handful of times during the call.
 - **Longest gap:** 3.4–3.8 s, of the same size as one bare tile run (3.9–4.1 s), so the loop is blocked for about one
   tile run at a time. The bare tile run blocks it for its whole length (0 ticks), as the bare `session.run` of `fast` does.
 - **Not measured:** 800 px input, a GPU, and thread counts other than the default. No recommendation to change code or
