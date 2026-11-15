@@ -20,7 +20,7 @@ meets the image border (BK8); `--include-border` keeps them (the first version o
   a 1 px dark line (column 200), a 12 px-diameter dark disc (centre 200, 150).
 - Each is upscaled by the shipped `fast` pipeline (CPU, 20 % Lanczos mix included) and, for the
   comparison, resized by plain `sharp` lanczos3 to the same output size.
-- **Overshoot:** over all pixels within 6 output px of the feature (of the edge, of the line, of
+- **Overshoot:** over all pixels within 6 output px of the feature (step and line: without the border rows, see above) (of the edge, of the line, of
   the disc's circumference) and all three channels: `below 40` = how far the lowest byte is under the
   dark level, `above 215` = how far the highest is over the light level; `overshoot` is the larger of the two.
   The Lanczos values are separate rows, not subtracted.
