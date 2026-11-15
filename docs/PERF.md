@@ -488,3 +488,40 @@ listed per call (run 1 / run 2). Blocked time equalled the longest gap in every 
   was measured. No change to code or
   defaults is proposed here; running inference in a `worker_threads` worker would be an owner decision
   (see task DOC16 in `TASKS.md`).
+
+## Worker (EL2, 2026-11-15)
+
+`node bench/worker.js [--sizes 400,800] [--calls 5]` compares `upscale()` on the main thread ("direct") with
+`upscale()` inside a `worker_threads` Worker ("worker"; the worker requires `src/index.js`, the input is sent as a
+transferred `ArrayBuffer` and the output comes back as one). `fast`, CPU, factor 1.5, synthetic 4:3 image, **one fresh
+process per row** (so the first call is cold and RSS is not shared with another row). The main thread runs the EL1
+timer probe (2 ms `setInterval`) during every call. First = the first call (for the worker: worker start, loading
+`src/`, session creation, first call); median = the median of the next 5 calls, as the main thread sees them (for the
+worker: from before `postMessage` to the arrival of the output, including copying the output into a transferable
+buffer; the input copy is made before the timer starts); ticks and longest gap are medians over those 5 calls; RSS =
+RSS of the whole process after the last call (main thread and worker share the process). The output bytes (sha256 of
+the first call) were equal in all four row pairs.
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, 4 vCPU cloud container, Node v22.23.4, onnxruntime-node 1.31.1. The
+numbers are for this machine and will differ elsewhere. Two runs (`node bench/worker.js --calls 5`), run 1 / run 2:
+
+| Mode | Input | First call ms | Median call ms | Ticks per call (median) | Longest gap ms (median) | RSS MB | Max RSS MB |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| direct | 400×300 | 460 / 512 | 408 / 418 | 7 / 5 | 393 / 399 | 346 / 368 | 346 / 368 |
+| worker | 400×300 | 533 / 528 | 403 / 413 | 190 / 195 | 6 / 6 | 398 / 367 | 398 / 367 |
+| direct | 800×600 | 1809 / 1889 | 1735 / 1706 | 17 / 18 | 1686 / 1667 | 953 / 953 | 1038 / 1039 |
+| worker | 800×600 | 2031 / 2078 | 1766 / 1754 | 824 / 826 | 7 / 7 | 994 / 996 | 1082 / 1084 |
+
+- **Latency per call:** at 400×300 the worker is not measurably slower (−6 and −4 ms against direct, inside the
+  run-to-run spread); at 800×600 it is 31 and 48 ms slower (about 2–3%).
+- **Cold start:** the first call costs 16–72 ms more at 400×300 and 190–221 ms more at 800×600 (the worker has to start
+  and load `src/` and create its session).
+- **Memory:** RSS after the last call is 52 MB and −1 MB different at 400×300 (so no reliable difference), and about
+  32–43 MB higher at 800×600 (41 and 43 MB in this table, 32 MB in a first trial run; max RSS 44 and 45 MB higher).
+- **Main loop:** with the worker the main thread's loop stays free: 190–195 ticks and a longest gap of 6 ms at 400×300,
+  824–826 ticks and 7 ms at 800×600, against 5–7 ticks with a longest gap of about 0.4 s and 17–18 ticks with about
+  1.7 s for the direct calls. This is the same effect EL1 found (see "Event loop (EL1, 2026-11-15)").
+- **What was not measured:** `high` mode, a GPU, several workers, a worker pool, a separate process, and large queues
+  of concurrent calls. A worker would not remove the one-call-at-a-time rule inside one worker. No change to code or
+  defaults is proposed here: whether to move inference to a worker is an owner decision (row 9 of
+  `docs/OWNER_DECISIONS.md`).
