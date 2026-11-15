@@ -39,8 +39,12 @@ already uses every CPU core. They do **not** leave the Node.js event loop free: 
 runs, timers and I/O in the same process are delayed for about the length of the call. In `fast`
 mode on a 4 vCPU machine that is about 0.4 s for a 400×300 image and 1.8 s for 800×600. The block
 is inside ONNX Runtime ([docs/PERF.md](docs/PERF.md#event-loop-el1-2026-11-15)). Calling
-`upscale` from a separate process or a worker thread should keep the main loop free (not tested
-here). `high` mode and a GPU were not measured.
+`upscale` from a worker thread keeps the main loop free in `fast` mode: in a test it stayed responsive (longest gap
+6–7 ms), with no measurable change in call time at 400×300 and about 30–50 ms (2–3%) more at 800×600, tens of ms up to
+about 200 ms more on the first call, and about 40 MB more memory at 800×600 (not resolved at 400×300;
+[docs/PERF.md](docs/PERF.md#worker-el2-2026-11-15)). A worker with `high` mode and a separate process were not tested.
+`high` mode blocks the loop too: a 400×300 image takes about 12 s on this machine, with timers delayed up to
+3.8 s at a time ([docs/PERF.md](docs/PERF.md#high-mode-el3-2026-11-15)). A GPU was not measured.
 
 ### Errors
 
