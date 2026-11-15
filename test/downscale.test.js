@@ -1,7 +1,8 @@
 'use strict';
 // BK5: factor < 1 must give a picture close to a plain Lanczos downscale (content, not only the
-// size, which test/upscale.test.js and test/aspect.test.js already pin). A wrong kernel, a shift
-// by a pixel or a bad crop in the 4x-then-down path would keep the size right.
+// size, which test/upscale.test.js and test/aspect.test.js already pin). A shift by a pixel or a
+// bad crop in the 4x-then-down path would keep the size right. Limit: a different resize kernel
+// is NOT caught (the bound is ~2x the measured difference); only shifts are.
 //
 // The mean absolute difference is over all bytes and channels. The 1 px shift assertion is the
 // real guard: a bound at ~2x the measured value would let a shifted output through. The
