@@ -10,8 +10,10 @@
 //     possibly twice in one file with different names (bench/memory-breakdown.js);
 //   - the inline form `require('../src/index.js')._NAME` (bench/throughput.js);
 //   - `const x = require('../src');` followed by `x.name` uses.
-// Not understood: a require stored in a variable and passed around, dynamic paths, `import`. Names in comments are
-// ignored only because the regexes need a `require(...)` call; a commented-out require would still be read.
+// Comments are stripped first (so a commented-out require or a comment inside a destructuring list is ignored), `...rest`
+// keys are skipped, and `/index` may omit `.js`. Not understood (none of these is used in bench/ today): a require stored in a
+// variable and passed around or destructured later, dynamic paths, bracket access, `import`, object defaults
+// (`{ a = {} }`), and a name `x` of `const x = require(...)` that is shadowed elsewhere in the file (every `x.name` counts).
 const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
@@ -20,15 +22,17 @@ const { spawnSync } = require('node:child_process');
 
 const root = path.join(__dirname, '..');
 // No capture groups in SRC, so the group numbers in the regexes below stay simple.
-const SRC = String.raw`require\(\s*['"](?:\.\./)+src(?:/index\.js)?['"]\s*\)`;
+const SRC = String.raw`require\(\s*['"](?:\.\./)+src(?:/index(?:\.js)?)?['"]\s*\)`;
 
 // All export names a source text takes from src. Pure function of the text.
-function usedExports(text) {
+function usedExports(source) {
+  // Strip comments (a string containing `//` could fool this; none of the require paths does).
+  const text = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`])\/\/.*$/gm, '$1');
   const names = new Set();
   for (const m of text.matchAll(new RegExp(String.raw`\{([^{}]*)\}\s*=\s*` + SRC, 'g'))) {
     for (const part of m[1].split(',')) {
       const key = part.split(':')[0].split('=')[0].trim();
-      if (key) names.add(key);
+      if (key && !key.startsWith('...')) names.add(key);
     }
   }
   for (const m of text.matchAll(new RegExp(SRC + String.raw`\s*\.\s*([A-Za-z_$][\w$]*)`, 'g'))) names.add(m[1]);
@@ -87,4 +91,6 @@ test('the scan understands each form of use', () => {
   assert.deepStrictEqual(t("x(require('../src/index.js')._MODES.fast)"), ['_MODES']);
   assert.deepStrictEqual(t("const p = require('../src');\np.upscale(1); p._run(2);"), ['_run', 'upscale']);
   assert.deepStrictEqual(t("const { x } = require('onnxruntime-node');"), []);
+  assert.deepStrictEqual(t("const { a, // why\n  b, ...rest } = require('../src/index');"), ['a', 'b']);
+  assert.deepStrictEqual(t("// const { gone } = require('../src');\n/* const { gone2 } = require('../src'); */\nconst { kept } = require('../src'); // trailing"), ['kept']);
 });
