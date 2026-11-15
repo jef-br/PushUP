@@ -494,7 +494,8 @@ listed per call (run 1 / run 2). Blocked time equalled the longest gap in every 
 `node bench/eventloop.js --quality high --sizes 400 --calls 1` (the same probe and machine as above; `high` is the
 Remacri model, 192 px tiles with 16 px context). `tile.run` is a bare `session.run` of the `high` model on one tile
 input, `1×3×224×224` (192 + 2·16): what one of the many runs of a `high` call feeds. A 400×300 image is covered by
-several tiles, so one `upscale()` call makes several such runs. Two runs, one call per row (the idle control gave 141
+6 tiles (3×2); the context padding is cut at the image edges, so those tiles are smaller than 224 px and
+`tile.run` is an upper bound for one of them. One `upscale()` call makes 6 such runs. Two runs, one call per row (the idle control gave 141
 and 143 ticks, longest gap 2 ms):
 
 | Case | Input | Call ms (run 1 / 2) | Ticks (run 1 / 2) | Longest gap ms (run 1 / 2) | Blocked ms (run 1 / 2) |

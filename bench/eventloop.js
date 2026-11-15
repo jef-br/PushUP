@@ -1,6 +1,6 @@
 'use strict';
 // Task EL1: does a call block the event loop? A timer probe (setInterval, 2 ms) runs during (a) a full
-// public upscale() call and (b) a bare ONNX Runtime session.run on a same-sized input, `fast` model, CPU.
+// public upscale() call and (b) a bare ONNX Runtime session.run on a same-sized input, `fast` (default) or `high` model, CPU.
 // Usage: node bench/eventloop.js [--sizes 400,800] [--calls 3] [--threads default] [--quality fast|high]   (--sizes: contract range 400-800; --threads: comma list of integers >= 1 or "default", applies to the bare session.run rows only; --quality high: the `high` model, Remacri, 192 px tiles; about 15 s per upscale() call at 400 px on 4 vCPU)
 // Prints one row per call: call time, number of probe ticks, longest gap between ticks (start of the call and its
 // end count as ticks) and the time spent in gaps above 10 ms ("blocked"). A free loop shows about call_ms / 2 ticks
