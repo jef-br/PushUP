@@ -84,12 +84,15 @@ the CPU (the attempt costs ~nothing and happens once per process). Set
 
 Override with environment variables, read on every call:
 
-| Variable | Values | Default |
-|---|---|---|
-| `PUSHUP_QUALITY` | `auto` (high on GPU, fast on CPU), `fast`, `high` | `auto` |
-| `PUSHUP_DEVICE` | `auto`, `cpu`, `gpu` (falls back to CPU with a warning) | `auto` |
+| Variable | Values | Default | Read by |
+|---|---|---|---|
+| `PUSHUP_QUALITY` | `auto` (high on GPU, fast on CPU), `fast`, `high` | `auto` | `src/index.js` (every call), and the `bench/` scripts that start the model |
+| `PUSHUP_DEVICE` | `auto`, `cpu`, `gpu` (falls back to CPU with a warning) | `auto` | `src/index.js` (every call), and the `bench/` scripts that start the model |
+| `PUSHUP_SMOKE_NPM_ARGS` | extra arguments for the `npm install` of the tarball, e.g. `--onnxruntime-node-install-cuda=skip` | none | `scripts/pack-smoke.sh` and the CI `pack-smoke` job (not used at runtime) |
+| `P4_THREADS`, `P4_SIZE`, `P5_CHILD_INDEX`, `P5_FAIL_CHILD` | internal | none | `bench/throughput.js`, which sets them for its own child processes; not for users |
 
-Any other value throws a `RangeError`. `PUSHUP_QUALITY=high` works on CPU, just slowly.
+For `PUSHUP_QUALITY` and `PUSHUP_DEVICE`, any other value throws a `RangeError`.
+`PUSHUP_QUALITY=high` works on CPU, just slowly. The other variables do not affect `upscale`.
 
 Licenses: `fast` is CC BY 4.0. `high` (Remacri) is **CC BY-NC-SA 4.0, non-commercial
 only**; see `models/LICENSES.md`.
