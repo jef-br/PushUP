@@ -89,7 +89,8 @@ Override with environment variables, read on every call:
 | `PUSHUP_QUALITY` | `auto` (high on GPU, fast on CPU), `fast`, `high` | `auto` | `src/index.js` (every call); the `bench/` scripts only set them for the model they start |
 | `PUSHUP_DEVICE` | `auto`, `cpu`, `gpu` (falls back to CPU with a warning) | `auto` | `src/index.js` (every call); the `bench/` scripts only set them for the model they start |
 | `PUSHUP_SMOKE_NPM_ARGS` | extra arguments for the `npm install` of the tarball, e.g. `--onnxruntime-node-install-cuda=skip` | none | `scripts/pack-smoke.sh` and the CI `pack-smoke` job (not used at runtime) |
-| `P4_THREADS`, `P4_SIZE`, `P5_CHILD_INDEX`, `P5_FAIL_CHILD` | internal | none | `bench/throughput.js`, which sets them for its own child processes; not for users |
+| `P4_THREADS`, `P4_SIZE`, `P5_CHILD_INDEX` | internal | none | `bench/throughput.js`, which sets them for its own child processes; not for users |
+| `P5_FAIL_CHILD` | `load` or `run` (test hook) | none | `bench/throughput.js`: makes child 0 crash before the session is created (`load`) or after the warm-up (`run`); for testing the script only |
 
 For `PUSHUP_QUALITY` and `PUSHUP_DEVICE`, any other value throws a `RangeError`.
 `PUSHUP_QUALITY=high` works on CPU, just slowly. The other variables do not affect `upscale`.
