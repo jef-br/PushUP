@@ -473,7 +473,7 @@ listed per call (run 1 / run 2). Blocked time equalled the longest gap in every 
 
 - **`session.run` alone:** the loop is blocked for the whole call, at 400 and 800 px and also with one
   thread. No timer fired in any of the 24 calls, although `run()` returns its promise at once
-  (about 0.1 ms).
+  (in an ad-hoc check, not part of the script: about 0.1 ms).
 - **`upscale()`:** the loop is blocked for almost the whole call: the longest gap is 96–98% of the
   call time (379–395 ms of 394–413 ms at 400×300; 1682–1772 ms of 1719–1814 ms at 800×600). The few ticks
   that do fire (6–8 and 16–19, i.e. about 12–38 ms) come at the end, from the resize and mix steps, which
