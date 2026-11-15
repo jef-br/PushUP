@@ -314,6 +314,7 @@ node bench/edges.js                   # overshoot and edge width on synthetic ha
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
+node bench/worker.js                  # cost of running `upscale` in a worker_threads worker: latency, cold start, memory, event loop (results: docs/PERF.md "Worker")
 ```
 
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
