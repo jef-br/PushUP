@@ -20,7 +20,8 @@ const img = (w) => new Uint8Array(w * 4 * 3).map((_, i) => (i * 7) & 255);
   if (process.argv[1] === 'reject') {
     await upscale(img(399), 399 * 3, 1).then(() => { process.exitCode = 3; }, (e) => { if (!(e instanceof RangeError)) process.exitCode = 4; });
   }
-  await upscale(img(400), 400 * 3, 1);
+  const [out] = await upscale(img(400), 400 * 3, 1);
+  if (out.length !== 400 * 4 * 3) process.exitCode = 5; // it must really have upscaled (400x4 at factor 1 stays 400x4)
 })();
 `;
 
