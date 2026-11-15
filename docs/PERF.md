@@ -516,7 +516,7 @@ numbers are for this machine and will differ elsewhere. Two runs (`node bench/wo
   run-to-run spread); at 800×600 it is 31 and 48 ms slower (about 2–3%).
 - **Cold start:** the first call costs more with the worker (it has to start, load `src/` and create its session):
   16–72 ms at 400×300 and 190–221 ms at 800×600 in this table. This is noisy: a later check run on the same machine
-  gave +106 ms (400×300) and +72 ms (800×600), so read it as "tens to a few hundred ms".
+  gave +106 ms (400×300) and +72 ms (800×600), so read it as "tens of ms up to about 200 ms". The worker's first call also includes loading `src/` inside the worker, which the direct row does before its timer starts, so the difference is not a pure worker-start cost.
 - **Memory:** RSS after the last call is 41–43 MB higher with the worker at 800×600 (both runs of this table; max RSS
   44 and 45 MB higher; a later check run gave +42 MB). At 400×300 the differences were +52 and −1 MB in this table and
   +44 MB in the check run, so up to about 45 MB cannot be ruled out there either.
