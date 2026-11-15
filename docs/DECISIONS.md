@@ -128,3 +128,21 @@ Numbers: `docs/TEXTURE.md`.
 - **Would reopen it:** an owner-requested batch mode (where ~10% more throughput beats latency),
   or measurements on a many-core host showing that fewer threads per call lose little speed.
 
+## D16 — A quiet library: the ONNX Runtime log level is 'error' unless the application chose one (2026-11-15, F-2026-11-15-0733)
+
+- **Problem:** `test/quiet.test.js` (EX3) failed in CI. On the GitHub runner onnxruntime printed a
+  `device_discovery.cc` warning to stderr at the first call, even with `PUSHUP_DEVICE=cpu`. It did not show in the
+  sandbox. The line comes from the ORT environment, which `onnxruntime-node` creates once at first use with
+  `env.logLevel` (default `warning`); it is not a session setting.
+- **Decision:** `src/index.js` sets `ort.env.logLevel = 'error'` when it still has its default `'warning'`, before any
+  session exists. A level the application chose (`verbose`, `fatal`, ...) is not touched. Errors stay visible, for
+  example the CUDA load error that README "Quality modes and GPU" documents for `auto` on Linux without CUDA.
+- **Cost:** ORT warnings about real problems (for example nodes not assigned to the preferred execution provider)
+  are no longer printed. An application that wants them sets `ort.env.logLevel = 'warning'` itself after requiring
+  PushUP, before the first call. `env` is shared by every user of `onnxruntime-common` in the process, which is why
+  an explicit level is never overridden.
+- **Evidence:** `test/ort-loglevel.test.js`; with `verbose` the same start-up code prints its device discovery lines
+  (so the level really controls it). CI on the runner is the check for the warning itself.
+- **Would reopen it:** a report that a warning hidden by this was needed, or an owner wish for a PushUP-specific
+  setting (new option, owner decision).
+

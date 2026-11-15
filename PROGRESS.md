@@ -13,6 +13,7 @@ new block on Monday).
 - **Devices:** every path runs on CPU; a GPU is used when present (DirectML / CUDA / CoreML,
   fallback to CPU on any failure). `auto` = Remacri on GPU, `fast` on CPU; overrides
   `PUSHUP_QUALITY`, `PUSHUP_DEVICE`. — D9 (supersedes D7), README "Quality modes and GPU"
+- **Quiet library:** ORT log level set to `error` unless the application chose one; a CI-only start-up warning had broken the quiet test. — D16
 - **No post-sharpening:** lowered every score, added no texture. — D8
 - **Byte conversion:** inline `floor(v*255+0.5)`, byte-identical and ~5x faster; not
   `Uint8ClampedArray` (rounds ties to even). — `docs/PERF.md`

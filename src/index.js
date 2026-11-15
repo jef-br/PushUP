@@ -3,6 +3,11 @@
 const path = require('node:path');
 const os = require('node:os');
 const ort = require('onnxruntime-node');
+
+// onnxruntime creates its environment once, at first use, with `env.logLevel` (default 'warning'), and warnings from
+// that start-up (for example device discovery on some VMs) go to stderr. A library should be quiet, so lower the level
+// to 'error' while it still has its default; any level the application chose is left alone. Errors stay visible.
+if (ort.env.logLevel === 'warning') ort.env.logLevel = 'error';
 const sharp = require('sharp');
 
 const MIN_INPUT = 400;
