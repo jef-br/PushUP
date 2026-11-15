@@ -293,7 +293,7 @@ node bench/memory.js                  # peak memory (RSS) of one call, each size
 node bench/memory-breakdown.js        # where `high` mode's extra memory comes from (add --arena for the arena test)
 node bench/arena.js                   # latency, memory and output bytes with the ONNX Runtime CPU arena on vs off
 node bench/memory-creep.js            # does memory keep growing over repeated `fast` calls? (30 calls, one process)
-node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos
+node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos (--quality high: Remacri)
 ```
 
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
