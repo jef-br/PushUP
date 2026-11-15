@@ -141,6 +141,11 @@ Numbers: `docs/TEXTURE.md`.
   are no longer printed. An application that wants them sets `ort.env.logLevel = 'warning'` itself after requiring
   PushUP, before the first call. `env` is shared by every user of `onnxruntime-common` in the process, which is why
   an explicit level is never overridden.
+- **Edge cases:** (a) the check is `env.logLevel === 'warning'`, so the default cannot be told apart from an
+  application that set `'warning'` itself before requiring PushUP: that application also gets `error`. It can set
+  `'warning'` again after requiring PushUP, before the first call. (b) `env` is a separate copy in each
+  `worker_threads` worker: the fix runs in a worker that requires PushUP too, and a level set on the main thread does
+  not carry over to workers.
 - **Evidence:** `test/ort-loglevel.test.js`; with `verbose` the same start-up code prints its device discovery lines
   (so the level really controls it). CI on the runner is the check for the warning itself.
 - **Would reopen it:** a report that a warning hidden by this was needed, or an owner wish for a PushUP-specific
