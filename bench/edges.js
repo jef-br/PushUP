@@ -1,22 +1,27 @@
 'use strict';
 // Ringing and halos on hard edges: overshoot and edge width of `fast` mode vs plain Lanczos (BK7).
-// Usage: node bench/edges.js [--factors 1.5,2.5]
+// Usage: node bench/edges.js [--factors 1.5,2.5] [--include-border]
 //   Synthetic 400x300 images with mid-level values (dark 40, light 215, so overshoot is not hidden
 //   by the 0/255 clamp of the output bytes): a vertical step, a 1 px dark line, a 12 px dark disc.
 //   Each is upscaled with the shipped `fast` pipeline (CPU) and resized with plain sharp lanczos3
 //   to the same size. Prints a markdown table; results are in docs/EDGES.md.
+//   The step and line windows skip the 40 output rows at the top and bottom, where the feature meets the
+//   image border (BK8); --include-border keeps them. The disc never reaches the border.
 const sharp = require('sharp');
 
 process.env.PUSHUP_QUALITY = 'fast';
 process.env.PUSHUP_DEVICE = 'cpu';
 const { upscale } = require('../src/index.js');
 
-const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
-const factors = arg('factors', '1.5,2.5').split(',').map(Number);
+const fi = process.argv.indexOf('--factors');
+const factorsRaw = fi > 0 ? process.argv[fi + 1] : '1.5,2.5'; // undefined: --factors without a value
+const factors = typeof factorsRaw === 'string' ? factorsRaw.split(',').map(Number) : [];
 if (!factors.length || factors.some((f) => !(f > 0))) {
   console.error('--factors must be a comma-separated list of numbers > 0');
   process.exit(1);
 }
+const includeBorder = process.argv.includes('--include-border');
+const BORDER = 40; // output rows skipped at the top and bottom for the step and line
 
 const W = 400, H = 300, DARK = 40, LIGHT = 215, NEAR = 6; // NEAR: output px around the feature
 const CX = 200, CY = 150, R = 6; // disc: centre, radius (12 px diameter)
@@ -59,6 +64,7 @@ function measure(kind, out, ow, oh, f) {
   const g = geometry(kind, f);
   let min = 255, max = 0;
   for (let y = 0; y < oh; y++) {
+    if (kind !== 'disc' && !includeBorder && (y < BORDER || y >= oh - BORDER)) continue;
     for (let x = 0; x < ow; x++) {
       let near;
       if (kind === 'disc') near = Math.abs(Math.hypot(x + 0.5 - CX * f, y + 0.5 - CY * f) - R * f) <= NEAR;
