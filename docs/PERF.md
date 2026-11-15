@@ -483,7 +483,8 @@ listed per call (run 1 / run 2). Blocked time equalled the longest gap in every 
   further (for example into how the binding schedules the run).
 - **What it means:** timers and I/O in the same process are delayed for about the length of each call, so
   a server that calls `upscale()` is unresponsive for 0.4 s (400 px) to 1.8 s (800 px) per call on this
-  machine, in `fast` mode. `high` mode and a GPU were not measured. The README and `CLAUDE.md` say the
-  model runs off the main thread; for the event loop this is not what was measured. No change to code or
+  machine, in `fast` mode. `high` mode and a GPU were not measured. `CLAUDE.md` says the model
+  runs off the main thread (the README said so too until DOC16); for the event loop this is not what
+  was measured. No change to code or
   defaults is proposed here; running inference in a `worker_threads` worker would be an owner decision
   (see task DOC16 in `TASKS.md`).
