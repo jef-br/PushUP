@@ -52,9 +52,14 @@ async function child(mode, size, calls) {
   let worker;
   if (mode === 'worker') {
     worker = new Worker(__filename);
+    // One persistent set of handlers (no listener per call): one call is in flight at a time.
+    let pending = null;
+    const settle = (fn) => { const p = pending; pending = null; if (p) fn(p); };
+    worker.on('message', ({ ab, outStride }) => settle((p) => p.resolve([Buffer.from(ab), outStride])));
+    worker.on('error', (e) => settle((p) => p.reject(e)));
+    worker.on('exit', (code) => settle((p) => p.reject(new Error(`worker exited with code ${code}`))));
     call = (copy) => new Promise((resolve, reject) => {
-      worker.once('message', ({ ab, outStride }) => resolve([Buffer.from(ab), outStride]));
-      worker.once('error', reject);
+      pending = { resolve, reject };
       worker.postMessage({ buf: copy.buffer, stride, factor: FACTOR }, [copy.buffer]);
     });
   } else {
@@ -66,8 +71,8 @@ async function child(mode, size, calls) {
     const ticks = [];
     const t0 = performance.now();
     const timer = setInterval(() => ticks.push(performance.now() - t0), TICK_MS);
-    const result = await call(copy);
-    clearInterval(timer);
+    let result;
+    try { result = await call(copy); } finally { clearInterval(timer); }
     const total = performance.now() - t0;
     const marks = [0, ...ticks, total];
     let maxGap = 0;

@@ -514,10 +514,12 @@ numbers are for this machine and will differ elsewhere. Two runs (`node bench/wo
 
 - **Latency per call:** at 400×300 the worker is not measurably slower (−6 and −4 ms against direct, inside the
   run-to-run spread); at 800×600 it is 31 and 48 ms slower (about 2–3%).
-- **Cold start:** the first call costs 16–72 ms more at 400×300 and 190–221 ms more at 800×600 (the worker has to start
-  and load `src/` and create its session).
-- **Memory:** RSS after the last call is 52 MB and −1 MB different at 400×300 (so no reliable difference), and about
-  32–43 MB higher at 800×600 (41 and 43 MB in this table, 32 MB in a first trial run; max RSS 44 and 45 MB higher).
+- **Cold start:** the first call costs more with the worker (it has to start, load `src/` and create its session):
+  16–72 ms at 400×300 and 190–221 ms at 800×600 in this table. This is noisy: a later check run on the same machine
+  gave +106 ms (400×300) and +72 ms (800×600), so read it as "tens to a few hundred ms".
+- **Memory:** RSS after the last call is 41–43 MB higher with the worker at 800×600 (both runs of this table; max RSS
+  44 and 45 MB higher; a later check run gave +42 MB). At 400×300 the differences were +52 and −1 MB in this table and
+  +44 MB in the check run, so up to about 45 MB cannot be ruled out there either.
 - **Main loop:** with the worker the main thread's loop stays free: 190–195 ticks and a longest gap of 6 ms at 400×300,
   824–826 ticks and 7 ms at 800×600, against 5–7 ticks with a longest gap of about 0.4 s and 17–18 ticks with about
   1.7 s for the direct calls. This is the same effect EL1 found (see "Event loop (EL1, 2026-11-15)").
