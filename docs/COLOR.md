@@ -58,14 +58,16 @@ saturated green, which also shifts by 10 to 14 bytes in the interior.
   (1.00 for black and grey, where rounding hides it).
 - **Which channel:** in the shipped column the blue channel has the largest deviation in 17 of the 27 colours, red in 5, green in 1, two ties, and
   two colours (black, grey) stay within 2 bytes. The worst shipped colours: (255,0,255) 29 on blue, (0,255,0) 26 on blue (R 22, G 16), (128,0,255) 22,
-  (255,0,128) 19, (128,255,0) 19, (0,0,255) 19. In flat saturated blue and magenta only blue moves, down (mean −4 to −6); in green-heavy colours all
+  (255,0,128) 19, (128,255,0) 19, (0,0,255) 19. In the interior of flat saturated blue and magenta only blue moves, down (mean −4 to −6; at the border R and G move too); in green-heavy colours all
   three channels move toward grey (the 255 channel down by 11, the 0 channels up by 10 to 14: a desaturation).
 - **Border effect:** the model-only maximum is far larger than the mean shift for blue and magenta, because it sits near the image border. Away from
   the border: (0,0,255) 24 → 4, (128,0,255) 28 → 4, (255,0,128) 24 → 5, (255,0,255) 36 → 6, (0,255,0) 33 → 14, (128,255,0) 24 → 12. So for
   most colours the visible error is a band around the edge of the image, for green a band plus a constant interior shift.
 - **What it would take to fix (not implemented):** the border part could be removed by padding the input (mirror) by 16 px before the model and cropping
   the output afterwards; at best the error then drops to the "away from the border" column (blue 24 → 4, magenta 36 → 6, green 33 → 14). That
-  is an upper bound from this table, not a measured result; it costs about 19 % more pixels through the model (432×332 vs 400×300, from the sizes, time
+  is an upper bound from this table; a check by the BK10 adversary (mirror-pad 16 px, model only, crop back; also 32 px) on four colours gave
+  exactly the "away from the border" values in every distance band (magenta 0/0/6, blue 1/0/4, green 10/11/14, (128,255,0) 9/7/12), and
+  showed the border effect reaching about 8 px from the edge, so 16 px is enough. Uniform images only; textured photos were not tested. The change costs about 19 % more pixels through the model (432×332 vs 400×300, from the sizes, time
   not measured) and changes default output, so it needs a quality-gate run and an owner decision. The interior green shift would need a different model.
 - **Limits:** synthetic uniform images (no texture, no gradient), one size, `fast` only; natural photos were not measured, so how visible this is on real
   product images is open.
