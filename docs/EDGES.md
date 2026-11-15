@@ -61,6 +61,42 @@ meets the image border (BK8); `--include-border` keeps them (the first version o
   every row) holds either way, and so does the 2 to 18 byte range.
 - **Mixed comparison:** the `fast` rows are the shipped pipeline (model + 20 % Lanczos mix), the
   Lanczos rows are a plain resize of the original, not of the 4x output.
-- **Limits:** synthetic edges at one contrast (175 bytes), one 400×300 size, one disc size, `fast` only.
-  Natural product photos have softer edges; `high` mode was not measured. Check with crops
+- **Limits:** synthetic edges at one contrast (175 bytes), one 400×300 size, one disc size, `fast` in this part (`high` is in the section below).
+  Natural product photos have softer edges; `high` mode is in the section below. Check with crops
   before drawing any conclusion for real photos.
+
+
+## `high` mode (BK9)
+
+`node bench/edges.js --quality high` (CPU, tiled Remacri, 6 runs in about 1.5 minutes on 4 vCPU, same border rule as
+above). The shipped `high` pipeline has no Lanczos mix. Date: 2026-11-15.
+
+Tile seams: `high` cuts the input into 192 px tiles with a 16 px pad, so the seams are at input x = 192 and 384
+and y = 192. The step edge and the line (x = 200) and the disc (x 194 to 206) all lie in the second tile column, 8 px
+past the seam and inside the 16 px pad of that tile; none sits on a seam, and the disc and the horizontal profile
+rows (y = 150, disc y 144 to 156) are above the y = 192 seam. So these numbers measure the model's edge
+behaviour, not a seam artefact at x = 192. The step and the line run the full image height, so their overshoot
+windows also cross the horizontal seam at input y = 192; a check by the BK9 adversary that skipped the rows within 24 input px of y = 192 gave the same 12 rows, so the horizontal seam does not drive these numbers.
+
+| feature | factor | method | below 40 | above 215 | overshoot | width (output px) |
+|---|---|---|---|---|---|---|
+| step | 1.5 | high | 4 | 12 | 12 | 0.84 |
+| step | 1.5 | lanczos | 10 | 10 | 10 | 1.44 |
+| step | 2.5 | high | 10 | 14 | 14 | 0.83 |
+| step | 2.5 | lanczos | 13 | 13 | 13 | 1.81 |
+| line | 1.5 | high | 20 | 24 | 24 | 1.40 |
+| line | 1.5 | lanczos | 0 | 11 | 11 | 1.74 |
+| line | 2.5 | high | 40 | 25 | 40 | 2.12 |
+| line | 2.5 | lanczos | 0 | 13 | 13 | 2.76 |
+| disc | 1.5 | high | 26 | 31 | 31 | 0.87 |
+| disc | 1.5 | lanczos | 20 | 18 | 20 | 1.44 |
+| disc | 2.5 | high | 40 | 40 | 40 | 0.84 |
+| disc | 2.5 | lanczos | 23 | 20 | 23 | 1.81 |
+
+**Reading: yes, `high` overshoots more than plain Lanczos in every row** (step +2 / +1, line +13 / +27, disc +11 / +17 bytes at
+factor 1.5 / 2.5), **and it is not better than `fast`**: against the `fast` table above it is about the same on the step
+(12 / 14 vs 12 / 17) and the disc (31 / 40 vs 34 / 37, within 3 bytes), and clearly worse on the 1 px line (24 / 40 vs 13 / 31, +11 / +9).
+Its step and disc edges are the sharpest of the three (0.83 to 0.87 px against 0.97 to 0.99 for `fast` on the step and 1.44 to 1.81 for Lanczos).
+An overshoot of 40 in the `high` rows (line 2.5 below, disc 2.5 both sides) means a byte reached 0 or 255, so it is a lower bound there; the real overshoot is at least that, which only strengthens "not better than `fast`". Its line is narrowest at factor 1.5 (1.40 vs 1.64 for `fast`) but not at 2.5 (2.12 vs 2.04).
+Same limits as above: synthetic edges, one contrast, one size; `high` was run on CPU (a GPU gives the same model, but the result was
+not compared).

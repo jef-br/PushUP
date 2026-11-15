@@ -9,6 +9,19 @@ const { spawnSync } = require('node:child_process');
 const SCRIPT = path.join(__dirname, '..', 'bench', 'edges.js');
 const MSG = '--factors must be a comma-separated list of numbers > 0';
 
+const QMSG = '--quality must be fast or high';
+
+for (const args of [['--quality', 'bogus'], ['--quality'], ['--quality', ''], ['--quality', 'auto']]) {
+  test(`edges.js ${args.join(' ')} exits 1 with the --quality message`, () => {
+    const t0 = Date.now();
+    const r = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8', timeout: 20000 });
+    const elapsed = Date.now() - t0;
+    assert.strictEqual(r.status, 1, `exit status (stderr: ${r.stderr})`);
+    assert.strictEqual(r.stderr.split('\n')[0], QMSG, 'first stderr line');
+    assert.ok(elapsed < 2000, `took ${elapsed} ms: the model must not start`);
+  });
+}
+
 for (const args of [['--factors', '0'], ['--factors', 'abc'], ['--factors', '1.5,-1'], ['--factors'], ['--factors', '']]) {
   test(`edges.js ${args.join(' ') || '(no args)'} exits 1 with the --factors message`, () => {
     const t0 = Date.now();
