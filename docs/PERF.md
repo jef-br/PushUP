@@ -489,6 +489,27 @@ listed per call (run 1 / run 2). Blocked time equalled the longest gap in every 
   defaults is proposed here; running inference in a `worker_threads` worker would be an owner decision
   (see task DOC16 in `TASKS.md`).
 
+### `high` mode (EL3, 2026-11-15)
+
+`node bench/eventloop.js --quality high --sizes 400 --calls 1` (the same probe and machine as above; `high` is the
+Remacri model, 192 px tiles with 16 px context). `tile.run` is a bare `session.run` of the `high` model on one tile
+input, `1×3×224×224` (192 + 2·16): what one of the many runs of a `high` call feeds. A 400×300 image is covered by
+several tiles, so one `upscale()` call makes several such runs. Two runs, one call per row (the idle control gave 141
+and 143 ticks, longest gap 2 ms):
+
+| Case | Input | Call ms (run 1 / 2) | Ticks (run 1 / 2) | Longest gap ms (run 1 / 2) | Blocked ms (run 1 / 2) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `upscale()`, `high` | 400×300 | 12136 / 11504 | 8 / 9 | 3812 / 3438 | 12127 / 11497 |
+| `tile.run` | one 224×224 tile | 4059 / 3897 | 0 / 0 | 4059 / 3897 | 4059 / 3897 |
+
+- **`high` mode blocks the loop too:** for 99.9% of the call (the time in gaps above 10 ms is 12127 of 12136 ms and
+  11497 of 11504 ms). Only 8–9 ticks fired (about 16–18 ms), so the loop is free for a few milliseconds at most between
+  tile runs, not in a useful way.
+- **Longest gap:** 3.4–3.8 s, of the same size as one bare tile run (3.9–4.1 s), so the loop is blocked for about one
+  tile run at a time. The bare tile run blocks it for its whole length (0 ticks), as the bare `session.run` of `fast` does.
+- **Not measured:** 800 px input, a GPU, and thread counts other than the default. No recommendation to change code or
+  defaults (owner decision, row 9 of `docs/OWNER_DECISIONS.md`).
+
 ## Worker (EL2, 2026-11-15)
 
 `node bench/worker.js [--sizes 400,800] [--calls 5]` compares `upscale()` on the main thread ("direct") with

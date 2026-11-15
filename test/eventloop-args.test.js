@@ -9,6 +9,7 @@ const { spawnSync } = require('node:child_process');
 const SCRIPT = path.join(__dirname, '..', 'bench', 'eventloop.js');
 const SIZES = '--sizes must be a comma list of integers from 400 to 800';
 const CALLS = '--calls must be an integer >= 1';
+const QUALITY = '--quality must be fast or high';
 const THREADS = '--threads must be a comma list of integers >= 1 or "default"';
 
 for (const [args, flag, text] of [
@@ -20,6 +21,9 @@ for (const [args, flag, text] of [
   [['--calls', 'x'], '--calls', CALLS],
   [['--threads', '0'], '--threads', THREADS],
   [['--threads', '1,two'], '--threads', THREADS],
+  [['--quality', 'ultra'], '--quality', QUALITY],
+  [['--quality', 'High'], '--quality', QUALITY],
+  [['--quality', 'high', '--calls', '0'], '--calls', CALLS],
   // Valid --sizes passes its check: this run fails on --calls (checked after --sizes), not on --sizes.
   [['--sizes', '400,800', '--calls', '0'], '--calls', CALLS],
 ]) {
