@@ -61,7 +61,7 @@ meets the image border (BK8); `--include-border` keeps them (the first version o
   every row) holds either way, and so does the 2 to 18 byte range.
 - **Mixed comparison:** the `fast` rows are the shipped pipeline (model + 20 % Lanczos mix), the
   Lanczos rows are a plain resize of the original, not of the 4x output.
-- **Limits:** synthetic edges at one contrast (175 bytes), one 400×300 size, one disc size, `fast` only.
+- **Limits:** synthetic edges at one contrast (175 bytes), one 400×300 size, one disc size, `fast` in this part (`high` is in the section below).
   Natural product photos have softer edges; `high` mode is in the section below. Check with crops
   before drawing any conclusion for real photos.
 
