@@ -275,6 +275,18 @@ case, so the model always gets the full-size input.
   planned OCR test found too few text lines in the benchmark set (7 usable crops,
   15 needed) and is waiting on a decision about the test data. A text detector plus a
   text-specific upscaler is a possible next step.
+- **Hard edges** (garment edge, thin line, small dark shape): on synthetic edges `fast` overshoots
+  more than plain Lanczos in every case, by 2 to 18 bytes on a 175-byte contrast (worst: a 1 px
+  dark line at factor 2.5, 31 bytes below the dark level where Lanczos has none), but its edges
+  are sharper (a step edge 0.97 to 0.99 px wide against 1.44 to 1.81). `high` is not better than
+  `fast` here: about the same on a step edge and a small disc, worse on the 1 px line, with the sharpest
+  edges ([docs/EDGES.md](docs/EDGES.md)). Synthetic images only; real photos were not measured.
+- **Flat saturated colours** move through the model: the largest single-channel shift of the
+  shipped `fast` pipeline on 27 uniform test colours is 29 bytes (the blue channel of magenta,
+  255,0,255), 26 on saturated green. The model causes it (plain Lanczos returns every colour
+  exactly; the 20 % mix only scales it by about 0.8). Most of it is a band within about 8 px of the
+  image border (model alone, more than 16 px from the border: magenta 6 bytes); saturated green also shifts by
+  10 to 14 bytes in the interior ([docs/COLOR.md](docs/COLOR.md)). Uniform images only; real photos were not measured.
 - **Other vendors:** only Claid.ai has been compared, using the vendor's own published
   before/after images. Comparing more vendors needs their sites added to the network
   allowlist. The bench can score any output folder.
