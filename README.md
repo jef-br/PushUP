@@ -308,6 +308,7 @@ node bench/memory-creep.js            # does memory keep growing over repeated `
 node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos (--quality high: Remacri)
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
+node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
 ```
 
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download

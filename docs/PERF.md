@@ -444,3 +444,46 @@ peak memory falls by about 40% (`fast` 800 px: ~1.0 GB to ~0.57 GB; `high` 400 p
 At 400×300 `fast` the memory was not lower in one of two runs (431 vs 357 MB), so there is no
 reliable saving there. The option is not free; whether the memory is worth the time is the owner's
 decision (see the note on task M4 in `TASKS.md`).
+
+## Event loop (EL1, 2026-11-15)
+
+`node bench/eventloop.js [--sizes 400,800] [--calls 3] [--threads default]` runs a timer probe
+(`setInterval`, 2 ms) on the main thread while one call runs, and reports the number of ticks, the
+longest gap between ticks and the time spent in gaps above 10 ms ("blocked"). The start and the end of
+the call count as ticks, so a call during which no timer ever fired shows one gap as long as the call.
+It does this for the public `upscale()` (factor 1.5) and for a bare ONNX Runtime `session.run` on a
+float32 `1×3×H×W` input of the same size (fresh session, `fast` model, CPU, warm-up call first).
+Control: an idle 300 ms sleep gives 142 ticks and a longest gap of 3 ms in both runs, so the probe works.
+The probe also runs on the main thread, so it shows how long the main thread cannot serve timers, not
+CPU use.
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, 4 vCPU cloud container, Node v22.23.4,
+onnxruntime-node 1.31.1. The numbers are for this machine and will differ elsewhere. Two runs
+(`node bench/eventloop.js --calls 3 --threads 1,default`); each cell is the median of 3 calls; ticks are
+listed per call (run 1 / run 2). Blocked time equalled the longest gap in every row.
+
+| Case | Input | Threads | Call ms (run 1 / 2) | Ticks per call, run 1 | Ticks per call, run 2 | Longest gap ms (run 1 / 2) |
+| --- | --- | --- | ---: | --- | --- | ---: |
+| `upscale()` | 400×300 | default (4) | 394 / 413 | 7, 8, 6 | 7, 7, 7 | 379 / 395 |
+| `session.run` | 400×300 | 1 | 1123 / 1163 | 0, 0, 0 | 0, 0, 0 | 1123 / 1163 |
+| `session.run` | 400×300 | default (4) | 351 / 290 | 0, 0, 0 | 0, 0, 0 | 351 / 290 |
+| `upscale()` | 800×600 | default (4) | 1814 / 1719 | 18, 18, 19 | 17, 16, 17 | 1772 / 1682 |
+| `session.run` | 800×600 | 1 | 4873 / 4562 | 0, 0, 0 | 0, 0, 0 | 4873 / 4562 |
+| `session.run` | 800×600 | default (4) | 1414 / 1422 | 0, 0, 0 | 0, 0, 0 | 1414 / 1422 |
+
+- **`session.run` alone:** the loop is blocked for the whole call, at 400 and 800 px and also with one
+  thread. No timer fired in any of the 24 calls, although `run()` returns its promise at once
+  (about 0.1 ms).
+- **`upscale()`:** the loop is blocked for almost the whole call: the longest gap is 96–98% of the
+  call time (379–395 ms of 394–413 ms at 400×300; 1682–1772 ms of 1719–1814 ms at 800×600). The few ticks
+  that do fire (6–8 and 16–19, i.e. about 12–38 ms) come at the end, from the resize and mix steps, which
+  yield to the event loop.
+- **Where it comes from:** the bare `session.run` already blocks the loop, so the block is inside the
+  ONNX Runtime binding (onnxruntime-node 1.31.1 here), not in PushUP's JavaScript. This was not traced
+  further (for example into how the binding schedules the run).
+- **What it means:** timers and I/O in the same process are delayed for about the length of each call, so
+  a server that calls `upscale()` is unresponsive for 0.4 s (400 px) to 1.8 s (800 px) per call on this
+  machine, in `fast` mode. `high` mode and a GPU were not measured. The README and `CLAUDE.md` say the
+  model runs off the main thread; for the event loop this is not what was measured. No change to code or
+  defaults is proposed here; running inference in a `worker_threads` worker would be an owner decision
+  (see task DOC16 in `TASKS.md`).
