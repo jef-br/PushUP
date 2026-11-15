@@ -76,7 +76,7 @@ and y = 192. The step edge and the line (x = 200) and the disc (x 194 to 206) al
 past the seam and inside the 16 px pad of that tile; none sits on a seam, and the disc and the horizontal profile
 rows (y = 150, disc y 144 to 156) are above the y = 192 seam. So these numbers measure the model's edge
 behaviour, not a seam artefact at x = 192. The step and the line run the full image height, so their overshoot
-windows also cross the horizontal seam at input y = 192; that crossing was not isolated (no run with those rows left out).
+windows also cross the horizontal seam at input y = 192; a check by the BK9 adversary that skipped the rows within 24 input px of y = 192 gave the same 12 rows, so the horizontal seam does not drive these numbers.
 
 | feature | factor | method | below 40 | above 215 | overshoot | width (output px) |
 |---|---|---|---|---|---|---|
@@ -97,5 +97,6 @@ windows also cross the horizontal seam at input y = 192; that crossing was not i
 factor 1.5 / 2.5), **and it is not better than `fast`**: against the `fast` table above it is about the same on the step
 (12 / 14 vs 12 / 17) and the disc (31 / 40 vs 34 / 37, within 3 bytes), and clearly worse on the 1 px line (24 / 40 vs 13 / 31, +11 / +9).
 Its step and disc edges are the sharpest of the three (0.83 to 0.87 px against 0.97 to 0.99 for `fast` on the step and 1.44 to 1.81 for Lanczos).
+An overshoot of 40 in the `high` rows (line 2.5 below, disc 2.5 both sides) means a byte reached 0 or 255, so it is a lower bound there; the real overshoot is at least that, which only strengthens "not better than `fast`". Its line is narrowest at factor 1.5 (1.40 vs 1.64 for `fast`) but not at 2.5 (2.12 vs 2.04).
 Same limits as above: synthetic edges, one contrast, one size; `high` was run on CPU (a GPU gives the same model, but the result was
 not compared).
