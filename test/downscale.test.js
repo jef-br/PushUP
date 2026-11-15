@@ -11,6 +11,16 @@ const assert = require('node:assert');
 const sharp = require('sharp');
 const { upscale } = require('../src');
 
+// Measured on the `fast` model on CPU; pin it so a GPU or an env override cannot change the model.
+const saved = { q: process.env.PUSHUP_QUALITY, d: process.env.PUSHUP_DEVICE };
+process.env.PUSHUP_QUALITY = 'fast';
+process.env.PUSHUP_DEVICE = 'cpu';
+test.after(() => {
+  for (const [k, v] of [['PUSHUP_QUALITY', saved.q], ['PUSHUP_DEVICE', saved.d]]) {
+    if (v === undefined) delete process.env[k]; else process.env[k] = v;
+  }
+});
+
 const W = 800;
 const H = 600;
 
