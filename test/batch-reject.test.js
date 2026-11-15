@@ -63,3 +63,24 @@ test('a call with upscale_factor 0 (RangeError) in the middle of a batch rejects
 
 test('a call with a string instead of a byte array (TypeError) in the middle of a batch rejects alone', () =>
   withFast(() => checkBatch(() => upscale('not bytes', 400 * 3, 1.0), TypeError, 'arr string')));
+
+// R16: the env settings are read synchronously when `upscale()` is called (before any await on the
+// default path), so a bad value set between two queued calls rejects only the call made while it
+// was set. The env is restored in a `finally`, before the third call is made.
+for (const [name, bad] of [['PUSHUP_QUALITY', 'ultra'], ['PUSHUP_DEVICE', 'tpu']]) {
+  test(`a call made while ${name}=${bad} (RangeError) in the middle of a batch rejects alone`, () =>
+    withFast(async () => {
+      let message;
+      const invalid = () => {
+        const saved = process.env[name];
+        process.env[name] = bad;
+        try {
+          return upscale(image(400, 12, 2), 400 * 3, 1.0).catch((e) => { message = e.message; throw e; });
+        } finally {
+          process.env[name] = saved; // withFast set both variables, so `saved` is defined
+        }
+      };
+      await checkBatch(invalid, RangeError, `${name}=${bad}`);
+      assert.ok(message.includes(name) && message.includes(bad), `error names the setting and value: ${message}`);
+    }));
+}
