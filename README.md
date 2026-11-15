@@ -293,6 +293,7 @@ node bench/memory.js                  # peak memory (RSS) of one call, each size
 node bench/memory-breakdown.js        # where `high` mode's extra memory comes from (add --arena for the arena test)
 node bench/arena.js                   # latency, memory and output bytes with the ONNX Runtime CPU arena on vs off
 node bench/memory-creep.js            # does memory keep growing over repeated `fast` calls? (30 calls, one process)
+node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos
 ```
 
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
@@ -306,5 +307,6 @@ node bench/memory-creep.js            # does memory keep growing over repeated `
   ("Throughput"), [Memory](docs/PERF.md#memory-m1-2026-11-12) (with the
   [`high` breakdown](docs/PERF.md#high-memory-breakdown-m4-2026-11-13)) and
   [Arena](docs/PERF.md#arena-p6-2026-11-13).
+- The edge script's results are in [docs/EDGES.md](docs/EDGES.md).
 - The latency scripts, their options and results are in [docs/PERF.md](docs/PERF.md).
   Quality benchmarking is described under "Benchmark" above.
