@@ -34,8 +34,13 @@ Examples: 800 px at 1.5 gives 1000 px (1200, capped); 400 px at 2.5 gives
 1000 px; 400 px at 1.5 gives 600 px. With 1.0 the size stays the same, but the
 model still runs, so JPEG blocks are removed and edges get sharper.
 
-Calls are async; the model runs off the main thread. Calls run one at a
-time, because each one already uses every CPU core.
+Calls are async (`upscale` returns a promise) and run one at a time, because each one
+already uses every CPU core. They do **not** leave the Node.js event loop free: while the model
+runs, timers and I/O in the same process are delayed for about the length of the call. In `fast`
+mode on a 4 vCPU machine that is about 0.4 s for a 400×300 image and 1.8 s for 800×600. The block
+is inside ONNX Runtime ([docs/PERF.md](docs/PERF.md#event-loop-el1-2026-11-15)). Calling
+`upscale` from a separate process or a worker thread should keep the main loop free (not tested
+here). `high` mode and a GPU were not measured.
 
 ### Errors
 
