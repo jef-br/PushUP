@@ -307,6 +307,7 @@ node bench/arena.js                   # latency, memory and output bytes with th
 node bench/memory-creep.js            # does memory keep growing over repeated `fast` calls? (30 calls, one process)
 node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos (--quality high: Remacri)
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
+node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 ```
 
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
@@ -320,6 +321,6 @@ node bench/colors.js                  # how far flat colours move through `fast`
   ("Throughput"), [Memory](docs/PERF.md#memory-m1-2026-11-12) (with the
   [`high` breakdown](docs/PERF.md#high-memory-breakdown-m4-2026-11-13)) and
   [Arena](docs/PERF.md#arena-p6-2026-11-13).
-- The edge script's results are in [docs/EDGES.md](docs/EDGES.md), the colour script's in [docs/COLOR.md](docs/COLOR.md).
+- The edge script's results are in [docs/EDGES.md](docs/EDGES.md), the colour script's in [docs/COLOR.md](docs/COLOR.md), the padding experiment's in [docs/PAD.md](docs/PAD.md).
 - The latency scripts, their options and results are in [docs/PERF.md](docs/PERF.md).
   Quality benchmarking is described under "Benchmark" above.
