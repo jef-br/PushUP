@@ -38,10 +38,13 @@ Runtime at 400 px in (median of 5, one image, includes padding and cropping): as
 
 ## Reading
 
-- The uniform-image result (padding removes the band) does not carry over to these photos: their borders are mostly plain background, and probably the model's border effect there is
+- The uniform-image result (padding removes the band) does not carry over to these photos: about half of their borders are plain background (flat in 9 of the 20 images, textured in 11, measured on the reference), and probably the model's border effect there is
   smaller than the JPEG and resampling error the scores include (not tested separately). The border band of the plain variant even scores better than the interior (39.4 dB vs 32.0 dB PSNR), which
   is what a plain background gives, not a sign of a model border problem.
 - So BK10's flat-colour border band is real on synthetic uniform colours but not measurable on this set. A set with saturated, flat colours up to the image edge (blue or
   magenta backgrounds) could still show it; none is in `sub20`.
+- The padded outputs do differ from the plain ones on images with content at the edge: the largest per-pixel differences within 8 px of the border reach 26 to 80 levels (of 255) on the five
+  most affected images (a check by the BK11 adversary), and are 3 or less on flat borders. The differences average out against the reference, which is why the scores do not move; the
+  experiment shows no gain in score, not that padding changes nothing.
 - Limits: factor 2.0 on 400 px inputs, not the shipped 2.5 and not 800 px; `fast` only; one set of 20 images. The quality gate for a default change would be `bench/bench.js
   --sizes 400,800`; since the effect is nil, nothing needs it.
