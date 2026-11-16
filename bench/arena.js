@@ -1,7 +1,7 @@
 'use strict';
 // Task P6: ONNX Runtime CPU memory arena on vs off: latency, peak memory, output bytes. Bench-only:
 // src/ is not changed and no default is proposed here (an owner decision).
-// Usage: node bench/arena.js [--runs 5] [--cases fast:400,fast:800,high:400]
+// Usage: node bench/arena.js [--runs 5] [--cases fast:400,fast:800,high:400]   (--runs: integer >= 1; --cases: <fast|high>:<integer 400-800>, comma list)
 // Each case is <mode>:<longest side> on a deterministic synthetic 4:3 image. For every case and for
 // arena = on / off it starts a fresh child process (so max RSS is not shared) that creates one CPU
 // session with _sessionOptions(['cpu']) (off adds enableCpuMemArena=false and enableMemPattern=false),
@@ -76,8 +76,16 @@ if (process.argv[2] === '--child') {
     console.log(JSON.stringify({ mode, w, h, arena, medianMs: times[Math.floor(times.length / 2)], maxRss: process.resourceUsage().maxRSS * 1024 }));
   })().catch((e) => { console.error(e); process.exit(1); });
 } else {
-  const runs = Number(arg('runs', 5));
-  const cases = arg('cases', 'fast:400,fast:800,high:400').split(',').filter(Boolean).map((c) => c.split(':'));
+  // A rejected flag prints one line naming it and exits 1, before any child starts (test/arena-cold-args.test.js).
+  const fail = (msg) => { console.error(msg); process.exit(1); };
+  const runsArg = String(arg('runs', '5'));
+  const casesArg = String(arg('cases', 'fast:400,fast:800,high:400'));
+  if (!/^\d+$/.test(runsArg) || Number(runsArg) < 1) fail('--runs must be an integer >= 1');
+  if (casesArg.split(',').some((c) => !/^(fast|high):\d+$/.test(c) || Number(c.split(':')[1]) < 400 || Number(c.split(':')[1]) > 800)) {
+    fail('--cases must be a comma list of <fast|high>:<integer from 400 to 800>');
+  }
+  const runs = Number(runsArg);
+  const cases = casesArg.split(',').map((c) => c.split(':'));
   const ver = require('onnxruntime-node/package.json').version;
   console.log(`cpu="${os.cpus()[0].model}" N=${os.availableParallelism()} node=${process.version} onnxruntime-node=${ver} runs=${runs}`);
   console.log('case        arena  median_ms  max_rss_MB  vs_on_time  bytes_equal_on  max_abs_diff');
