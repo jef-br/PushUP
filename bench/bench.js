@@ -9,6 +9,7 @@ const sharp = require('sharp');
 const { _run } = require('../src');
 const { psnr, ssim, gmsd } = require('./metrics');
 const { aspectGroup } = require('./aspect');
+const { parseMethod } = require('./method');
 
 const args = process.argv.slice(2);
 const dir = args[0];
@@ -35,19 +36,12 @@ function crop(buf, w, cw, ch) {
 }
 
 async function method(name, inp, w, h) {
-  if (name === 'lanczos') {
+  const m = parseMethod(name);
+  if (m.kind === 'lanczos') {
     const L = Math.max(w, h), ow = Math.round((w * 1000) / L), oh = Math.round((h * 1000) / L);
     return sharp(inp, { raw: { width: w, height: h, channels: 3 } }).resize(ow, oh, { kernel: 'lanczos3', fit: 'fill' }).raw().toBuffer();
   }
-  // sr-full | sr-<maxInputPx> | sr:<path/to/model.onnx>, each with optional @<lanczosMix>
-  const opts = {};
-  // optional #<tile> suffix, then @<lanczosMix>
-  const at = name.indexOf('@');
-  if (at > 0) { opts.lanczosMix = Number(name.slice(at + 1)); name = name.slice(0, at); }
-  const hash = name.indexOf('#');
-  if (hash > 0) { opts.tile = Number(name.slice(hash + 1)); name = name.slice(0, hash); }
-  if (name.startsWith('sr:')) opts.modelPath = path.resolve(name.slice(3));
-  else if (name !== 'sr-full') opts.modelInputMax = Number(name.split('-')[1]);
+  const opts = m.opts;
   const [out] = await _run(inp, w * 3, 1000 / Math.max(w, h), opts);
   return out;
 }
