@@ -54,6 +54,7 @@ test('README names every runnable bench/*.js script by its full path', () => {
   const exempt = new Map([
     ['metrics.js', 'library: PSNR/SSIM/GMSD functions used by bench.js, no command line'],
     ['aspect.js', 'library: aspect-group helper used by bench.js, no command line'],
+    ['method.js', 'library: --methods name parser used by bench.js, no command line'],
   ]);
   const files = fs.readdirSync(path.join(root, 'bench')).filter((f) => f.endsWith('.js'));
   const runnable = files.filter((f) => {
