@@ -30,7 +30,8 @@ function run(args) {
 const LIMIT = '--limit must be a positive integer';
 for (const limit of ['0', '-1', '1.5', 'abc']) {
   test(`pad.js --limit ${limit} exits 1 naming --limit`, () => {
-    // A directory that exists, so only --limit can be the reason (its check comes first anyway).
+    // A directory that exists, so only --limit can be the reason. (The order of the --limit and the
+    // directory checks is not pinned: no case gives both a bad value and a bad directory.)
     const r = run(['--dir', emptyDir, '--limit', limit]);
     assert.strictEqual(r.status, 1);
     assert.strictEqual(r.firstErr, LIMIT);
