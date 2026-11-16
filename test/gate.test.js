@@ -114,7 +114,36 @@ test('bad input and missing arguments fail clearly', () => {
   const r = spawnSync(process.execPath, [GATE, bad, bad], { encoding: 'utf8' });
   assert.strictEqual(r.status, 1);
   assert.match(r.stderr, /cannot read bench --json output/);
+  assert.ok(r.stderr.includes(bad), `message must name the file: ${r.stderr}`);
   const u = spawnSync(process.execPath, [GATE], { encoding: 'utf8' });
   assert.strictEqual(u.status, 2);
   assert.match(u.stderr, /Usage: node bench\/gate\.js/);
+});
+
+// GATE2: a broken `before` or `after` file must fail the gate (exit 1) with a message that
+// names that file, never pass it.
+test('unreadable or wrongly shaped input fails and names the file, for both arguments', () => {
+  const good = path.join(dir, 'good.json');
+  fs.writeFileSync(good, JSON.stringify(base()));
+  const cases = [
+    ['not JSON', (f) => fs.writeFileSync(f, 'images: 20'), /cannot read bench --json output/],
+    ['missing file', () => {}, /cannot read bench --json output/],
+    ['no images', (f) => fs.writeFileSync(f, JSON.stringify({ rows: [] })), /expected \{images, rows/],
+    ['images not an integer', (f) => fs.writeFileSync(f, JSON.stringify({ images: 'x', rows: [] })), /expected \{images, rows/],
+    ['images a fraction', (f) => fs.writeFileSync(f, JSON.stringify({ images: 1.5, rows: [] })), /expected \{images, rows/],
+    ['rows not an array', (f) => fs.writeFileSync(f, JSON.stringify({ images: 20, rows: {} })), /expected \{images, rows/],
+    ['JSON null', (f) => fs.writeFileSync(f, 'null'), /expected \{images, rows/],
+  ];
+  for (const side of ['before', 'after']) {
+    for (const [label, write, re] of cases) {
+      const f = path.join(dir, `broken-${side}-${label.replace(/\W+/g, '_')}.json`);
+      write(f);
+      const args = side === 'before' ? [f, good] : [good, f];
+      const r = spawnSync(process.execPath, [GATE, ...args], { encoding: 'utf8' });
+      assert.strictEqual(r.status, 1, `${side} ${label}: exit ${r.status} ${r.stdout}${r.stderr}`);
+      assert.match(r.stderr, re, `${side} ${label}`);
+      assert.ok(r.stderr.includes(f), `${side} ${label}: message must name the file: ${r.stderr}`);
+      assert.ok(!r.stdout.includes('GATE: PASS'), `${side} ${label}: must not pass`);
+    }
+  }
 });
