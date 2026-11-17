@@ -1,6 +1,6 @@
 'use strict';
 // Task M4: where does `high` mode's extra memory at 800 px come from? No src/ change.
-// Usage: node bench/memory-breakdown.js [--sizes 400,800] [--arena]
+// Usage: node bench/memory-breakdown.js [--sizes 400,800 (integers 400-800)] [--arena]
 // --arena adds an ORT-only comparison: the same tile loop run directly on the Remacri model with the
 // shipped session options (_sessionOptions) with and without the CPU memory arena (enableCpuMemArena /
 // enableMemPattern false). It is bench-only: src/ is not changed and no default is proposed here.
@@ -93,7 +93,13 @@ if (process.argv[2] === '--tiles') {
     console.log(JSON.stringify({ size, w, h, afterRequire, afterSession, peak, afterCall, maxRss, geo: geometry(w, h, _MODES.high.tile) }));
   })();
 } else {
-  const sizes = arg('sizes', '400,800').split(',').filter(Boolean).map(Number);
+  const sizesArg = String(arg('sizes', '400,800'));
+  if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 400 || Number(v) > 800)) {
+    // before any child starts (test/throughput-breakdown-args.test.js)
+    console.error('--sizes must be a comma list of integers from 400 to 800');
+    process.exit(1);
+  }
+  const sizes = sizesArg.split(',').map(Number);
   console.log('input   rss_require  rss_session  peak_sampled  max_rss  rss_after_call  (MB)');
   const rows = [];
   for (const size of sizes) {
