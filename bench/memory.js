@@ -1,6 +1,7 @@
 'use strict';
 // Task M1: peak memory (RSS) of upscale(), each measurement in a fresh process, CPU only.
-// Usage: node bench/memory.js [--sizes 400,800] [--factors 1,1.5] [--high-sizes 400]
+// Usage: node bench/memory.js [--sizes 400,800 (integers 400-800)] [--factors 1,1.5 (positive numbers)]
+//   [--high-sizes 400 (integers 400-800, or '' for none)]
 //   Parent mode spawns one child per (mode, size, factor);
 //   child mode: node bench/memory.js --child <mode> <size> <factor>
 // Reported per row (MB): rss after `require`, rss after the first call, peak sampled RSS
@@ -42,9 +43,18 @@ if (process.argv[2] === '--child') {
     console.log(JSON.stringify({ mode, size, factor, afterRequire, afterCall, peak, maxRss }));
   })();
 } else {
-  const sizes = arg('sizes', '400,800').split(',').map(Number);
-  const factors = arg('factors', '1,1.5').split(',');
-  const highSizes = arg('high-sizes', '400').split(',').filter(Boolean).map(Number);
+  // A rejected flag prints one line naming it and exits 1, before any child starts (test/memory-args.test.js).
+  const fail = (msg) => { console.error(msg); process.exit(1); };
+  const sizesArg = String(arg('sizes', '400,800'));
+  const factorsArg = String(arg('factors', '1,1.5'));
+  const highArg = String(arg('high-sizes', '400'));
+  const badSize = (v) => !/^\d+$/.test(v) || Number(v) < 400 || Number(v) > 800;
+  if (sizesArg.split(',').some(badSize)) fail('--sizes must be a comma list of integers from 400 to 800');
+  if (factorsArg.split(',').some((v) => !/^\d+(\.\d+)?$/.test(v) || !(Number(v) > 0) || !Number.isFinite(Number(v)))) fail('--factors must be a comma list of positive numbers');
+  if (highArg !== '' && highArg.split(',').some(badSize)) fail('--high-sizes must be empty or a comma list of integers from 400 to 800');
+  const sizes = sizesArg.split(',').map(Number);
+  const factors = factorsArg.split(',');
+  const highSizes = highArg === '' ? [] : highArg.split(',').map(Number);
   const jobs = [];
   for (const s of sizes) for (const f of factors) jobs.push(['fast', s, f]);
   for (const s of highSizes) for (const f of factors) jobs.push(['high', s, f]);
