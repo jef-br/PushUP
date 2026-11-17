@@ -100,3 +100,32 @@ Its step and disc edges are the sharpest of the three (0.83 to 0.87 px against 0
 An overshoot of 40 in the `high` rows (line 2.5 below, disc 2.5 both sides) means a byte reached 0 or 255, so it is a lower bound there; the real overshoot is at least that, which only strengthens "not better than `fast`". Its line is narrowest at factor 1.5 (1.40 vs 1.64 for `fast`) but not at 2.5 (2.12 vs 2.04).
 Same limits as above: synthetic edges, one contrast, one size; `high` was run on CPU (a GPU gives the same model, but the result was
 not compared).
+
+## Real photos (CV2)
+
+Command (needs `bash bench/fetch_testset.sh`; about 16 s on the 4 vCPU container, 2026-11-17):
+
+```
+node bench/edges-real.js          # --dir bench/out/sub20 --limit 20
+```
+
+Per image of `bench/out/sub20` (20 images, 13 ABO + 7 Lamoda): reference = source resized to 800 px on its longest
+side (lanczos3), input = reference downscaled to 400 px (cubic), JPEG q85, decoded (as `bench/pad.js`); `fast` at
+factor 2.0 (shipped settings, CPU) and plain lanczos3 of the input to the same size. Edge pixels = the 200 pixels
+with the largest Sobel gradient of the reference luma whose 9×9 neighbourhood spans at least 80 levels, at least
+4 px from the border. Overshoot at such a pixel = how far the output luma lies beyond the min/max of the reference's
+9×9 neighbourhood (0 when inside it). Images used: 20 of 20, 200 edge pixels each (4000 per method).
+
+| method | mean overshoot (levels) | share with overshoot > 4 | edge pixels with any overshoot | largest overshoot (levels) |
+| --- | --- | --- | --- | --- |
+| `fast` | 0.001 | 0.0 % | 3 of 4000 | 1.98 |
+| Lanczos | 0.000 | 0.0 % | 1 of 4000 | 1.84 |
+
+Reading: on the strongest edges of real product photos neither method leaves the range of the reference's
+neighbourhood by more than 2 levels, so the 12 to 37 byte overshoots of the synthetic table above do not show up
+here. Do not read this as "no ringing on photos": the measure is different. The synthetic features are ideal
+(a flat 40 / 215 step, a 1 px line) and overshoot is measured against the flat feature levels; here the reference is
+itself a lanczos3 downscale, so its edges are soft and a 9×9 window around a strong edge already spans the whole
+dark-to-light range, which leaves little room to overshoot. Edges that are one pixel wide in the reference
+(hairlines, text) are the case the synthetic `line` row stresses, and the 200 largest gradients are mostly wider edges.
+The measure is also blind to ringing lobes: it samples the pixels with the largest gradient, which sit on the edge itself, while lobes sit one to two pixels to either side (a probe by the adversary pass with lobes of 10 and 250 around a 40 / 215 step gave overshoot 0 at the picked pixels). There was no positive control on the synthetic step, so the same measure would very likely read about 0 there too, where `bench/edges.js` reads 12 to 17. A real-photo number for halos and for thin features would need a different protocol (sample the pixels one to two px beside the edge). Factor 2.0 only; 400 px inputs only.

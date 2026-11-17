@@ -289,7 +289,7 @@ case, so the model always gets the full-size input.
   dark line at factor 2.5, 31 bytes below the dark level where Lanczos has none), but its edges
   are sharper (a step edge 0.97 to 0.99 px wide against 1.44 to 1.81). `high` is not better than
   `fast` here: about the same on a step edge and a small disc, worse on the 1 px line, with the sharpest
-  edges ([docs/EDGES.md](docs/EDGES.md)). Synthetic images only; real photos were not measured.
+  edges ([docs/EDGES.md](docs/EDGES.md)). A check on 20 real photos at the pixel of each strongest edge found neither method outside the local range of the reference by more than 2 levels, but that check samples on the edge itself, not at the ringing lobes next to it, so it does not show whether halos are absent ([docs/EDGES.md](docs/EDGES.md#real-photos-cv2)); thin real features were not measured.
 - **Flat saturated colours** move through the model: the largest single-channel shift of the
   shipped `fast` pipeline on 27 uniform test colours is 29 bytes (the blue channel of magenta,
   255,0,255), 26 on saturated green. The model causes it (plain Lanczos returns every colour
@@ -317,6 +317,7 @@ node bench/memory-creep.js            # does memory keep growing over repeated `
 node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos (--quality high: Remacri)
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
+node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
 node bench/worker.js                  # cost of running `upscale` in a worker_threads worker: latency, cold start, memory, event loop (results: docs/PERF.md "Worker")
 ```
