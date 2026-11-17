@@ -1,5 +1,5 @@
 'use strict';
-// Usage: node bench/bench.js <dir-of-HR-images> [--methods lanczos,sr-full,...] [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--by-aspect] [--json]
+// Usage: node bench/bench.js <dir-of-HR-images> [--methods lanczos,sr-full,...] [--sizes 400,600,800 (integers 100-4000)] [--limit N (integer >= 1)] [--save outDir] [--by-source] [--by-aspect] [--json]
 // --by-source adds rows grouped by file-name prefix (abo_, lamoda_) after the overall table.
 // --by-aspect adds rows grouped by reference shape (portrait: h > w, landscape: w > h, square) after the overall and per-source rows.
 // --json prints one JSON object {images, rows:[{setting, psnr, ssim, gmsd, ms}]} (unrounded) instead of the table.
@@ -14,8 +14,20 @@ const { parseMethod } = require('./method');
 const args = process.argv.slice(2);
 const dir = args[0];
 const opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
-const sizes = opt('--sizes', '400,600,800').split(',').map(Number);
-const limit = Number(opt('--limit', 1e9));
+// A rejected argument prints one line and exits before any image is read (test/bench-args.test.js).
+// Exit 2 = usage error (like bench/gate.js), exit 1 = a bad value or directory.
+const fail = (msg, code = 1) => { console.error(msg); process.exit(code); };
+if (dir === undefined || dir.startsWith('--')) fail('usage: node bench/bench.js <dir-of-HR-images> [--methods ...] [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--by-aspect] [--json]', 2);
+const sizesArg = String(opt('--sizes', '400,600,800'));
+const limitArg = String(opt('--limit', '1000000000'));
+if (!/^\d+$/.test(limitArg) || Number(limitArg) < 1) fail('--limit must be a positive integer');
+if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 100 || Number(v) > 4000)) fail('--sizes must be a comma list of integers from 100 to 4000');
+let stat = null;
+try { stat = fs.statSync(dir); } catch { /* reported below */ }
+if (!stat) fail(`${dir} does not exist; run bash bench/fetch_testset.sh`);
+if (!stat.isDirectory()) fail(`${dir} is not a directory`);
+const sizes = sizesArg.split(',').map(Number);
+const limit = Number(limitArg);
 const saveDir = opt('--save', null);
 const bySource = args.includes('--by-source');
 const byAspect = args.includes('--by-aspect');
@@ -47,7 +59,9 @@ async function method(name, inp, w, h) {
 }
 
 (async () => {
-  const files = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort().slice(0, limit);
+  const all = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort();
+  if (all.length === 0) fail(`no images in ${dir}`);
+  const files = all.slice(0, limit);
   const agg = {};
   const rank = {}; // 0 overall, 1 per-source, 2 per-aspect: the output order
   for (const f of files) {
