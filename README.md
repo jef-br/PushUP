@@ -338,7 +338,8 @@ node bench/worker.js                  # cost of running `upscale` in a worker_th
 - Every `bench/` script that takes flags (`bench/colors.js` takes none, `bench/gate.js` and `bench/saas/` take file
   names) checks them before it loads a model: a malformed or out-of-range number or list, an unknown or misspelled
   flag, or the `--flag=value` form ends in one line on stderr that names the problem, with exit 1 (the usage error of
-  `bench/bench.js` and of `bench/gate.js` exits 2). The names given to `bench/bench.js --methods` are not checked: an
-  unknown name runs and is reported under that name. The checks are kept true by `test/flags.test.js` and the
+  `bench/bench.js` and of `bench/gate.js` exits 2). The names given to `bench/bench.js --methods` are checked too
+  (`lanczos`, `sr-full`, `sr-<max input px>`, `sr:<model path>`, each with optional `#<tile>` and `@<mix 0-1>`): a typo such as
+  `sr-ful` ends in one line, exit 1, instead of a row of meaningless numbers. The checks are kept true by `test/flags.test.js` and the
   `test/*-args.test.js` files (`bench-args`, `memory-args`, `throughput-breakdown-args`, `arena-cold-args`,
   `threads-profile-args`, `eventloop-args`, `worker-args`, `memory-creep-args`, `edges-args`, `pad-args`).

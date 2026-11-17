@@ -9,7 +9,7 @@ const sharp = require('sharp');
 const { _run } = require('../src');
 const { psnr, ssim, gmsd } = require('./metrics');
 const { aspectGroup } = require('./aspect');
-const { parseMethod } = require('./method');
+const { parseMethod, validateMethod } = require('./method');
 const { checkFlags } = require('./flags');
 
 const args = process.argv.slice(2);
@@ -28,6 +28,9 @@ const sizesArg = String(opt('--sizes', '400,600,800'));
 const limitArg = String(opt('--limit', '1000000000'));
 if (!/^\d+$/.test(limitArg) || Number(limitArg) < 1) fail('--limit must be a positive integer');
 if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 100 || Number(v) > 4000)) fail('--sizes must be a comma list of integers from 100 to 4000');
+const methodsRaw = opt('--methods', 'lanczos,sr-full,sr-500,sr-250');
+if (methodsRaw === undefined || methodsRaw.split(',').some((m) => m === '')) fail('--methods must be a comma list of method names');
+for (const m of methodsRaw.split(',')) { const e = validateMethod(m); if (e) fail(e); }
 let stat = null;
 try { stat = fs.statSync(dir); } catch { /* reported below */ }
 if (!stat) fail(`${dir} does not exist; run bash bench/fetch_testset.sh`);
