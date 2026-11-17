@@ -10,6 +10,7 @@ const { _run } = require('../src');
 const { psnr, ssim, gmsd } = require('./metrics');
 const { aspectGroup } = require('./aspect');
 const { parseMethod } = require('./method');
+const { checkFlags } = require('./flags');
 
 const args = process.argv.slice(2);
 const dir = args[0];
@@ -18,6 +19,11 @@ const opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1
 // Exit 2 = usage error (like bench/gate.js), exit 1 = a bad value or directory.
 const fail = (msg, code = 1) => { console.error(msg); process.exit(code); };
 if (dir === undefined || dir.startsWith('--')) fail('usage: node bench/bench.js <dir-of-HR-images> [--methods ...] [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--by-aspect] [--json]', 2);
+const flagError = checkFlags(args.slice(1), {
+  values: ['--methods', '--sizes', '--limit', '--save'],
+  switches: ['--by-source', '--by-aspect', '--json'],
+});
+if (flagError) fail(flagError);
 const sizesArg = String(opt('--sizes', '400,600,800'));
 const limitArg = String(opt('--limit', '1000000000'));
 if (!/^\d+$/.test(limitArg) || Number(limitArg) < 1) fail('--limit must be a positive integer');

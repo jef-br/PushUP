@@ -11,6 +11,7 @@
 // holds, computed from the image size (MODEL_SCALE 4 and the 16 px tile pad mirror src/index.js, where DEFAULT_TILE_PAD is not exported, so keep them in sync by hand; the tile size comes from _MODES.high.tile),
 // and the tile count. The arrays are arithmetic, not measured: infer() and getSession() are not exported.
 const { spawnSync } = require('node:child_process');
+const { checkFlags } = require('./flags');
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const MB = (b) => b / 1048576;
@@ -93,6 +94,8 @@ if (process.argv[2] === '--tiles') {
     console.log(JSON.stringify({ size, w, h, afterRequire, afterSession, peak, afterCall, maxRss, geo: geometry(w, h, _MODES.high.tile) }));
   })();
 } else {
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--sizes'], switches: ['--arena'] });
+  if (flagError) { console.error(flagError); process.exit(1); }
   const sizesArg = String(arg('sizes', '400,800'));
   if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 400 || Number(v) > 800)) {
     // before any child starts (test/throughput-breakdown-args.test.js)
