@@ -76,3 +76,13 @@ for (const [args, line] of [
       assert.strictEqual(r.stdout, '', 'no output: no model or child started');
   });
 }
+
+// PD2: a path that is a file, not a directory, is one clear line (it used to be an ENOTDIR stack trace).
+test('pad.js --dir that is a file exits 1 with "<path> is not a directory"', () => {
+  const file = path.join(textDir, fs.readdirSync(textDir)[0]);
+  const r = run(['--dir', file]);
+  assert.strictEqual(r.status, 1);
+  assert.strictEqual(r.firstErr, `${file} is not a directory`);
+  assert.strictEqual(r.out, '');
+  assert.ok(r.elapsed < 5000, `took ${r.elapsed} ms`);
+});
