@@ -3,6 +3,7 @@
 // Usage: node bench/profile.js [--runs 5] [--sizes 400,600,800] [--factor 1.5]   (--runs: integer >= 1; --sizes: integers 400-800; --factor: number > 0)
 // Uses synthetic 4:3 images (smooth gradient + noise): latency depends on size only.
 const os = require('node:os');
+const { checkFlags } = require('./flags');
 const path = require('node:path');
 const ort = require('onnxruntime-node');
 const sharp = require('sharp');
@@ -14,6 +15,8 @@ const arg = (n, d) => {
 };
 // A rejected flag prints one line naming it and exits 1, before any model is loaded (test/threads-profile-args.test.js).
 const fail = (msg) => { console.error(msg); process.exit(1); };
+const flagError = checkFlags(process.argv.slice(2), { values: ['--runs', '--sizes', '--factor'] });
+if (flagError) fail(flagError);
 const runsArg = String(arg('runs', '5'));
 const sizesArg = String(arg('sizes', '400,600,800'));
 const factorArg = String(arg('factor', '1.5'));

@@ -4,6 +4,7 @@
 // Usage: node bench/cold.js [--sizes 400,800] [--modes fast,high] [--warm 3] [--factor 1.5]   (--sizes: integers 400-800; --modes: fast and/or high; --warm: integer >= 1; --factor: number > 0)
 //   Parent mode spawns one child per (mode, size); child mode: node bench/cold.js --child <mode> <size> <warm> <factor>
 const { spawnSync } = require('node:child_process');
+const { checkFlags } = require('./flags');
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const now = () => Number(process.hrtime.bigint()) / 1e6;
@@ -39,6 +40,8 @@ if (process.argv[2] === '--child') {
 } else {
   // A rejected flag prints one line naming it and exits 1, before any child starts (test/arena-cold-args.test.js).
   const fail = (msg) => { console.error(msg); process.exit(1); };
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--sizes', '--modes', '--warm', '--factor'] });
+  if (flagError) fail(flagError);
   const sizesArg = String(arg('sizes', '400,800'));
   const modesArg = String(arg('modes', 'fast,high'));
   const warmArg = String(arg('warm', '3'));

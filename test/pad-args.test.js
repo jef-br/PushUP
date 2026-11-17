@@ -63,3 +63,16 @@ test('pad.js --dir with only non-image files exits 1 with "no images in <dir>"',
   assert.strictEqual(r.out, '');
   assert.ok(r.elapsed < 5000, `took ${r.elapsed} ms`);
 });
+
+// BU2: an unknown or `--name=value` flag is rejected by bench/flags.js before any model loads.
+for (const [args, line] of [
+  [['--bogus', '1'], `unknown flag --bogus; allowed: --dir, --limit`],
+  [['--sizes=400'], `unknown flag --sizes=400; use "--sizes value"; allowed: --dir, --limit`],
+]) {
+  test(`pad.js ${args.join(' ')} is rejected as an unknown flag`, () => {
+      const r = spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8', timeout: 20000 });
+      assert.strictEqual(r.status, 1, `exit status (stderr: ${r.stderr})`);
+      assert.strictEqual(r.stderr.split('\n')[0], line, 'first stderr line');
+      assert.strictEqual(r.stdout, '', 'no output: no model or child started');
+  });
+}
