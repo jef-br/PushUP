@@ -335,3 +335,9 @@ node bench/worker.js                  # cost of running `upscale` in a worker_th
 - The edge script's results are in [docs/EDGES.md](docs/EDGES.md), the colour script's in [docs/COLOR.md](docs/COLOR.md), the padding experiment's in [docs/PAD.md](docs/PAD.md).
 - The latency scripts, their options and results are in [docs/PERF.md](docs/PERF.md).
   Quality benchmarking is described under "Benchmark" above.
+- Every `bench/` script that takes flags (`bench/colors.js` takes none, `bench/gate.js` is positional) checks them
+  before it loads a model: a bad value, an unknown or misspelled flag, or the `--flag=value` form ends in one line on
+  stderr that names the problem, with exit 1 (`bench/gate.js` and the `bench/bench.js` usage error exit 2). The checks are
+  kept true by `test/flags.test.js` and the `test/*-args.test.js` files (`bench-args`, `memory-args`,
+  `throughput-breakdown-args`, `arena-cold-args`, `threads-profile-args`, `eventloop-args`, `worker-args`,
+  `memory-creep-args`, `edges-args`, `pad-args`).
