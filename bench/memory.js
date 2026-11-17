@@ -9,6 +9,7 @@
 // (process.resourceUsage().maxRSS, the authoritative peak for the whole process). Input is a
 // deterministic synthetic 4:3 image, like bench/cold.js.
 const { spawnSync } = require('node:child_process');
+const { checkFlags } = require('./flags');
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const MB = (b) => b / 1048576;
@@ -45,6 +46,8 @@ if (process.argv[2] === '--child') {
 } else {
   // A rejected flag prints one line naming it and exits 1, before any child starts (test/memory-args.test.js).
   const fail = (msg) => { console.error(msg); process.exit(1); };
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--sizes', '--factors', '--high-sizes'] });
+  if (flagError) fail(flagError);
   const sizesArg = String(arg('sizes', '400,800'));
   const factorsArg = String(arg('factors', '1,1.5'));
   const highArg = String(arg('high-sizes', '400'));

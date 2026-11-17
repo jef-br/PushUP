@@ -11,6 +11,7 @@
 const os = require('node:os');
 const path = require('node:path');
 const { fork } = require('node:child_process');
+const { checkFlags } = require('./flags');
 
 const arg = (n, d) => {
   const i = process.argv.indexOf('--' + n);
@@ -113,6 +114,8 @@ async function measure(kids, deaths, seconds) {
 async function main() {
   // A rejected flag prints one line naming it and exits 1, before any child starts (test/throughput-breakdown-args.test.js).
   const fail = (msg) => { console.error(msg); process.exit(1); };
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--seconds', '--sizes'] });
+  if (flagError) fail(flagError);
   const secondsArg = String(arg('seconds', 30));
   const sizesArg = String(arg('sizes', '400,800'));
   if (!/^\d+(\.\d+)?$/.test(secondsArg) || Number(secondsArg) < 0.5) fail('--seconds must be a number >= 0.5');
