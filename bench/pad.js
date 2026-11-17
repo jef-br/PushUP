@@ -24,6 +24,7 @@ const dir = path.resolve(arg('dir', path.join(__dirname, 'out', 'sub20')));
 const limit = Number(arg('limit', '20'));
 if (!Number.isInteger(limit) || limit < 1) { console.error('--limit must be a positive integer'); process.exit(1); }
 if (!fs.existsSync(dir)) { console.error(`${dir} does not exist; run bash bench/fetch_testset.sh`); process.exit(1); }
+if (!fs.statSync(dir).isDirectory()) { console.error(`${dir} is not a directory`); process.exit(1); }
 
 const FACTOR = 2.0, PAD = 16, CUT = 2 * PAD; // pad in input px, border width in output px
 const raw = async (img) => { const { data, info } = await img.removeAlpha().raw().toBuffer({ resolveWithObject: true }); return { data, w: info.width, h: info.height }; };
