@@ -7,6 +7,7 @@
 // --runs runs after 1 warm-up. It also converts each output to bytes with the function
 // src/index.js ships and compares them with the bytes at N threads.
 const os = require('node:os');
+const { checkFlags } = require('./flags');
 const ort = require('onnxruntime-node');
 const { _toTensor, _copyFromTensor, _MODES, _sessionOptions } = require('../src/index.js');
 
@@ -17,6 +18,8 @@ const arg = (n, d) => {
 const N = os.availableParallelism();
 // A rejected flag prints one line naming it and exits 1, before any model is loaded (test/threads-profile-args.test.js).
 const fail = (msg) => { console.error(msg); process.exit(1); };
+const flagError = checkFlags(process.argv.slice(2), { values: ['--runs', '--sizes', '--threads'] });
+if (flagError) fail(flagError);
 const runsArg = String(arg('runs', '5'));
 const sizesArg = String(arg('sizes', '400,800'));
 const threadsArg = arg('threads', null) === null ? null : String(arg('threads'));

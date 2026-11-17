@@ -15,8 +15,11 @@ const { ssim, gmsd } = require('./metrics.js');
 process.env.PUSHUP_QUALITY = 'fast';
 process.env.PUSHUP_DEVICE = 'cpu';
 const { _run } = require('../src/index.js');
+const { checkFlags } = require('./flags');
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
+const flagError = checkFlags(process.argv.slice(2), { values: ['--dir', '--limit'] });
+if (flagError) { console.error(flagError); process.exit(1); }
 const dir = path.resolve(arg('dir', path.join(__dirname, 'out', 'sub20')));
 const limit = Number(arg('limit', '20'));
 if (!Number.isInteger(limit) || limit < 1) { console.error('--limit must be a positive integer'); process.exit(1); }

@@ -12,6 +12,7 @@
 // run are converted with the shipped _copyFromTensor, written to a temp file and compared by the parent
 // (byte-identical?, max absolute byte difference).
 const { spawnSync } = require('node:child_process');
+const { checkFlags } = require('./flags');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -78,6 +79,8 @@ if (process.argv[2] === '--child') {
 } else {
   // A rejected flag prints one line naming it and exits 1, before any child starts (test/arena-cold-args.test.js).
   const fail = (msg) => { console.error(msg); process.exit(1); };
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--runs', '--cases'] });
+  if (flagError) fail(flagError);
   const runsArg = String(arg('runs', '5'));
   const casesArg = String(arg('cases', 'fast:400,fast:800,high:400'));
   if (!/^\d+$/.test(runsArg) || Number(runsArg) < 1) fail('--runs must be an integer >= 1');

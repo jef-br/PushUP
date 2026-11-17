@@ -69,3 +69,27 @@ for (const [script, cases] of Object.entries(CASE_LIST)) {
     });
   }
 }
+
+// BU2: an unknown or `--name=value` flag is rejected by bench/flags.js before any model loads.
+for (const [args, line] of [
+  [['--bogus', '1'], `unknown flag --bogus; allowed: --runs, --cases`],
+  [['--sizes=400'], `unknown flag --sizes=400; use "--sizes value"; allowed: --runs, --cases`],
+]) {
+  test(`arena.js ${args.join(' ')} is rejected as an unknown flag`, () => {
+      const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'bench', 'arena.js'), ...args], { encoding: 'utf8', timeout: 20000 });
+      assert.strictEqual(r.status, 1, `exit status (stderr: ${r.stderr})`);
+      assert.strictEqual(r.stderr.split('\n')[0], line, 'first stderr line');
+      assert.strictEqual(r.stdout, '', 'no output: no model or child started');
+  });
+}
+for (const [args, line] of [
+  [['--bogus', '1'], `unknown flag --bogus; allowed: --sizes, --modes, --warm, --factor`],
+  [['--sizes=400'], `unknown flag --sizes=400; use "--sizes value"; allowed: --sizes, --modes, --warm, --factor`],
+]) {
+  test(`cold.js ${args.join(' ')} is rejected as an unknown flag`, () => {
+      const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'bench', 'cold.js'), ...args], { encoding: 'utf8', timeout: 20000 });
+      assert.strictEqual(r.status, 1, `exit status (stderr: ${r.stderr})`);
+      assert.strictEqual(r.stderr.split('\n')[0], line, 'first stderr line');
+      assert.strictEqual(r.stdout, '', 'no output: no model or child started');
+  });
+}
