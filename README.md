@@ -289,7 +289,7 @@ case, so the model always gets the full-size input.
   dark line at factor 2.5, 31 bytes below the dark level where Lanczos has none), but its edges
   are sharper (a step edge 0.97 to 0.99 px wide against 1.44 to 1.81). `high` is not better than
   `fast` here: about the same on a step edge and a small disc, worse on the 1 px line, with the sharpest
-  edges ([docs/EDGES.md](docs/EDGES.md)). On the strongest edges of 20 real photos neither method overshoots the local range of the reference by more than 2 levels (the synthetic numbers are for ideal features; [docs/EDGES.md](docs/EDGES.md#real-photos-cv2)); thin real features were not measured.
+  edges ([docs/EDGES.md](docs/EDGES.md)). A check on 20 real photos at the pixel of each strongest edge found neither method outside the local range of the reference by more than 2 levels, but that check samples on the edge itself, not at the ringing lobes next to it, so it does not show whether halos are absent ([docs/EDGES.md](docs/EDGES.md#real-photos-cv2)); thin real features were not measured.
 - **Flat saturated colours** move through the model: the largest single-channel shift of the
   shipped `fast` pipeline on 27 uniform test colours is 29 bytes (the blue channel of magenta,
   255,0,255), 26 on saturated green. The model causes it (plain Lanczos returns every colour

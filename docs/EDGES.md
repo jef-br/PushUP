@@ -128,4 +128,4 @@ here. Do not read this as "no ringing on photos": the measure is different. The 
 itself a lanczos3 downscale, so its edges are soft and a 9×9 window around a strong edge already spans the whole
 dark-to-light range, which leaves little room to overshoot. Edges that are one pixel wide in the reference
 (hairlines, text) are the case the synthetic `line` row stresses, and the 200 largest gradients are mostly wider edges.
-A real-photo number for such thin features would need a different protocol. Factor 2.0 only; 400 px inputs only.
+The measure is also blind to ringing lobes: it samples the pixels with the largest gradient, which sit on the edge itself, while lobes sit one to two pixels to either side (a probe by the adversary pass with lobes of 10 and 250 around a 40 / 215 step gave overshoot 0 at the picked pixels). There was no positive control on the synthetic step, so the same measure would very likely read about 0 there too, where `bench/edges.js` reads 12 to 17. A real-photo number for halos and for thin features would need a different protocol (sample the pixels one to two px beside the edge). Factor 2.0 only; 400 px inputs only.
