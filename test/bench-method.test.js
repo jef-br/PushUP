@@ -83,3 +83,31 @@ test('edge names: `sr-` is modelInputMax 0 (Number("")), the empty string is NaN
 test('edge names: an empty `@` suffix is a mix of 0 (Number(""))', () => {
   assert.deepStrictEqual(parseMethod('sr-full@'), { kind: 'sr', opts: { lanczosMix: 0 } });
 });
+
+// BM3: trailing junk after a number. These pin the CURRENT behaviour of a benchmark tool (a typo
+// gives NaN, not a silently different setting); they are not a statement that NaN is desirable.
+test('trailing junk: a non-numeric tile or mix stays NaN, not a parsed prefix', () => {
+  // A mutation of Number(...) to parseFloat(...) on the tile would make this 192.
+  const t = parseMethod('sr-full#192x');
+  assert.strictEqual(t.kind, 'sr');
+  assert.deepStrictEqual(Object.keys(t.opts), ['tile']);
+  assert.ok(Number.isNaN(t.opts.tile), `tile ${t.opts.tile}`);
+  const m = parseMethod('sr-full@0.2x');
+  assert.deepStrictEqual(Object.keys(m.opts), ['lanczosMix']);
+  assert.ok(Number.isNaN(m.opts.lanczosMix), `lanczosMix ${m.opts.lanczosMix}`);
+});
+
+test('trailing junk: only the exact name `sr-full` is the whole-image model', () => {
+  // A mutation of `name !== 'sr-full'` to a prefix check would drop modelInputMax for sr-full2.
+  for (const name of ['sr-full2', 'sr-600x']) {
+    const { kind, opts } = parseMethod(name);
+    assert.strictEqual(kind, 'sr', name);
+    assert.deepStrictEqual(Object.keys(opts), ['modelInputMax'], name);
+    assert.ok(Number.isNaN(opts.modelInputMax), `${name}: modelInputMax ${opts.modelInputMax}`);
+  }
+});
+
+test('only the second `-` part is read; `sr:` with no path is the current directory', () => {
+  assert.deepStrictEqual(parseMethod('sr-600-1'), { kind: 'sr', opts: { modelInputMax: 600 } });
+  assert.deepStrictEqual(parseMethod('sr:'), { kind: 'sr', opts: { modelPath: path.resolve('') } });
+});
