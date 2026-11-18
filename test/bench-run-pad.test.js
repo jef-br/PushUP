@@ -32,10 +32,10 @@ async function writeImage(file, w, h) {
 function run(args) {
   const t0 = Date.now();
   const r = spawnSync(process.execPath, [SCRIPT, ...args], {
-    encoding: 'utf8', timeout: 300000, // ~10 s alone; CI runs test files in parallel on 4 vCPU and the 60 s limit was hit (F-2026-11-19-0025)
+    encoding: 'utf8', timeout: 300000, // ~10 s alone; the 60 s limit was hit on a loaded CI runner (F-2026-11-19-0025)
     env: { ...process.env, PUSHUP_DEVICE: 'cpu' },
   });
-  return { status: r.status, out: r.stdout, err: r.stderr, elapsed: Date.now() - t0 };
+  return { status: r.status, out: r.stdout, err: r.stderr || `no stderr; signal=${r.signal} error=${r.error && r.error.code}`, elapsed: Date.now() - t0 };
 }
 
 function cells(line) { return line.split('|').slice(1, -1).map((c) => c.trim()); }
