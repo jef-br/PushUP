@@ -27,9 +27,14 @@ test('800x600 source: gt 800x600, inp 400x300, packed RGB', async () => {
   assert.strictEqual(inp.data.length, 400 * 300 * 3);
 });
 
-test('600x900 source: gt 533x800 (round(600*800/900)), inp 267x400 (round(266.5) = 267)', async () => {
+test('600x900 source: gt 533x800 (round(533.33)), inp 267x400 (round(266.5) = 267)', async () => {
   const { gt, inp } = await degrade(await source('b.png', 600, 900));
   assert.deepStrictEqual([gt.w, gt.h, inp.w, inp.h], [533, 800, 267, 400]);
+});
+
+test('650x900 source: gt 578x800 (577.78 rounds up; a floor would give 577), inp 289x400', async () => {
+  const { gt, inp } = await degrade(await source('e.png', 650, 900));
+  assert.deepStrictEqual([gt.w, gt.h, inp.w, inp.h], [578, 800, 289, 400]);
 });
 
 test('a source smaller than 800 px is scaled up to an 800 px reference; the input is always 400 px on its longest side', async () => {
