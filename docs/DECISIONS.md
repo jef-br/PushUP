@@ -111,3 +111,43 @@ plus the SD x4 upscaler (diffusion) on a crop. None reproduces Claid's suede gra
 diffusion model takes 65 s and 9 GB for a 128 px crop. UltraSharpV2-Lite beats Remacri on GMSD and PSNR at 1.7x the speed. The
 default model is not changed (owner rule); the switch is task T8, blocked on the owner.
 Numbers: `docs/TEXTURE.md`.
+
+## D15 — Keep one process using all cores; no thread/process setting without the owner (2026-11-11, P3/P4)
+
+- **Context:** sessions use `intraOpNumThreads = os.availableParallelism()` and run one call at a
+  time. `docs/PERF.md` listed thread tuning as an open idea.
+- **Evidence** (4 vCPU Xeon, `fast` model, model call only):
+  - [Threads](PERF.md#threads-p3-2026-11-11) (P3): one call is ~1.8× slower with 2 threads and
+    ~3.2–3.6× slower with 1 thread than with 4; output bytes are identical at every thread count.
+  - [Throughput](PERF.md#throughput-p4-2026-11-11) (P4): four 1-thread processes run at the same
+    time finish ~9–15% more model calls per second than one 4-thread process, but each image takes
+    ~3.5× longer.
+- **Decision:** keep the default (all cores, one call at a time): it gives the lowest latency per
+  call, which is what an interactive upscale needs. Don't add a thread-count or multi-process
+  setting: that is a new option (public behaviour), so it needs an owner-written task.
+- **Would reopen it:** an owner-requested batch mode (where ~10% more throughput beats latency),
+  or measurements on a many-core host showing that fewer threads per call lose little speed.
+
+## D16 — A quiet library: the ONNX Runtime log level is 'error' unless the application chose one (2026-11-15, F-2026-11-15-0733)
+
+- **Problem:** `test/quiet.test.js` (EX3) failed in CI. On the GitHub runner onnxruntime printed a
+  `device_discovery.cc` warning to stderr at the first call, even with `PUSHUP_DEVICE=cpu`. It did not show in the
+  sandbox. The line comes from the ORT environment, which `onnxruntime-node` creates once at first use with
+  `env.logLevel` (default `warning`); it is not a session setting.
+- **Decision:** `src/index.js` sets `ort.env.logLevel = 'error'` when it still has its default `'warning'`, before any
+  session exists. A level the application chose (`verbose`, `fatal`, ...) is not touched. Errors stay visible, for
+  example the CUDA load error that README "Quality modes and GPU" documents for `auto` on Linux without CUDA.
+- **Cost:** ORT warnings about real problems (for example nodes not assigned to the preferred execution provider)
+  are no longer printed. An application that wants them sets `ort.env.logLevel = 'warning'` itself after requiring
+  PushUP, before the first call. `env` is shared by every user of `onnxruntime-common` in the process, which is why
+  an explicit level is never overridden.
+- **Edge cases:** (a) the check is `env.logLevel === 'warning'`, so the default cannot be told apart from an
+  application that set `'warning'` itself before requiring PushUP: that application also gets `error`. It can set
+  `'warning'` again after requiring PushUP, before the first call. (b) `env` is a separate copy in each
+  `worker_threads` worker: the fix runs in a worker that requires PushUP too, and a level set on the main thread does
+  not carry over to workers.
+- **Evidence:** `test/ort-loglevel.test.js`; with `verbose` the same start-up code prints its device discovery lines
+  (so the level really controls it). CI on the runner is the check for the warning itself.
+- **Would reopen it:** a report that a warning hidden by this was needed, or an owner wish for a PushUP-specific
+  setting (new option, owner decision).
+

@@ -1,20 +1,31 @@
 'use strict';
 // Per-stage latency profile of the upscale pipeline.
-// Usage: node bench/profile.js [--runs 5] [--sizes 400,600,800] [--factor 1.5]
+// Usage: node bench/profile.js [--runs 5] [--sizes 400,600,800] [--factor 1.5]   (--runs: integer >= 1; --sizes: integers 400-800; --factor: number > 0)
 // Uses synthetic 4:3 images (smooth gradient + noise): latency depends on size only.
 const os = require('node:os');
+const { checkFlags } = require('./flags');
 const path = require('node:path');
 const ort = require('onnxruntime-node');
 const sharp = require('sharp');
-const { upscale, _copyFromTensor } = require('../src/index.js');
+const { upscale, _copyFromTensor, _mixLanczos, _toTensor, _MODES, _sessionOptions } = require('../src/index.js');
 
 const arg = (n, d) => {
   const i = process.argv.indexOf('--' + n);
   return i > 0 ? process.argv[i + 1] : d;
 };
-const runs = Number(arg('runs', 5));
-const sizes = arg('sizes', '400,600,800').split(',').map(Number);
-const factor = Number(arg('factor', 1.5));
+// A rejected flag prints one line naming it and exits 1, before any model is loaded (test/threads-profile-args.test.js).
+const fail = (msg) => { console.error(msg); process.exit(1); };
+const flagError = checkFlags(process.argv.slice(2), { values: ['--runs', '--sizes', '--factor'] });
+if (flagError) fail(flagError);
+const runsArg = String(arg('runs', '5'));
+const sizesArg = String(arg('sizes', '400,600,800'));
+const factorArg = String(arg('factor', '1.5'));
+if (!/^\d+$/.test(runsArg) || Number(runsArg) < 1) fail('--runs must be an integer >= 1');
+if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 400 || Number(v) > 800)) fail('--sizes must be a comma list of integers from 400 to 800');
+if (factorArg.trim() === '' || !(Number(factorArg) > 0) || !Number.isFinite(Number(factorArg))) fail('--factor must be a positive number');
+const runs = Number(runsArg);
+const sizes = sizesArg.split(',').map(Number);
+const factor = Number(factorArg);
 
 const now = () => Number(process.hrtime.bigint()) / 1e6;
 const median = (a) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
@@ -30,16 +41,16 @@ function synth(longest) {
   return { b, w, h };
 }
 
-// NOTE: stage code below is a copy of the helpers in src/index.js (not exported);
-// update it if the pipeline changes, or timings will silently drift.
+// NOTE: the tensor conversion, the byte conversion, the mix loop, the mix share and the CPU
+// session options come from src/index.js (_toTensor, _copyFromTensor, _mixLanczos,
+// _MODES.fast.lanczosMix, _sessionOptions), so they cannot drift. The rest of the stage replay
+// (resize calls) is still a copy: update it if the pipeline changes. This profile measures the
+// `fast` model only.
+const mix = _MODES.fast.lanczosMix;
 async function stages(rgb, w, h, outW, outH) {
   const t = {};
   let t0 = now();
-  const plane = w * h, data = new Float32Array(3 * plane);
-  for (let i = 0, j = 0; i < plane; i++, j += 3) {
-    data[i] = rgb[j] / 255; data[plane + i] = rgb[j + 1] / 255; data[2 * plane + i] = rgb[j + 2] / 255;
-  }
-  const tensor = new ort.Tensor('float32', data, [1, 3, h, w]);
+  const tensor = _toTensor(rgb, w, 0, 0, w, h);
   t.toTensor = now() - t0;
   t0 = now();
   const res = await session.run({ [session.inputNames[0]]: tensor });
@@ -56,7 +67,7 @@ async function stages(rgb, w, h, outW, outH) {
   t.resizeDown = now() - t0;
   t0 = now();
   const plain = await rs(rgb, w, h);
-  for (let i = 0; i < o.length; i++) o[i] = Math.round(0.8 * o[i] + 0.2 * plain[i]);
+  _mixLanczos(o, plain, mix); // the function src/index.js ships
   t.lanczosMix = now() - t0;
   return t;
 }
@@ -65,7 +76,7 @@ let session;
 (async () => {
   session = await ort.InferenceSession.create(
     path.join(__dirname, '..', 'models', '4xLSDIRCompactC3.onnx'),
-    { graphOptimizationLevel: 'all', intraOpNumThreads: os.availableParallelism(), executionMode: 'sequential' });
+    _sessionOptions(['cpu']));
   console.log(`cpus=${os.availableParallelism()} node=${process.version} factor=${factor} runs=${runs} (median ms)`);
   console.log('size      total(upscale)  toTensor  inference  fromTensor  resizeDown  lanczosMix');
   for (const L of sizes) {

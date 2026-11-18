@@ -8,12 +8,40 @@
 - `total` is the public `upscale()` call, median of N runs after one warm-up call (so the
   one-off ONNX session load is excluded). Stage columns replay the same steps in the
   script, median of N runs, and are indicative (they don't sum exactly to `total`).
-- Machine: 4 vCPU cloud container, Node 22, onnxruntime-node 1.31, sharp 0.35,
+- Machine: 4 vCPU cloud container (`cpus=4`), Node 22 (v22.23.4 in the 2026-11-11 run), onnxruntime-node 1.31, sharp 0.35,
   `DEFAULT_LANCZOS_MIX` 0.2, full input fed to the model. Re-measure on your own hardware.
 
 ## Results (median ms)
 
-Current (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5
+Current (2026-11-11, D4): model 4xLSDIRCompactC3, after the faster mix loop (P2).
+`PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/profile.js --runs 5` (factor 1.5), run twice;
+this is the second run. Same machine as above (4 vCPU cloud container, header
+`cpus=4 node=v22.23.4`):
+
+| Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix (incl. plain resize) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 443 | 1 | 428 | 13 | 9 | 13 |
+| 600×450 | 1014 | 2 | 932 | 31 | 12 | 21 |
+| 800×600 | 1854 | 3 | 1768 | 52 | 15 | 25 |
+
+First run, for the spread (the stage columns differ from the second run by at most 4 ms;
+`inference` by up to 62 ms at 600 px):
+
+| Input | total | toTensor | inference | fromTensor | Lanczos resize | Lanczos mix (incl. plain resize) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 455 | 1 | 416 | 12 | 6 | 13 |
+| 600×450 | 1038 | 2 | 994 | 32 | 12 | 23 |
+| 800×600 | 1874 | 3 | 1751 | 48 | 15 | 27 |
+
+What changed since 2026-11-09 (every cell that moved by more than the spread between the two
+runs above, checked cell by cell): the Lanczos mix fell 18 / 36 / 46 → 13 / 21 / 25 ms, the only
+change with a code cause (P2), while 400 px `toTensor` 6 → 1 and `inference` 399 → 428, 600 px
+`total` 1039 → 1014 and Lanczos resize 11 → 12, and 800 px `total` 1792 → 1854 and Lanczos resize
+17 → 15 ms moved with no code change in those stages, so they are session-to-session variation
+(single runs on two days; the 400 px inference rise is unexplained and worth re-measuring if it
+recurs).
+
+Earlier (2026-11-09): model 4xLSDIRCompactC3, faster byte conversion (T5). Factor 1.5
 (800 px input is capped to a 1000 px output). `total` and the stage columns come from
 separate timed passes, so stages don't sum exactly to `total`; small stages are noisy:
 
@@ -38,9 +66,486 @@ The model always runs at 4×, so the factor barely changes latency.
 - `fromTensor` (float → bytes over the 4× output) was ~6% and is now ~2-3% (T5: inline
   `floor(v*255+0.5)`, byte-identical to `Math.round` + clamp for float32 inputs).
 - Pre/post resizing with sharp and the Lanczos mix are each ≲ 1–2%.
-- First call additionally pays session creation (not measured here).
+- First call additionally pays session creation: small for `fast`, a few seconds for `high`
+  (see "Cold start" below).
+
+## Lanczos mix loop (P2, 2026-11-10)
+
+The 20% Lanczos mix used `Math.round(a * o + m * p)` per byte (2.25 M bytes for a 1000×750
+output). It is now `(a * o + m * p + 0.5) | 0` in `_mixLanczos` (`src/index.js`): the value is
+never negative, so it gives the same bytes. `test/mix.test.js` checks that over all 256×256
+byte pairs for the shipped share (0.2) and for shares 0, 0.05 … 1, and on a real `upscale`
+output; `bench/profile.js` now calls the shipped function.
+
+800×600 input, factor 1.25 (1000×750 output), `fast`, same machine (4 vCPU, Node 22.23), ms:
+
+| Measurement | Before | After |
+| --- | ---: | ---: |
+| `profile.js --runs 7 --sizes 800 --factor 1.25`, `lanczosMix` column (includes the plain Lanczos resize), 2 runs | 55, 53 | 28, 29 |
+| Mix loop alone on a real model output, median of 15 calls, 5 alternating rounds | 18.1–22.3 | 3.1–3.7 |
+
+So about 15–19 ms less per 800 px call (~1% of the ~2 s total; totals vary by more than that
+between runs). Output bytes are unchanged.
 
 ## Follow-up ideas (not implemented)
 
 Further speed has to come from inference: fp16/int8 quantisation, thread tuning, or a GPU.
 These change output quality or depend on hardware, so they need a human decision first.
+Thread tuning was measured in P3 (section "Threads" below): fewer threads are not faster per
+call, and the output bytes don't depend on the thread count.
+
+- **Throughput with one thread per process (measured in P4, see "Throughput" below).** In the
+  P3 numbers, one thread spends about 11–20% fewer core-milliseconds per image than four threads.
+  Run concurrently on 4 vCPU, four 1-thread processes finish 9–15% more model calls per second
+  than one 4-thread process (model call only, without tensor conversion, resize or mix), but each
+  image takes ~3.5× longer. Worth it only for batch jobs where
+  per-image latency doesn't matter; it would need a way to set the thread count (a new setting
+  or API: an owner decision).
+- **Turn the ONNX Runtime CPU memory arena off (measured in M4 and P6).** M4 found the arena is the
+  main reason `high` mode's memory grows with input size. P6 measured the option (`enableCpuMemArena:
+  false` and `enableMemPattern: false`): output bytes identical (max difference 0), the model call
+  1.2× (`high` 400 px) to 1.75–1.86× (`fast` 800 px) slower, peak RSS about 40% lower at 800 px
+  `fast` and 400 px `high`. M7 then traced `fast` mode's memory step after the first call to the arena: with
+  it off, an 800×600 process settled at about 0.26 GB instead of 0.93 GB (median call about 1.65× slower).
+  Changing the session options is an owner decision. Numbers and method:
+  [Arena (P6, 2026-11-13)](#arena-p6-2026-11-13),
+  [`high` memory breakdown (M4, 2026-11-13)](#high-memory-breakdown-m4-2026-11-13) and
+  [the M7 paragraph](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) (bold "Is the call-2 step the ONNX Runtime arena? (M7)" under that heading).
+
+## Cold start (Q3, 2026-11-10)
+
+`node bench/cold.js` runs each measurement in a **fresh process** (sessions are cached per
+model, so a second size in the same process would not be cold), on CPU, factor 1.5, synthetic
+4:3 image. `require` = loading `src/index.js` (onnxruntime-node, sharp); `cold` = the first
+`upscale()` call (includes creating the ONNX session); `warm` = median of the following calls.
+Same machine as above (4 vCPU Xeon @ 2.1 GHz, Node 22.23). ms:
+
+| Mode | Input | require | cold (1st call) | warm median | cold − warm | warm calls |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `fast` | 400×300 | 50 | 589 | 522 | 67 | 5 |
+| `fast` | 800×600 | 42 | 2203 | 2131 | 72 | 5 |
+| `high` | 400×300 | 57 | 15585 | 14254 | 1331 | 1 |
+| `high` | 800×600 | 49 | 61150 | 57955 | 3195 | 1 |
+
+A first `fast` run of the same script gave cold − warm of 65 ms @400 and 148 ms @800, so the
+`fast` overhead is about 0.07-0.15 s and within run-to-run noise. `high` has one warm call
+only (it takes about 14 s @400 and 58 s @800 per call), so its cold − warm figure is rougher;
+the 67 MB model costs roughly 1.3-3 s extra on the first call.
+
+**Would pre-warming help?** Not for `fast`: the first call costs about 0.1 s more than later
+ones, which is below the noise of one request. For `high` it would save about 1-3 s once per
+process, small next to the 14-58 s per call, and `high` is meant for GPU machines anyway
+(not measured here). A pre-warm call would need a new API or a dummy upscale at start-up, so
+there is no case for it now.
+
+## Threads (P3, 2026-11-11)
+
+`node bench/threads.js [--runs 5] [--sizes 400,800] [--threads 1,2,4]` creates one CPU session
+of the `fast` model (`4xLSDIRCompactC3.onnx`) per `intraOpNumThreads` value. By default the
+values are {1, 2, N/2, N}, N = `os.availableParallelism()`, with duplicates removed; the other
+session options are as in `src/index.js`. It times `session.run` on a deterministic synthetic
+whole-image input (4:3, gradient + noise): median of the runs after one warm-up. Only the model
+call is timed, so tensor conversion, Lanczos resizing and the mix are not included. Each count's
+output is converted to bytes with `_copyFromTensor` (the function `src/` ships) and compared
+with the bytes at N threads.
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, N = 4 (4 vCPU cloud container), Node v22.23.4,
+onnxruntime-node 1.31.1. `node bench/threads.js --runs 7`, run twice. Median ms, and the
+ratio to N threads:
+
+| Input | Threads | Run 1 ms | vs N | Run 2 ms | vs N | Bytes equal to N | Max abs byte diff |
+| --- | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| 400×300 | 1 | 1367 | 3.30× | 1589 | 3.37× | yes | 0 |
+| 400×300 | 2 | 773 | 1.86× | 834 | 1.77× | yes | 0 |
+| 400×300 | 4 (N) | 415 | 1.00× | 471 | 1.00× | — | — |
+| 800×600 | 1 | 5999 | 3.20× | 6135 | 3.55× | yes | 0 |
+| 800×600 | 2 | 3389 | 1.81× | 3192 | 1.85× | yes | 0 |
+| 800×600 | 4 (N) | 1876 | 1.00× | 1728 | 1.00× | — | — |
+
+**Result:** latency scales almost linearly with the thread count: 2 threads are ~1.8× and
+1 thread is ~3.2–3.6× slower than 4. No smaller count is within 5% of N's time, so the
+current default (`intraOpNumThreads = os.availableParallelism()`) stays the fastest setting
+for one call. The output bytes are identical at every thread count, so the thread count doesn't
+change results. Only a 4-vCPU machine was measured; on many-core hosts the curve may flatten,
+so re-run the script there. For several processes per host, see the throughput idea under
+"Follow-up ideas".
+
+## Throughput (P4, 2026-11-11)
+
+`node bench/throughput.js [--seconds 30] [--sizes 400,800]` compares one process using all N
+threads with several processes using fewer threads each, all running at the same time:
+1 × N, N/2 × 2 (when N ≥ 4) and N × 1 (processes × threads). Each process creates one CPU
+session of the `fast` model (`_sessionOptions` from `src/`, only `intraOpNumThreads` changed),
+does one warm-up run, waits until all processes are ready, then runs `session.run` on the same
+deterministic synthetic whole-image input in a loop for the given wall time. Only `session.run`
+is timed (no tensor conversion, resize or mix). `images/s` = images finished by all processes /
+wall time until the last one finished (a run that started before the deadline still counts).
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, N = 4 (4 vCPU cloud container), Node v22.23.4,
+onnxruntime-node 1.31.1. `node bench/throughput.js --seconds 30`, run twice:
+
+| Input | Processes × threads | Run 1 images/s | vs 1 × 4 | Run 2 images/s | vs 1 × 4 | Median ms per image (run 1 / 2) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 1 × 4 | 2.35 | 1.00× | 2.34 | 1.00× | 418 / 423 |
+| 400×300 | 2 × 2 | 2.46 | 1.05× | 2.57 | 1.10× | 803 / 783 |
+| 400×300 | 4 × 1 | 2.55 | 1.09× | 2.69 | 1.15× | 1541 / 1497 |
+| 800×600 | 1 × 4 | 0.53 | 1.00× | 0.56 | 1.00× | 1860 / 1773 |
+| 800×600 | 2 × 2 | 0.58 | 1.09× | 0.57 | 1.02× | 3398 / 3418 |
+| 800×600 | 4 × 1 | 0.61 | 1.15× | 0.63 | 1.12× | 6104 / 6356 |
+
+Images finished per configuration: 71–84 at 400×300, only 16–22 at 800×600, so the 800 px rows
+are rougher (one image more or less moves images/s by ~5%).
+
+**Result:** running N single-thread processes gives about 9–15% more throughput than one
+N-thread process on this 4-vCPU machine (model call only). P3's core-ms figures alone would
+predict 12–25% (11–20% fewer core-ms); the measured gain is at the low end of that, but the
+difference is within the run-to-run spread above (up to ~7 points), so these runs can't say how
+much contention between processes costs. The price is latency: each image takes ~3.5×
+longer (1.5 s instead of 0.42 s at 400×300; 6.1–6.4 s instead of 1.8 s at 800×600). PushUP's
+default (one process, all cores, one call at a time) is the right choice for interactive use,
+where latency matters. A batch user who wants the extra ~10% would need a way to set the
+thread count, which PushUP doesn't offer; adding one is an owner decision. Only one 4-vCPU
+machine was measured; re-run on the target hardware.
+
+## Memory (M1, 2026-11-12)
+
+### Summary: settled RSS
+
+One table for sizing a box (MB, `fast`/`high` on CPU, synthetic 4:3 images, factor 1.0, the machine described in this section). Every cell is copied from the
+section named in the last column; nothing here is a new run. "First call" = RSS after the first call; "settled" = RSS after call 30 (`fast`) (`high` has one call per process, so its settled cell says "not measured"); "max RSS" = OS peak of the same run.
+
+| Mode | Input | Arena | First call | Settled | Max RSS | Source |
+| --- | --- | --- | ---: | ---: | ---: | --- |
+| `fast` | 400×300 | on | 199 | 369 | 369 | [M6 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 400×300 | off | 113 | 198 | 288 | [M9 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 600×450 | on | 346 | 606 | 656 | [M6 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 600×450 | off | 172 | 193 | 374 | [M9 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 800×600 | on | 561 | 934 | 1022 | [M5 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `fast` | 800×600 | off | 222 | 258 | 597 | [M7 run 1](#does-fast-mode-creep-over-repeated-calls-m5-2026-11-14) |
+| `high` | 400×300 | on | 886 | not measured | 895 | [M4](#high-memory-breakdown-m4-2026-11-13) |
+| `high` | 800×600 | on | 1493 | not measured | 1493 | [M4](#high-memory-breakdown-m4-2026-11-13) |
+
+Where each column comes from: `fast` first-call, settled and max RSS are the "after call 1", "call 30" and "max RSS" cells of run 1 of the named multi-call table
+(M6, M5, M7 and M9 sit under the M5 heading); `high` rows come from the M4 table ("RSS after the call", "Max RSS"), and `high` was measured with one call per process, so no other settled value exists (the M1 table below has other single-call peaks). Run-to-run noise is large at 400 px (M6 and M9 show settled values from 0.20 to 0.39 GB), and
+this table does not cover other image shapes or other machines.
+
+`node bench/memory.js` runs each measurement in a **fresh process** (CPU, synthetic 4:3 image,
+one `upscale()` call). `peak sampled` = `process.memoryUsage().rss` read every 10 ms during the
+call; `max RSS` = `process.resourceUsage().maxRSS` (the OS peak for the whole process, the figure
+to use). Same machine as above (4 vCPU Xeon @ 2.1 GHz, 16 GB, Node 22.23). MB:
+
+| Mode | Input | Factor | RSS after `require` | RSS after call | Peak sampled | Max RSS |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `fast` | 400×300 | 1.0 | 68 | 202 | 222 | 222 |
+| `fast` | 400×300 | 1.5 | 69 | 205 | 205 | 223 |
+| `fast` | 800×600 | 1.0 | 68 | 564 | 564 | 564 |
+| `fast` | 800×600 | 1.5 | 68 | 566 | 566 | 566 |
+| `high` | 400×300 | 1.0 | 69 | 898 | 902 | 915 |
+| `high` | 400×300 | 1.5 | 68 | 898 | 902 | 915 |
+| `high` | 800×600 | 1.0 | 67 | 1468 | 1501 | 1501 |
+| `high` | 800×600 | 1.0 (2nd run) | 67 | 1454 | 1481 | 1481 |
+
+The two `high` 800×600 rows were added by M3 (2026-11-13), same machine, with
+`node bench/memory.js --sizes 400 --factors 1 --high-sizes 800` (the call takes about 47 s;
+the command also runs one cheap `fast` 400 px job).
+
+- `fast` needs roughly 0.2 GB at 400 px and 0.57 GB at 800 px for one call; the factor (1.0 vs
+  1.5) changes it by under 1%. It grows with the input pixel count (the 4× model output
+  alone is 3200×2400×3 floats ≈ 92 MB at 800 px; the rest is ONNX Runtime's intermediate
+  buffers and the image copies, which were not broken down).
+- `high` at 400 px peaks near 0.9 GB (the 67 MB model plus tiles) and at 800 px near 1.5 GB
+  (1.48–1.50 GB in two runs). So tiling does **not** keep memory flat: it still grows with the
+  input size (about +0.6 GB from 400 to 800 px; `fast` grows by about +0.35 GB over the same
+  range). An earlier README figure of "around 1.6 GB" for tiling was a design
+  note (removed in DOC1); the measured 800 px peak is close to it. Where the growth comes from:
+  see "`high` memory breakdown (M4)" below.
+- Calls run one at a time inside a process, so a process needs about the peak of its largest
+  call, not the sum. Several processes (see "Throughput") each need their own copy: four
+  `fast` processes at 800 px need about 2.3 GB, plus headroom for the input and output buffers.
+
+### Does `fast` mode creep over repeated calls? (M5, 2026-11-14)
+
+`node bench/memory-creep.js` (one fresh process; `fast` on CPU; the public `upscale()` on a synthetic
+800×600 image at factor 1.0; 30 sequential calls) prints the RSS after calls 1, 2, 5, 10, 20 and 30.
+Same machine as above (`Intel(R) Xeon(R) Processor @ 2.10GHz`, 4 vCPU, Node v22.23.4, onnxruntime-node
+1.31.1). Two runs, MB:
+
+| Run | After call 1 | 2 | 5 | 10 | 20 | 30 | Max RSS | Call 30 vs call 5 | Median call |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 561 | 908 | 934 | 934 | 934 | 934 | 1022 | +0 MB (0.0%) | 1990 ms |
+| 2 | 473 | 908 | 934 | 907 | 929 | 929 | 1039 | −5 MB (−0.6%) | 1966 ms |
+
+**Flat after the second call: no creep.** RSS after call 30 is within 1% of RSS after call 5 in both
+runs (+0.02 and −0.21 MB per call), so a long-running `fast` process does not keep growing. What the
+table shows instead is a **warm-up step**: RSS after the first call is 473–561 MB (what the single-call
+rows above measure), after the second call it is 908 MB in both runs, and it then stays at about
+0.91–0.93 GB (max RSS 1.02–1.04 GB). So a `fast` process serving 800 px images settles at roughly
+**0.93 GB resident (about 1 GB peak), not 0.57 GB**: the first-call figure understates a server that
+has handled more than one call. The cause of the extra ~0.35–0.45 GB after call 2 was not investigated
+(it could be ONNX Runtime keeping buffers, as M4 found for `high`, but that was not measured for `fast`). Only 800×600 was run here (400 and 600 px: see M6 below). How to run
+(about 1 minute): `node bench/memory-creep.js [--calls 30] [--size 800]`.
+
+**Smaller sizes (M6, 2026-11-14).** `node bench/memory-creep.js --size 400` and `--size 600`, two runs each,
+same machine and settings (4:3 images, MB):
+
+| Input | Run | After call 1 | 2 | 5 | 10 | 20 | 30 | Max RSS | Call 30 vs call 5 | Median call |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 1 | 199 | 312 | 359 | 368 | 369 | 369 | 369 | +10 MB (2.7%) | 442 ms |
+| 400×300 | 2 | 200 | 313 | 360 | 383 | 386 | 386 | 386 | +26 MB (7.2%) | 415 ms |
+| 600×450 | 1 | 346 | 590 | 605 | 606 | 606 | 606 | 656 | +1 MB (0.2%) | 994 ms |
+| 600×450 | 2 | 395 | 540 | 604 | 605 | 605 | 605 | 655 | +1 MB (0.1%) | 1010 ms |
+
+- **400 px:** the step after call 1 appears (about +0.11 GB at call 2, 0.20 → 0.31 GB), but it is not
+  flat by the 5% rule: call 30 is 2.7% above call 5 in run 1 and 7.2% above it in run 2 (over the 5% limit). Both runs
+  rise only until call 10 (run 2: 360 → 383) and are unchanged from call 20 on, so it settles at about
+  0.37–0.39 GB rather than growing without bound; two runs are too few to say more.
+- **600 px:** the step appears too (about +0.15–0.24 GB, 0.35–0.40 → 0.54–0.59 GB at call 2) and it is flat
+  after it: call 30 is within 0.2% of call 5 in both runs; it settles at about 0.61 GB (max RSS 0.66 GB).
+
+**More 400 px runs (M8, 2026-11-14).** `node bench/memory-creep.js --size 400 --calls 100`, three runs, same
+machine and settings (MB):
+
+| Run | After call 1 | 2 | 5 | 10 | 20 | 100 | Max RSS | Call 100 vs call 20 | Median call |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 198 | 311 | 358 | 359 | 362 | 369 | 369 | +7 MB (1.9%) | 460 ms |
+| 2 | 200 | 313 | 360 | 367 | 370 | 388 | 388 | +18 MB (4.9%) | 457 ms |
+| 3 | 200 | 314 | 361 | 367 | 369 | 371 | 371 | +2 MB (0.5%) | 473 ms |
+
+By the rule (call 100 within 5% of call 20 in all three runs) the 400 px steady state is **flat**: it settles
+at about 0.37–0.39 GB and no run ends above 2× the RSS of call 5. Run 2 is close to the limit (4.9%, about 0.2 MB per call between calls 20 and 100),
+so a slow rise of the order of 0.1–0.2 MB per call is not ruled out by three runs; max RSS never exceeded 0.39 GB.
+
+**Is the call-2 step the ONNX Runtime arena? (M7, 2026-11-14).** `node bench/memory-creep.js --arena off`
+wraps `ort.InferenceSession.create` in the benchmark process so the CPU session also gets
+`enableCpuMemArena: false` and `enableMemPattern: false` (bench-only; `src/` is unchanged). Two runs, 800×600,
+30 calls, same machine, MB (the "arena on" rows are the M5 runs above):
+
+| Arena | Run | After call 1 | 2 | 5 | 10 | 20 | 30 | Max RSS | Median call |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| on | M5 1 | 561 | 908 | 934 | 934 | 934 | 934 | 1022 | 1990 ms |
+| on | M5 2 | 473 | 908 | 934 | 907 | 929 | 929 | 1039 | 1966 ms |
+| off | 1 | 222 | 231 | 263 | 275 | 258 | 258 | 597 | 3243 ms |
+| off | 2 | 222 | 231 | 263 | 264 | 258 | 258 | 597 | 3255 ms |
+
+With the arena off the step after call 1 **disappears** (222 → 231 MB instead of 473–561 → 908 MB), so the
+step is the arena; RSS settles at about 0.26 GB (call 30 is 1.9–2.0% below call 5 in both runs; a third check run by the reviewer was 5.8% below, so the exact figure is noisy; max RSS 0.60 GB,
+against 0.93 GB and 1.02–1.04 GB with the arena on). The cost is speed: the median call goes from about 2.0 s to
+about 3.2 s (about 1.65×; "Arena (P6)" measured 1.75–1.86× for the model call alone). Whether to change the session
+options is an owner decision; nothing was changed.
+
+**Arena off at 400 and 600 px (M9, 2026-11-14).** `node bench/memory-creep.js --arena off --size 400` and `--size 600`,
+two runs each, same machine and settings, 30 calls (MB; the arena-on rows are the M6 runs above):
+
+| Input | Arena | Run | After call 1 | 2 | 5 | 10 | 20 | 30 | Max RSS | Median call |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | on | M6 1 | 199 | 312 | 359 | 368 | 369 | 369 | 369 | 442 ms |
+| 400×300 | on | M6 2 | 200 | 313 | 360 | 383 | 386 | 386 | 386 | 415 ms |
+| 400×300 | off | 1 | 113 | 141 | 223 | 195 | 198 | 198 | 288 | 695 ms |
+| 400×300 | off | 2 | 115 | 144 | 255 | 258 | 230 | 230 | 318 | 503 ms |
+| 600×450 | on | M6 1 | 346 | 590 | 605 | 606 | 606 | 606 | 656 | 994 ms |
+| 600×450 | on | M6 2 | 395 | 540 | 604 | 605 | 605 | 605 | 655 | 1010 ms |
+| 600×450 | off | 1 | 172 | 177 | 192 | 193 | 193 | 193 | 374 | 1925 ms |
+| 600×450 | off | 2 | 122 | 177 | 192 | 192 | 192 | 192 | 373 | 1957 ms |
+
+- **400 px:** the step after call 1 shrinks but does not disappear: call 2 is 25% above call 1 in both runs (141 vs 113, 144 vs 115; arena on: +56%),
+  so the "within 15%" test fails; RSS also moves around until call 5 to 10 (223 and 255 MB at call 5) and then settles at about
+  0.20–0.23 GB, against 0.37–0.39 GB with the arena on. The median call is 503–695 ms against 415–442 ms (about 1.2–1.6×; the two off runs differ a lot).
+- **600 px:** the step disappears: call 2 is 177 MB in both runs (call 1 is 172 in run 1, within 3%; in run 2 call 1 was 122, so the
+  15% test fails there because call 1 was low, not because call 2 grew), RSS is flat from call 5 (192–193 MB, call 30 within 0.2% of call 5), against 0.61 GB
+  with the arena on. The median call is 1925–1957 ms against 994–1010 ms (about 1.9×).
+
+So the arena explains most of the memory the `fast` process keeps at 600 px (about 0.4 GB less), and the step after call 1 is smaller at 400 px,
+where a smaller step still remains with the arena off. The settled value with the arena off is not stable at 400 px: the two runs above settle at 0.20 and 0.23 GB,
+and two further check runs by the reviewer settled at 0.26 and 0.39 GB (the latter equal to the arena-on value), so "about 0.17 GB less at 400 px" is not a firm
+figure. At 600 px a third check run ended 8.9% above call 5 (210 vs 193 MB; call 20 was 229 MB), so the "flat" reading rests on two clean runs. No default is proposed (owner decision).
+
+### `high` memory breakdown (M4, 2026-11-13)
+
+`node bench/memory-breakdown.js` (one fresh process per size, `high` on CPU, factor 1.0; same
+machine as above; MB):
+
+| Input | RSS after `require` | RSS after session creation | Peak (sampled) | Max RSS | RSS after the call |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 67 | 281 | 890 | 895 | 886 |
+| 800×600 | 67 | 281 | 1493 | 1493 | 1493 |
+
+"Session creation" is one call on a thin 400×12 image (inputs under 400 px are rejected), which
+loads the 67 MB model and runs three small tiles. Arrays held by `src/index.js`, from the
+image size (arithmetic, not measured: `infer()` is not exported, so stage boundaries inside a
+call are not observable without a `src/` change):
+
+| Input | Tiles (192 px + 16 px pad) | Largest tile | Packed input | Whole-image 4× output (uint8) | Returned image (factor 1.0) | Largest tile, float32 in / out |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 400×300 | 6 | 224×208 | 0.3 | 5.5 | 0.3 | 0.5 / 8.5 |
+| 800×600 | 20 | 224×224 | 1.4 | 22.0 | 1.4 | 0.6 / 9.2 |
+
+**Result:** the whole-image arrays grow by 18 MB from 400 to 800 px, which is **3%** of the
+598 MB growth in max RSS, so they explain far less than half. The per-tile tensors are nearly
+the same size at both inputs (largest tile 224×208 vs 224×224). RSS after the call equals the
+peak (the process keeps what it grew to), and a second `high` call at 800 px in the same process
+moved RSS from 1459 to 1521 MB (max 1510 → 1533 MB; ad-hoc check, not in the script), so
+memory is retained, not freed between calls, and creeps up a little more.
+
+**The ONNX Runtime CPU memory arena is the main cause.** `node bench/memory-breakdown.js --arena`
+runs only the tile loop (ORT inference on the Remacri model, no sharp, no whole-image buffers)
+with the shipped session options (`_sessionOptions`, a bench-only use of an existing export) and
+again with `enableCpuMemArena: false` and `enableMemPattern: false` added, max RSS in MB:
+
+| Input | Shipped options (arena on) | Arena and mem-pattern off |
+| --- | ---: | ---: |
+| 400×300 (6 tiles) | 906 | 642 |
+| 800×600 (20 tiles) | 1450 | 732 |
+
+With the arena off the 400 → 800 px growth drops from about 540–570 MB to about 60–90 MB (two
+runs), and the 800 px peak from about 1.45 GB to about 0.7 GB (ORT inference alone; the full call
+adds the sharp and output buffers, estimated at a few tens of MB from the arrays above). So the extra memory is blocks the
+arena keeps while tiles of varying shapes run; it is not any one array. Not measured: whether
+turning the arena off costs latency, whether it changes output bytes, and what it does for
+`fast` mode. `src/` is unchanged and no default is proposed here: changing the session options
+is an owner decision (see the note on task M4 in `TASKS.md`). Until then: budget about 1.5 GB per
+`high` process at 800 px and expect it to stay allocated.
+
+## Arena (P6, 2026-11-13)
+
+M4 found the ONNX Runtime CPU memory arena to be the main reason `high` grows with input size. This
+section measures what turning it off (`enableCpuMemArena: false` and `enableMemPattern: false`, added to
+`_sessionOptions(['cpu'])`) costs in time and output. Bench-only; `src/` is unchanged and no default is
+proposed here (an owner decision).
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, N = 4 (4 vCPU cloud container), Node v22.23.4,
+onnxruntime-node 1.31.1. How to run (about 4 minutes):
+
+```bash
+node bench/arena.js                              # --runs 5 --cases fast:400,fast:800,high:400
+node bench/arena.js --runs 7 --cases fast:800    # one case
+```
+
+Each case runs in a fresh child process per setting: 1 warm-up, then `--runs` timed model calls
+(`fast`: one whole-image `session.run`; `high`: one pass of the 192 px tile loop, 6 tiles at 400×300).
+Median ms is the model call only. Max RSS is the child's `resourceUsage().maxRSS`. Bytes are the
+warm-up output after the shipped `_copyFromTensor`, compared across the two settings.
+
+| Case | Arena | Median ms | Max RSS MB | Time vs on | Bytes equal to on | Max abs byte diff |
+| --- | --- | ---: | ---: | ---: | --- | ---: |
+| `fast` 400×300 | on | 481 | 331 | 1.00× | – | – |
+| `fast` 400×300 | off | 699 | 286 | 1.45× | yes | 0 |
+| `fast` 800×600 | on | 1892 | 1012 | 1.00× | – | – |
+| `fast` 800×600 | off | 3308 | 569 | 1.75× | yes | 0 |
+| `high` 400×300 (6 tiles) | on | 13567 | 1239 | 1.00× | – | – |
+| `high` 400×300 (6 tiles) | off | 16505 | 729 | 1.22× | yes | 0 |
+
+A first run of the `fast` cases gave 493 / 525 ms at 400×300 (1.07×) and 1829 / 3402 ms at 800×600
+(1.86×), with max RSS 357 / 431 MB and 990 / 569 MB, so the 400 px time ratio varies a lot between runs
+(1.07× to 1.45×); the 800 px ratio (1.75× to 1.86×) and the memory figures are stable.
+
+Reading: the output is **lossless** (every byte equal in all three cases) but turning the arena off is
+**costly** in time: the model call is about 1.2× (`high`) to 1.8× (`fast` at 800 px) slower, while
+peak memory falls by about 40% (`fast` 800 px: ~1.0 GB to ~0.57 GB; `high` 400 px: ~1.24 GB to ~0.73 GB).
+At 400×300 `fast` the memory was not lower in one of two runs (431 vs 357 MB), so there is no
+reliable saving there. The option is not free; whether the memory is worth the time is the owner's
+decision (see the note on task M4 in `TASKS.md`).
+
+## Event loop (EL1, 2026-11-15)
+
+`node bench/eventloop.js [--sizes 400,800] [--calls 3] [--threads default]` runs a timer probe
+(`setInterval`, 2 ms) on the main thread while one call runs, and reports the number of ticks, the
+longest gap between ticks and the time spent in gaps above 10 ms ("blocked"). The start and the end of
+the call count as ticks, so a call during which no timer ever fired shows one gap as long as the call.
+It does this for the public `upscale()` (factor 1.5) and for a bare ONNX Runtime `session.run` on a
+float32 `1×3×H×W` input of the same size (fresh session, `fast` model, CPU, warm-up call first).
+Control: an idle 300 ms sleep gives 142 ticks and a longest gap of 3 ms in both runs, so the probe works.
+The probe also runs on the main thread, so it shows how long the main thread cannot serve timers, not
+CPU use.
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, 4 vCPU cloud container, Node v22.23.4,
+onnxruntime-node 1.31.1. The numbers are for this machine and will differ elsewhere. Two runs
+(`node bench/eventloop.js --calls 3 --threads 1,default`); each cell is the median of 3 calls; ticks are
+listed per call (run 1 / run 2). Blocked time equalled the longest gap in every row.
+
+| Case | Input | Threads | Call ms (run 1 / 2) | Ticks per call, run 1 | Ticks per call, run 2 | Longest gap ms (run 1 / 2) |
+| --- | --- | --- | ---: | --- | --- | ---: |
+| `upscale()` | 400×300 | default (4) | 394 / 413 | 7, 8, 6 | 7, 7, 7 | 379 / 395 |
+| `session.run` | 400×300 | 1 | 1123 / 1163 | 0, 0, 0 | 0, 0, 0 | 1123 / 1163 |
+| `session.run` | 400×300 | default (4) | 351 / 290 | 0, 0, 0 | 0, 0, 0 | 351 / 290 |
+| `upscale()` | 800×600 | default (4) | 1814 / 1719 | 18, 18, 19 | 17, 16, 17 | 1772 / 1682 |
+| `session.run` | 800×600 | 1 | 4873 / 4562 | 0, 0, 0 | 0, 0, 0 | 4873 / 4562 |
+| `session.run` | 800×600 | default (4) | 1414 / 1422 | 0, 0, 0 | 0, 0, 0 | 1414 / 1422 |
+
+- **`session.run` alone:** the loop is blocked for the whole call, at 400 and 800 px and also with one
+  thread. No timer fired in any of the 24 calls, although `run()` returns its promise at once
+  (in an ad-hoc check, not part of the script: about 0.1 ms).
+- **`upscale()`:** the loop is blocked for almost the whole call: the longest gap is 96–98% of the
+  call time (379–395 ms of 394–413 ms at 400×300; 1682–1772 ms of 1719–1814 ms at 800×600). The few ticks
+  that do fire (6–8 and 16–19, i.e. about 12–38 ms) come at the end, probably from the resize and mix steps, which
+  yield to the event loop (inferred, not traced).
+- **Where it comes from:** the bare `session.run` already blocks the loop, so the block is inside the
+  ONNX Runtime binding (onnxruntime-node 1.31.1 here), not in PushUP's JavaScript. This was not traced
+  further (for example into how the binding schedules the run).
+- **What it means:** timers and I/O in the same process are delayed for about the length of each call, so
+  a server that calls `upscale()` is unresponsive for 0.4 s (400 px) to 1.8 s (800 px) per call on this
+  machine, in `fast` mode. `high` mode and a GPU were not measured. `CLAUDE.md` says the model
+  runs off the main thread (the README said so too until DOC16); for the event loop this is not what
+  was measured. No change to code or
+  defaults is proposed here; running inference in a `worker_threads` worker would be an owner decision
+  (see task DOC16 in `TASKS.md`).
+
+### `high` mode (EL3, 2026-11-15)
+
+`node bench/eventloop.js --quality high --sizes 400 --calls 1` (the same probe and machine as above; `high` is the
+Remacri model, 192 px tiles with 16 px context). `tile.run` is a bare `session.run` of the `high` model on one tile
+input, `1×3×224×224` (192 + 2·16): what one of the many runs of a `high` call feeds. A 400×300 image is covered by
+6 tiles (3×2); the context padding is cut at the image edges, so those tiles are smaller than 224 px and
+`tile.run` is an upper bound for one of them. One `upscale()` call makes 6 such runs. Two runs, one call per row (the idle control gave 141
+and 143 ticks, longest gap 2 ms):
+
+| Case | Input | Call ms (run 1 / 2) | Ticks (run 1 / 2) | Longest gap ms (run 1 / 2) | Blocked ms (run 1 / 2) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `upscale()`, `high` | 400×300 | 12136 / 11504 | 8 / 9 | 3812 / 3438 | 12127 / 11497 |
+| `tile.run` | one 224×224 tile | 4059 / 3897 | 0 / 0 | 4059 / 3897 | 4059 / 3897 |
+
+- **`high` mode blocks the loop too:** for 99.9% of the call (the time in gaps above 10 ms is 12127 of 12136 ms and
+  11497 of 11504 ms). Only 8–9 ticks fired in about 11–12 s (the probe does not say where in the call), so timers ran
+  at most a handful of times during the call.
+- **Longest gap:** 3.4–3.8 s, of the same size as one bare tile run (3.9–4.1 s), so the loop is blocked for about one
+  tile run at a time. The bare tile run blocks it for its whole length (0 ticks), as the bare `session.run` of `fast` does.
+- **Not measured:** 800 px input, a GPU, and thread counts other than the default. No recommendation to change code or
+  defaults (owner decision, row 9 of `docs/OWNER_DECISIONS.md`).
+
+## Worker (EL2, 2026-11-15)
+
+`node bench/worker.js [--sizes 400,800] [--calls 5]` compares `upscale()` on the main thread ("direct") with
+`upscale()` inside a `worker_threads` Worker ("worker"; the worker requires `src/index.js`, the input is sent as a
+transferred `ArrayBuffer` and the output comes back as one). `fast`, CPU, factor 1.5, synthetic 4:3 image, **one fresh
+process per row** (so the first call is cold and RSS is not shared with another row). The main thread runs the EL1
+timer probe (2 ms `setInterval`) during every call. First = the first call (for the worker: worker start, loading
+`src/`, session creation, first call); median = the median of the next 5 calls, as the main thread sees them (for the
+worker: from before `postMessage` to the arrival of the output, including copying the output into a transferable
+buffer; the input copy is made before the timer starts); ticks and longest gap are medians over those 5 calls; RSS =
+RSS of the whole process after the last call (main thread and worker share the process). The output bytes (sha256 of
+the first call) were equal in all four row pairs.
+
+Machine: `Intel(R) Xeon(R) Processor @ 2.10GHz`, 4 vCPU cloud container, Node v22.23.4, onnxruntime-node 1.31.1. The
+numbers are for this machine and will differ elsewhere. Two runs (`node bench/worker.js --calls 5`), run 1 / run 2:
+
+| Mode | Input | First call ms | Median call ms | Ticks per call (median) | Longest gap ms (median) | RSS MB | Max RSS MB |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| direct | 400×300 | 460 / 512 | 408 / 418 | 7 / 5 | 393 / 399 | 346 / 368 | 346 / 368 |
+| worker | 400×300 | 533 / 528 | 403 / 413 | 190 / 195 | 6 / 6 | 398 / 367 | 398 / 367 |
+| direct | 800×600 | 1809 / 1889 | 1735 / 1706 | 17 / 18 | 1686 / 1667 | 953 / 953 | 1038 / 1039 |
+| worker | 800×600 | 2031 / 2078 | 1766 / 1754 | 824 / 826 | 7 / 7 | 994 / 996 | 1082 / 1084 |
+
+- **Latency per call:** at 400×300 the worker is not measurably slower (−6 and −4 ms against direct, inside the
+  run-to-run spread); at 800×600 it is 31 and 48 ms slower (about 2–3%).
+- **Cold start:** the first call costs more with the worker (it has to start, load `src/` and create its session):
+  +73 and +16 ms at 400×300 and +222 and +189 ms at 800×600 in this table (worker minus direct, run 1 and run 2). This is noisy: a later check run on the same machine
+  gave +106 ms (400×300) and +72 ms (800×600), so read it as "tens of ms up to about 200 ms" (the largest difference in this table is 222 ms). The worker's first call also includes loading `src/` inside the worker, which the direct row does before its timer starts, so the difference is not a pure worker-start cost.
+- **Memory:** RSS after the last call is 41–43 MB higher with the worker at 800×600 (both runs of this table; max RSS
+  44 and 45 MB higher; a later check run gave +42 MB). At 400×300 the differences were +52 and −1 MB in this table and
+  +44 MB in the check run, so up to about 45 MB cannot be ruled out there either.
+- **Main loop:** with the worker the main thread's loop stays free: 190–195 ticks and a longest gap of 6 ms at 400×300,
+  824–826 ticks and 7 ms at 800×600, against 5–7 ticks with a longest gap of about 0.4 s and 17–18 ticks with about
+  1.7 s for the direct calls. This is the same effect EL1 found (see "Event loop (EL1, 2026-11-15)").
+- **What was not measured:** `high` mode, a GPU, several workers, a worker pool, a separate process, and large queues
+  of concurrent calls. A worker would not remove the one-call-at-a-time rule inside one worker. No change to code or
+  defaults is proposed here: whether to move inference to a worker is an owner decision (row 9 of
+  `docs/OWNER_DECISIONS.md`).

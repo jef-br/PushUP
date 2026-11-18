@@ -1,0 +1,171 @@
+# Ringing and halos on hard edges (BK7)
+
+Question: does `fast` mode produce dark or bright halos next to hard edges (garment on white,
+text, thin lines)? The sub20 metrics (PSNR, SSIM, GMSD) do not isolate this. Date: 2026-11-15.
+
+**Answer: yes, `fast` overshoots more than plain Lanczos, by 2 to 18 bytes on a 175-byte contrast
+(about 1 to 10 %), and its edges are sharper.** The worst case is the dark side of a
+small dark feature (a 1 px line at factor 2.5: 31 bytes below the dark level, where Lanczos has none; a 12 px disc: 34 to 37 bytes below it, Lanczos
+20 to 23). The halo is visible only on crops of such edges, not in the aggregate scores.
+Whether it is a defect or just "crisper" is an owner judgement; no code change is proposed.
+
+## Method
+
+`node bench/edges.js` (six model runs, a few seconds each on 4 vCPU; `--factors 1.5,2.5` is the default).
+The step and line windows skip the 40 output rows at the top and bottom of the image, where the feature
+meets the image border (BK8); `--include-border` keeps them (the first version of this table, BK7).
+
+- Three synthetic 400×300 images with **mid-level** values (dark 40, light 215), so overshoot is
+  not hidden by the 0/255 clamp of the output bytes: a vertical step edge (dark left of x = 200),
+  a 1 px dark line (column 200), a 12 px-diameter dark disc (centre 200, 150).
+- Each is upscaled by the shipped `fast` pipeline (CPU, 20 % Lanczos mix included) and, for the
+  comparison, resized by plain `sharp` lanczos3 to the same output size.
+- **Overshoot:** over all pixels within 6 output px of the feature (step and line: without the border rows, see above) (of the edge, of the line, of
+  the disc's circumference) and all three channels: `below 40` = how far the lowest byte is under the
+  dark level, `above 215` = how far the highest is over the light level; `overshoot` is the larger of the two.
+  The Lanczos values are separate rows, not subtracted.
+- **Width:** along the row through the feature's centre (channel 0): step = 10 to 90 % rise distance;
+  disc = 90 to 10 % fall distance at its left edge; line = full width at half maximum of the dark dip.
+  Linear interpolation; output pixels.
+
+## Results
+
+| feature | factor | method | below 40 | above 215 | overshoot | width (output px) |
+|---|---|---|---|---|---|---|
+| step | 1.5 | fast | 12 | 7 | 12 | 0.99 |
+| step | 1.5 | lanczos | 10 | 10 | 10 | 1.44 |
+| step | 2.5 | fast | 17 | 7 | 17 | 0.97 |
+| step | 2.5 | lanczos | 13 | 13 | 13 | 1.81 |
+| line | 1.5 | fast | 0 | 13 | 13 | 1.64 |
+| line | 1.5 | lanczos | 0 | 11 | 11 | 1.74 |
+| line | 2.5 | fast | 31 | 9 | 31 | 2.04 |
+| line | 2.5 | lanczos | 0 | 13 | 13 | 2.76 |
+| disc | 1.5 | fast | 34 | 31 | 34 | 0.88 |
+| disc | 1.5 | lanczos | 20 | 18 | 20 | 1.44 |
+| disc | 2.5 | fast | 37 | 34 | 37 | 0.87 |
+| disc | 2.5 | lanczos | 23 | 20 | 23 | 1.81 |
+
+(Two runs gave identical numbers: the pipeline is deterministic.)
+
+## Reading
+
+- **Overshoot:** `fast` is worse than Lanczos in every row: step +2 / +4 (factor 1.5 / 2.5),
+  line +2 / +18, disc +14 / +14. The dark side is the larger one for `fast` on the step (12 vs 7, 17 vs 7) and the line at 2.5 (31 vs 9); on the disc the two sides are close (34/31, 37/34). On the 1 px line at 1.5 the dip stays above the dark level
+  for both methods, so only the light side overshoots there.
+- **Sharpness:** `fast` edges are sharper: step 0.97 to 0.99 px against 1.44 to 1.81 for Lanczos,
+  disc 0.87 against 1.44 to 1.81. In these synthetic cases `fast` is both sharper and has a larger halo
+  (same order as Lanczos's own ringing); the data do not show that one causes the other.
+- **Image borders:** with the border rows included (`--include-border`, the first version of this doc) the
+  `fast` step overshoot was 14 / 21 instead of 12 / 17 and the line's light side at 2.5 was 14 instead of 9, so
+  the step excess over Lanczos was +4 / +8. Lanczos and disc rows do not change. The ranking (`fast` worse in
+  every row) holds either way, and so does the 2 to 18 byte range.
+- **Mixed comparison:** the `fast` rows are the shipped pipeline (model + 20 % Lanczos mix), the
+  Lanczos rows are a plain resize of the original, not of the 4x output.
+- **Limits:** synthetic edges at one contrast (175 bytes), one 400×300 size, one disc size, `fast` in this part (`high` is in the section below).
+  Natural product photos have softer edges; `high` mode is in the section below. Check with crops
+  before drawing any conclusion for real photos.
+
+
+## `high` mode (BK9)
+
+`node bench/edges.js --quality high` (CPU, tiled Remacri, 6 runs in about 1.5 minutes on 4 vCPU, same border rule as
+above). The shipped `high` pipeline has no Lanczos mix. Date: 2026-11-15.
+
+Tile seams: `high` cuts the input into 192 px tiles with a 16 px pad, so the seams are at input x = 192 and 384
+and y = 192. The step edge and the line (x = 200) and the disc (x 194 to 206) all lie in the second tile column, 8 px
+past the seam and inside the 16 px pad of that tile; none sits on a seam, and the disc and the horizontal profile
+rows (y = 150, disc y 144 to 156) are above the y = 192 seam. So these numbers measure the model's edge
+behaviour, not a seam artefact at x = 192. The step and the line run the full image height, so their overshoot
+windows also cross the horizontal seam at input y = 192; a check by the BK9 adversary that skipped the rows within 24 input px of y = 192 gave the same 12 rows, so the horizontal seam does not drive these numbers.
+
+| feature | factor | method | below 40 | above 215 | overshoot | width (output px) |
+|---|---|---|---|---|---|---|
+| step | 1.5 | high | 4 | 12 | 12 | 0.84 |
+| step | 1.5 | lanczos | 10 | 10 | 10 | 1.44 |
+| step | 2.5 | high | 10 | 14 | 14 | 0.83 |
+| step | 2.5 | lanczos | 13 | 13 | 13 | 1.81 |
+| line | 1.5 | high | 20 | 24 | 24 | 1.40 |
+| line | 1.5 | lanczos | 0 | 11 | 11 | 1.74 |
+| line | 2.5 | high | 40 | 25 | 40 | 2.12 |
+| line | 2.5 | lanczos | 0 | 13 | 13 | 2.76 |
+| disc | 1.5 | high | 26 | 31 | 31 | 0.87 |
+| disc | 1.5 | lanczos | 20 | 18 | 20 | 1.44 |
+| disc | 2.5 | high | 40 | 40 | 40 | 0.84 |
+| disc | 2.5 | lanczos | 23 | 20 | 23 | 1.81 |
+
+**Reading: yes, `high` overshoots more than plain Lanczos in every row** (step +2 / +1, line +13 / +27, disc +11 / +17 bytes at
+factor 1.5 / 2.5), **and it is not better than `fast`**: against the `fast` table above it is about the same on the step
+(12 / 14 vs 12 / 17) and the disc (31 / 40 vs 34 / 37, within 3 bytes), and clearly worse on the 1 px line (24 / 40 vs 13 / 31, +11 / +9).
+Its step and disc edges are the sharpest of the three (0.83 to 0.87 px against 0.97 to 0.99 for `fast` on the step and 1.44 to 1.81 for Lanczos).
+An overshoot of 40 in the `high` rows (line 2.5 below, disc 2.5 both sides) means a byte reached 0 or 255, so it is a lower bound there; the real overshoot is at least that, which only strengthens "not better than `fast`". Its line is narrowest at factor 1.5 (1.40 vs 1.64 for `fast`) but not at 2.5 (2.12 vs 2.04).
+Same limits as above: synthetic edges, one contrast, one size; `high` was run on CPU (a GPU gives the same model, but the result was
+not compared).
+
+## Real photos (CV2)
+
+Command (needs `bash bench/fetch_testset.sh`; about 16 s on the 4 vCPU container, 2026-11-17):
+
+```
+node bench/edges-real.js          # --dir bench/out/sub20 --limit 20
+```
+
+Per image of `bench/out/sub20` (20 images, 13 ABO + 7 Lamoda): reference = source resized to 800 px on its longest
+side (lanczos3), input = reference downscaled to 400 px (cubic), JPEG q85, decoded (as `bench/pad.js`); `fast` at
+factor 2.0 (shipped settings, CPU) and plain lanczos3 of the input to the same size. Edge pixels = the 200 pixels
+with the largest Sobel gradient of the reference luma whose 9×9 neighbourhood spans at least 80 levels, at least
+4 px from the border. Overshoot at such a pixel = how far the output luma lies beyond the min/max of the reference's
+9×9 neighbourhood (0 when inside it). Images used: 20 of 20, 200 edge pixels each (4000 per method).
+
+| method | mean overshoot (levels) | share with overshoot > 4 | edge pixels with any overshoot | largest overshoot (levels) |
+| --- | --- | --- | --- | --- |
+| `fast` | 0.001 | 0.0 % | 3 of 4000 | 1.98 |
+| Lanczos | 0.000 | 0.0 % | 1 of 4000 | 1.84 |
+
+Reading: on the strongest edges of real product photos neither method leaves the range of the reference's
+neighbourhood by more than 2 levels, so the 12 to 37 byte overshoots of the synthetic table above do not show up
+here. Do not read this as "no ringing on photos": the measure is different. The synthetic features are ideal
+(a flat 40 / 215 step, a 1 px line) and overshoot is measured against the flat feature levels; here the reference is
+itself a lanczos3 downscale, so its edges are soft and a 9×9 window around a strong edge already spans the whole
+dark-to-light range, which leaves little room to overshoot. Edges that are one pixel wide in the reference
+(hairlines, text) are the case the synthetic `line` row stresses, and the 200 largest gradients are mostly wider edges.
+### Beside the edge, with a positive control (CV3)
+
+The measure above samples on the edge, where ringing lobes are not (they sit 1 to 2 px beside it). CV3 also scores the
+pixels 2 px to each side of every edge pixel along the Sobel gradient (direction rounded to the nearest of 8 steps),
+against the 13×13 window of the reference centred on the **edge pixel** (so the window still spans dark to light and
+the lobe pixel is judged against it). A sample whose window would leave the image is skipped and counted.
+
+Positive control (the script runs it first): an 800×600 ideal step (dark 40 | light 215, edge between x = 399 and 400),
+degraded as the photos are (cubic halving, JPEG q85, decode), then `fast` at factor 2.0 and Lanczos; the 200 edge pixels are
+picked from rows 100 to 499 only (an ideal step has the same gradient in every row, so the border rows would take all
+the ties). Decision rule, printed by the script: if `fast` reads below 4 levels beside the edge on the control, the
+measure cannot see the 12 to 17 byte overshoot that `bench/edges.js` shows on a clean step, and the real-photo result is
+"inconclusive". (That figure is a largest value on an un-degraded step; the rule compares a mean on a JPEG-degraded step,
+so "inconclusive" was an expected outcome.)
+
+| data | samples | method | mean overshoot (levels) | share with overshoot > 4 | samples with any overshoot | largest overshoot (levels) | samples skipped |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| control | on the edge | `fast` | 0.000 | 0.0 % | 0 of 200 | 0.00 | - |
+| control | beside the edge | `fast` | 2.049 | 25.0 % | 200 of 400 | 6.59 | 0 |
+| control | on the edge | Lanczos | 0.000 | 0.0 % | 0 of 200 | 0.00 | - |
+| control | beside the edge | Lanczos | 2.500 | 0.0 % | 300 of 400 | 4.00 | 0 |
+| real photos | on the edge | `fast` | 0.001 | 0.0 % | 3 of 4000 | 1.98 | - |
+| real photos | beside the edge | `fast` | 0.024 | 0.3 % | 68 of 7946 | 8.97 | 54 |
+| real photos | on the edge | Lanczos | 0.000 | 0.0 % | 1 of 4000 | 1.84 | - |
+| real photos | beside the edge | Lanczos | 0.057 | 0.5 % | 175 of 7946 | 11.74 | 54 |
+
+Reading (2026-11-17, `node bench/edges-real.js`, about 20 s):
+
+- **The control reads 2.05 levels for `fast`, below 4, so the real-photo result is inconclusive** by the rule above. The
+  on-edge samples of an ideal step read 0 by construction (the pixel on the edge is inside the window's range); only the
+  beside-edge set can show overshoot, and it shows about 2 levels for both methods (Lanczos 2.50, `fast` 2.05).
+- On the control `fast` has the larger tail (25 % of samples above 4 levels, largest 6.59) and Lanczos the larger
+  mean (2.50, largest 4.00). The measure is therefore not blind beside the edge, but it does not separate the methods the
+  way the clean synthetic step does (there `fast` overshoots more than Lanczos).
+- On real photos, beside the edge, `fast` is at 0.024 levels on average (0.3 % of samples above 4, largest 8.97) and
+  Lanczos at 0.057 (0.5 %, largest 11.74). Both are small; `fast` is not worse than Lanczos here. This is reported for
+  completeness only: the control did not pass, so it is not evidence that there are no halos on real photos.
+- 54 of 8000 beside-edge samples (27 edge pixels within 6 px of the border) were skipped.
+- Factor 2.0, 400 px inputs, 20 images of `bench/out/sub20`. A measure that separates `fast` from Lanczos on the degraded
+  step would need a different design (for example the signed lobe amplitude against a matched, un-degraded reference);
+  thin features (hairlines, text) are still not measured.

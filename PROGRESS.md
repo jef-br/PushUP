@@ -13,6 +13,7 @@ new block on Monday).
 - **Devices:** every path runs on CPU; a GPU is used when present (DirectML / CUDA / CoreML,
   fallback to CPU on any failure). `auto` = Remacri on GPU, `fast` on CPU; overrides
   `PUSHUP_QUALITY`, `PUSHUP_DEVICE`. — D9 (supersedes D7), README "Quality modes and GPU"
+- **Quiet library:** ORT log level set to `error` unless the application chose one; a CI-only start-up warning had broken the quiet test. — D16
 - **No post-sharpening:** lowered every score, added no texture. — D8
 - **Byte conversion:** inline `floor(v*255+0.5)`, byte-identical and ~5x faster; not
   `Uint8ClampedArray` (rounds ties to even). — `docs/PERF.md`
@@ -30,6 +31,14 @@ new block on Monday).
   `main` is the only long-lived branch.
 - **Network / permissions:** PushUP environment allows Hugging Face and `claid.ai`;
   `Bash(curl:*)` and `mcp__github__merge_pull_request` are allowed in `.claude/settings.json`.
+- **CI:** Node 24 (current LTS) added; the matrix is now Node 20, 22 and 24. `engines` stays
+  `>=20.9` (dropping Node 20, EOL since April 2026, is an owner decision). — I5,
+  `.github/workflows/ci.yml`
+- **Threads:** keep `intraOpNumThreads = os.availableParallelism()`: fewer threads are slower
+  per call (near-linear scaling on 4 vCPU) and output bytes don't depend on it. — D15, P3, `docs/PERF.md`
+- **Throughput:** N one-thread processes give ~9–15% more model calls/s than one N-thread process
+  but ~3.5× the latency per image; default unchanged, a thread setting would be an owner
+  decision. — D15, P4, `docs/PERF.md`
 
 ## 2026-W45 (Nov 2–8)
 
@@ -46,7 +55,7 @@ new block on Monday).
 - **Self-running project:** overnight runs follow `docs/OVERNIGHT_RUN.md`, backlog in
   `TASKS.md`, decisions in `docs/DECISIONS.md`, helpers in `.claude/agents/`.
 - **CI:** `npm ci` + `npm test` on push to `main` and every PR, Node 20 and 22 (Node 18
-  untested, so not in the matrix). — I1, `.github/workflows/ci.yml`
+  untested, so not in the matrix; Node 24 added in W46, I5). — I1, `.github/workflows/ci.yml`
 - **Publishing:** `files` whitelist, `prepublishOnly: npm test`, Node >=20.9. — D13
 - **Latency:** inference is ~90% of the time; speed has to come from the model runtime. —
   `docs/PERF.md`

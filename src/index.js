@@ -3,6 +3,11 @@
 const path = require('node:path');
 const os = require('node:os');
 const ort = require('onnxruntime-node');
+
+// onnxruntime creates its environment once, at first use, with `env.logLevel` (default 'warning'), and warnings from
+// that start-up (for example device discovery on some VMs) go to stderr. A library should be quiet, so lower the level
+// to 'error' while it still has its default; any level the application chose is left alone. Errors stay visible.
+if (ort.env.logLevel === 'warning') ort.env.logLevel = 'error';
 const sharp = require('sharp');
 
 const MIN_INPUT = 400;
@@ -207,6 +212,14 @@ async function infer(session, rgb, w, h, tile, pad) {
   return { data: out, width: w * scale, height: h * scale };
 }
 
+// out[i] = round((1 - mix) * out[i] + mix * plain[i]), in place. For bytes and 0 <= mix <= 1
+// the value is >= 0, so (v + 0.5) | 0 gives the same bytes as Math.round(v), ~5x faster
+// (checked over all byte pairs for the shipped share and for 0.05..0.95 in test/mix.test.js).
+function mixLanczos(out, plain, mix) {
+  const a = 1 - mix;
+  for (let i = 0; i < out.length; i++) out[i] = (a * out[i] + mix * plain[i] + 0.5) | 0;
+}
+
 function resizeRaw(data, width, height, outW, outH) {
   return sharp(data, { raw: { width, height, channels: 3 } })
     .resize(outW, outH, { kernel: 'lanczos3', fit: 'fill' })
@@ -303,8 +316,7 @@ async function run(
   // texture (fabric weave, print) that the model smooths away.
   if (lanczosMix > 0) {
     const plain = await resizeRaw(packRows(arr, stride, width, height, rowBytes), width, height, outW, outH);
-    const a = 1 - lanczosMix;
-    for (let i = 0; i < out.length; i++) out[i] = Math.round(a * out[i] + lanczosMix * plain[i]);
+    mixLanczos(out, plain, lanczosMix);
   }
 
   return [out, outW * 3];
@@ -314,8 +326,11 @@ module.exports = { upscale };
 module.exports.default = upscale;
 module.exports._run = run;
 module.exports._copyFromTensor = copyFromTensor;
+module.exports._mixLanczos = mixLanczos;
+module.exports._toTensor = toTensor;
 module.exports._gpuProviders = gpuProviders;
 module.exports._MODES = MODES;
+module.exports._sessionOptions = sessionOptions; // bench scripts reuse the shipped options
 // Tests only: forget cached sessions and GPU state.
 module.exports._reset = () => {
   cpuSessions.clear();
