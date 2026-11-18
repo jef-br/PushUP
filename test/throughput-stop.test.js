@@ -52,7 +52,11 @@ for (const [sig, code] of [['SIGTERM', 143], ['SIGINT', 130]]) {
     assert.ok(kids.length >= 1, 'no child process found before the signal');
     assert.ok(kids.every(alive), 'a child was already dead before the signal');
     p.kill(sig);
-    const { c, s } = await Promise.race([exited, sleep(20000).then(() => { p.kill('SIGKILL'); throw new Error('the parent did not exit within 20 s of ' + sig); })]);
+    let timer;
+    const limit = new Promise((_, reject) => {
+      timer = setTimeout(() => { p.kill('SIGKILL'); reject(new Error('the parent did not exit within 20 s of ' + sig)); }, 20000);
+    });
+    const { c, s } = await Promise.race([exited, limit]).finally(() => clearTimeout(timer));
     assert.strictEqual(c, code, `code=${c} signal=${s} stderr=${err}`);
     for (let i = 0; i < 50 && kids.some(alive); i++) await sleep(100);
     assert.deepStrictEqual(kids.filter(alive), [], 'children still alive 5 s after the parent exited');
