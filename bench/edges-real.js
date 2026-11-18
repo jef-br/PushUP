@@ -16,6 +16,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const sharp = require('sharp');
 const { checkFlags } = require('./flags');
+const { raw, degrade } = require('./degrade');
 
 const HALF = 4, N_EDGE = 200, MIN_CONTRAST = 80, HIT = 4; // 9x9 window, edge pixels per image, levels, "overshoot > 4"
 
@@ -84,7 +85,6 @@ function pickEdges(ref, w, h, n) {
 }
 
 const luma = (rgb, n) => { const l = new Float32Array(n); for (let i = 0, j = 0; i < n; i++, j += 3) l[i] = 0.299 * rgb[j] + 0.587 * rgb[j + 1] + 0.114 * rgb[j + 2]; return l; };
-const raw = async (img) => { const { data, info } = await img.removeAlpha().raw().toBuffer({ resolveWithObject: true }); return { data, w: info.width, h: info.height }; };
 
 async function main() {
   const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
@@ -152,13 +152,7 @@ async function main() {
   const used = [];
   const short = [];
   for (const f of files) {
-    const meta = await sharp(path.join(dir, f)).metadata();
-    const L = Math.max(meta.width, meta.height);
-    const gw = Math.round((meta.width * 800) / L), gh = Math.round((meta.height * 800) / L);
-    const gt = await raw(sharp(path.join(dir, f)).resize(gw, gh, { kernel: 'lanczos3', fit: 'fill' }));
-    const iw = Math.round(gw / 2), ih = Math.round(gh / 2);
-    const jpg = await sharp(gt.data, { raw: { width: gw, height: gh, channels: 3 } }).resize(iw, ih, { kernel: 'cubic', fit: 'fill' }).jpeg({ quality: 85 }).toBuffer();
-    const inp = await raw(sharp(jpg));
+    const { gt, inp } = await degrade(path.join(dir, f));
     if (Math.max(inp.w, inp.h) < 400) { short.push(f); continue; }
     const [fa, sa] = await _run(inp.data, inp.w * 3, 2.0);
     const ow = sa / 3, oh = fa.length / sa;

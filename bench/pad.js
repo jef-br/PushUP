@@ -16,6 +16,7 @@ process.env.PUSHUP_QUALITY = 'fast';
 process.env.PUSHUP_DEVICE = 'cpu';
 const { _run } = require('../src/index.js');
 const { checkFlags } = require('./flags');
+const { degrade } = require('./degrade');
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const flagError = checkFlags(process.argv.slice(2), { values: ['--dir', '--limit'] });
@@ -27,7 +28,6 @@ if (!fs.existsSync(dir)) { console.error(`${dir} does not exist; run bash bench/
 if (!fs.statSync(dir).isDirectory()) { console.error(`${dir} is not a directory`); process.exit(1); }
 
 const FACTOR = 2.0, PAD = 16, CUT = 2 * PAD; // pad in input px, border width in output px
-const raw = async (img) => { const { data, info } = await img.removeAlpha().raw().toBuffer({ resolveWithObject: true }); return { data, w: info.width, h: info.height }; };
 
 function crop(buf, w, x0, y0, cw, ch) {
   const out = Buffer.alloc(cw * ch * 3);
@@ -83,11 +83,7 @@ async function variants(inp) {
     const meta = await sharp(path.join(dir, f)).metadata();
     const L = Math.max(meta.width, meta.height);
     if (L < 800) small++;
-    const gw = Math.round((meta.width * 800) / L), gh = Math.round((meta.height * 800) / L);
-    const gt = await raw(sharp(path.join(dir, f)).resize(gw, gh, { kernel: 'lanczos3', fit: 'fill' }));
-    const iw = Math.round(gw / 2), ih = Math.round(gh / 2);
-    const jpg = await sharp(gt.data, { raw: { width: gw, height: gh, channels: 3 } }).resize(iw, ih, { kernel: 'cubic', fit: 'fill' }).jpeg({ quality: 85 }).toBuffer();
-    const inp = await raw(sharp(jpg));
+    const { gt, inp } = await degrade(path.join(dir, f));
     if (Math.max(inp.w, inp.h) < 400) { skipped.push(`${f} (input ${inp.w}x${inp.h})`); continue; }
     const v = await variants(inp);
     if (!first) first = inp;

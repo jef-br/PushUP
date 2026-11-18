@@ -55,6 +55,7 @@ test('README names every runnable bench/*.js script by its full path', () => {
     ['metrics.js', 'library: PSNR/SSIM/GMSD functions used by bench.js, no command line'],
     ['aspect.js', 'library: aspect-group helper used by bench.js, no command line'],
     ['method.js', 'library: --methods name parser used by bench.js, no command line'],
+    ['degrade.js', 'library: degraded-input construction (degrade) shared by pad.js and edges-real.js, no command line'],
     ['flags.js', 'library: unknown-flag check (checkFlags) used by the bench scripts, no command line'],
   ]);
   const files = fs.readdirSync(path.join(root, 'bench')).filter((f) => f.endsWith('.js'));
