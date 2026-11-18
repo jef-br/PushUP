@@ -1,5 +1,5 @@
 'use strict';
-// Usage: node bench/bench.js <dir-of-HR-images> [--methods lanczos,sr-full,...] [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--by-aspect] [--json]
+// Usage: node bench/bench.js <dir-of-HR-images> [--methods lanczos,sr-full,...] [--sizes 400,600,800 (integers 100-4000)] [--limit N (integer >= 1)] [--save outDir] [--by-source] [--by-aspect] [--json]
 // --by-source adds rows grouped by file-name prefix (abo_, lamoda_) after the overall table.
 // --by-aspect adds rows grouped by reference shape (portrait: h > w, landscape: w > h, square) after the overall and per-source rows.
 // --json prints one JSON object {images, rows:[{setting, psnr, ssim, gmsd, ms}]} (unrounded) instead of the table.
@@ -9,12 +9,34 @@ const sharp = require('sharp');
 const { _run } = require('../src');
 const { psnr, ssim, gmsd } = require('./metrics');
 const { aspectGroup } = require('./aspect');
+const { parseMethod, validateMethod } = require('./method');
+const { checkFlags } = require('./flags');
 
 const args = process.argv.slice(2);
 const dir = args[0];
 const opt = (k, d) => { const i = args.indexOf(k); return i < 0 ? d : args[i + 1]; };
-const sizes = opt('--sizes', '400,600,800').split(',').map(Number);
-const limit = Number(opt('--limit', 1e9));
+// A rejected argument prints one line and exits before any image is read (test/bench-args.test.js).
+// Exit 2 = usage error (like bench/gate.js), exit 1 = a bad value or directory.
+const fail = (msg, code = 1) => { console.error(msg); process.exit(code); };
+if (dir === undefined || dir.startsWith('--')) fail('usage: node bench/bench.js <dir-of-HR-images> [--methods ...] [--sizes 400,600,800] [--limit N] [--save outDir] [--by-source] [--by-aspect] [--json]', 2);
+const flagError = checkFlags(args.slice(1), {
+  values: ['--methods', '--sizes', '--limit', '--save'],
+  switches: ['--by-source', '--by-aspect', '--json'],
+});
+if (flagError) fail(flagError);
+const sizesArg = String(opt('--sizes', '400,600,800'));
+const limitArg = String(opt('--limit', '1000000000'));
+if (!/^\d+$/.test(limitArg) || Number(limitArg) < 1) fail('--limit must be a positive integer');
+if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 100 || Number(v) > 4000)) fail('--sizes must be a comma list of integers from 100 to 4000');
+const methodsRaw = opt('--methods', 'lanczos,sr-full,sr-500,sr-250');
+if (methodsRaw === undefined || methodsRaw.split(',').some((m) => m === '')) fail('--methods must be a comma list of method names');
+for (const m of methodsRaw.split(',')) { const e = validateMethod(m); if (e) fail(e); }
+let stat = null;
+try { stat = fs.statSync(dir); } catch { /* reported below */ }
+if (!stat) fail(`${dir} does not exist; run bash bench/fetch_testset.sh`);
+if (!stat.isDirectory()) fail(`${dir} is not a directory`);
+const sizes = sizesArg.split(',').map(Number);
+const limit = Number(limitArg);
 const saveDir = opt('--save', null);
 const bySource = args.includes('--by-source');
 const byAspect = args.includes('--by-aspect');
@@ -35,25 +57,20 @@ function crop(buf, w, cw, ch) {
 }
 
 async function method(name, inp, w, h) {
-  if (name === 'lanczos') {
+  const m = parseMethod(name);
+  if (m.kind === 'lanczos') {
     const L = Math.max(w, h), ow = Math.round((w * 1000) / L), oh = Math.round((h * 1000) / L);
     return sharp(inp, { raw: { width: w, height: h, channels: 3 } }).resize(ow, oh, { kernel: 'lanczos3', fit: 'fill' }).raw().toBuffer();
   }
-  // sr-full | sr-<maxInputPx> | sr:<path/to/model.onnx>, each with optional @<lanczosMix>
-  const opts = {};
-  // optional #<tile> suffix, then @<lanczosMix>
-  const at = name.indexOf('@');
-  if (at > 0) { opts.lanczosMix = Number(name.slice(at + 1)); name = name.slice(0, at); }
-  const hash = name.indexOf('#');
-  if (hash > 0) { opts.tile = Number(name.slice(hash + 1)); name = name.slice(0, hash); }
-  if (name.startsWith('sr:')) opts.modelPath = path.resolve(name.slice(3));
-  else if (name !== 'sr-full') opts.modelInputMax = Number(name.split('-')[1]);
+  const opts = m.opts;
   const [out] = await _run(inp, w * 3, 1000 / Math.max(w, h), opts);
   return out;
 }
 
 (async () => {
-  const files = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort().slice(0, limit);
+  const all = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort();
+  if (all.length === 0) fail(`no images in ${dir}`);
+  const files = all.slice(0, limit);
   const agg = {};
   const rank = {}; // 0 overall, 1 per-source, 2 per-aspect: the output order
   for (const f of files) {

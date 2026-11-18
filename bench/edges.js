@@ -10,7 +10,13 @@
 //   The step and line windows skip the 40 output rows at the top and bottom, where the feature meets the
 //   image border (BK8); --include-border keeps them. The disc never reaches the border.
 const sharp = require('sharp');
+const { checkFlags } = require('./flags');
 
+const flagError = checkFlags(process.argv.slice(2), { values: ['--factors', '--quality'], switches: ['--include-border'] });
+if (flagError) {
+  console.error(flagError);
+  process.exit(1);
+}
 const fi = process.argv.indexOf('--factors');
 const factorsRaw = fi > 0 ? process.argv[fi + 1] : '1.5,2.5'; // undefined: --factors without a value
 const factors = typeof factorsRaw === 'string' ? factorsRaw.split(',').map(Number) : [];

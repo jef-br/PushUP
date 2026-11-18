@@ -1,12 +1,13 @@
 'use strict';
 // Task P3: ONNX Runtime intra-op thread count vs inference latency, `fast` model, CPU.
-// Usage: node bench/threads.js [--runs 5] [--sizes 400,800] [--threads 1,2,4]
+// Usage: node bench/threads.js [--runs 5] [--sizes 400,800] [--threads 1,2,4]   (--runs: integer >= 1; --sizes: integers 400-800; --threads: integers >= 1)
 // Default thread counts: {1, 2, N/2, N} with N = os.availableParallelism(), duplicates removed.
 // For each count it creates one CPU session and times session.run on a deterministic synthetic
 // whole-image input (4:3, gradient + noise; latency depends on size, not content): median of
 // --runs runs after 1 warm-up. It also converts each output to bytes with the function
 // src/index.js ships and compares them with the bytes at N threads.
 const os = require('node:os');
+const { checkFlags } = require('./flags');
 const ort = require('onnxruntime-node');
 const { _toTensor, _copyFromTensor, _MODES, _sessionOptions } = require('../src/index.js');
 
@@ -15,10 +16,20 @@ const arg = (n, d) => {
   return i > 0 ? process.argv[i + 1] : d;
 };
 const N = os.availableParallelism();
-const runs = Number(arg('runs', 5));
-const sizes = arg('sizes', '400,800').split(',').map(Number);
-const threads = arg('threads', null)
-  ? arg('threads').split(',').map(Number)
+// A rejected flag prints one line naming it and exits 1, before any model is loaded (test/threads-profile-args.test.js).
+const fail = (msg) => { console.error(msg); process.exit(1); };
+const flagError = checkFlags(process.argv.slice(2), { values: ['--runs', '--sizes', '--threads'] });
+if (flagError) fail(flagError);
+const runsArg = String(arg('runs', '5'));
+const sizesArg = String(arg('sizes', '400,800'));
+const threadsArg = arg('threads', null) === null ? null : String(arg('threads'));
+if (!/^\d+$/.test(runsArg) || Number(runsArg) < 1) fail('--runs must be an integer >= 1');
+if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 400 || Number(v) > 800)) fail('--sizes must be a comma list of integers from 400 to 800');
+if (threadsArg !== null && threadsArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 1)) fail('--threads must be a comma list of integers >= 1');
+const runs = Number(runsArg);
+const sizes = sizesArg.split(',').map(Number);
+const threads = threadsArg !== null
+  ? threadsArg.split(',').map(Number)
   : [...new Set([1, 2, Math.max(1, Math.floor(N / 2)), N])].sort((a, b) => a - b);
 if (!threads.includes(N)) threads.push(N); // N is the reference for the byte comparison
 

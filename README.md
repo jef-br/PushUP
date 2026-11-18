@@ -87,7 +87,7 @@ If the GPU can't load the model, or fails while running, PushUP falls back to th
 GPU. GPU speeds were not measured (no GPU in the test environment).
 
 On Linux without CUDA, the first call logs one red onnxruntime error ("Failed to load
-library ... libonnxruntime_providers_cuda.so"). It is harmless: PushUP catches it and uses
+library ... libonnxruntime_providers_shared.so"). It is harmless: PushUP catches it and uses
 the CPU (the attempt costs ~nothing and happens once per process). Set
 `PUSHUP_DEVICE=cpu` on CPU-only servers to skip the attempt and the message.
 
@@ -289,7 +289,7 @@ case, so the model always gets the full-size input.
   dark line at factor 2.5, 31 bytes below the dark level where Lanczos has none), but its edges
   are sharper (a step edge 0.97 to 0.99 px wide against 1.44 to 1.81). `high` is not better than
   `fast` here: about the same on a step edge and a small disc, worse on the 1 px line, with the sharpest
-  edges ([docs/EDGES.md](docs/EDGES.md)). Synthetic images only; real photos were not measured.
+  edges ([docs/EDGES.md](docs/EDGES.md)). A check on 20 real photos found almost no overshoot on or beside the strongest edges (at most 9 levels for `fast`, 12 for Lanczos, in under 1 % of the samples), but its positive control (a degraded ideal step) read only 2 levels, so the check is inconclusive and does not show that halos are absent ([docs/EDGES.md](docs/EDGES.md#real-photos-cv2)); thin real features were not measured.
 - **Flat saturated colours** move through the model: the largest single-channel shift of the
   shipped `fast` pipeline on 27 uniform test colours is 29 bytes (the blue channel of magenta,
   255,0,255), 26 on saturated green. The model causes it (plain Lanczos returns every colour
@@ -317,6 +317,7 @@ node bench/memory-creep.js            # does memory keep growing over repeated `
 node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos (--quality high: Remacri)
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
+node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
 node bench/worker.js                  # cost of running `upscale` in a worker_threads worker: latency, cold start, memory, event loop (results: docs/PERF.md "Worker")
 ```
@@ -335,3 +336,11 @@ node bench/worker.js                  # cost of running `upscale` in a worker_th
 - The edge script's results are in [docs/EDGES.md](docs/EDGES.md), the colour script's in [docs/COLOR.md](docs/COLOR.md), the padding experiment's in [docs/PAD.md](docs/PAD.md).
 - The latency scripts, their options and results are in [docs/PERF.md](docs/PERF.md).
   Quality benchmarking is described under "Benchmark" above.
+- Every `bench/` script that takes flags (`bench/colors.js` takes none, `bench/gate.js` and `bench/saas/` take file
+  names) checks them before it loads a model: a malformed or out-of-range number or list, an unknown or misspelled
+  flag, or the `--flag=value` form ends in one line on stderr that names the problem, with exit 1 (the usage error of
+  `bench/bench.js` and of `bench/gate.js` exits 2). The names given to `bench/bench.js --methods` are checked too
+  (`lanczos`, `sr-full`, `sr-<max input px>`, `sr:<model path>`, each with optional `#<tile>` and `@<mix 0-1>`): a typo such as
+  `sr-ful` ends in one line, exit 1, instead of a row of meaningless numbers. The checks are kept true by `test/flags.test.js` and the
+  `test/*-args.test.js` files (`bench-args`, `memory-args`, `throughput-breakdown-args`, `arena-cold-args`,
+  `threads-profile-args`, `eventloop-args`, `worker-args`, `memory-creep-args`, `edges-args`, `pad-args`).

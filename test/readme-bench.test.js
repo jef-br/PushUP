@@ -54,6 +54,9 @@ test('README names every runnable bench/*.js script by its full path', () => {
   const exempt = new Map([
     ['metrics.js', 'library: PSNR/SSIM/GMSD functions used by bench.js, no command line'],
     ['aspect.js', 'library: aspect-group helper used by bench.js, no command line'],
+    ['method.js', 'library: --methods name parser used by bench.js, no command line'],
+    ['degrade.js', 'library: degraded-input construction (degrade) shared by pad.js and edges-real.js, no command line'],
+    ['flags.js', 'library: unknown-flag check (checkFlags) used by the bench scripts, no command line'],
   ]);
   const files = fs.readdirSync(path.join(root, 'bench')).filter((f) => f.endsWith('.js'));
   const runnable = files.filter((f) => {
@@ -72,3 +75,16 @@ test('README names every runnable bench/*.js script by its full path', () => {
   }
 });
 
+
+// DOC22: the README "Development" paragraph on flag checks names test files; they must exist.
+test('README "Development" names the flag-check tests, and they exist', () => {
+  const dev = readme.split(/^## /m).find((s) => s.startsWith('Development'));
+  assert.ok(dev, 'README has no "## Development" section');
+  assert.ok(dev.includes('test/flags.test.js'), 'README "Development" does not name test/flags.test.js');
+  const named = [...new Set([...dev.matchAll(/`test\/([\w.-]+\.test\.js)`/g)].map((m) => m[1]))];
+  const argsNames = [...dev.matchAll(/`([a-z-]+-args)`/g)].map((m) => `${m[1]}.test.js`);
+  assert.ok(argsNames.length >= 10, `expected the ten *-args test names, found ${argsNames.join(', ')}`);
+  for (const f of [...named, ...argsNames]) {
+    assert.ok(fs.existsSync(path.join(root, 'test', f)), `README "Development" names test/${f}, which does not exist`);
+  }
+});

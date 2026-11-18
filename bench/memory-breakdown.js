@@ -1,6 +1,6 @@
 'use strict';
 // Task M4: where does `high` mode's extra memory at 800 px come from? No src/ change.
-// Usage: node bench/memory-breakdown.js [--sizes 400,800] [--arena]
+// Usage: node bench/memory-breakdown.js [--sizes 400,800 (integers 400-800)] [--arena]
 // --arena adds an ORT-only comparison: the same tile loop run directly on the Remacri model with the
 // shipped session options (_sessionOptions) with and without the CPU memory arena (enableCpuMemArena /
 // enableMemPattern false). It is bench-only: src/ is not changed and no default is proposed here.
@@ -11,6 +11,7 @@
 // holds, computed from the image size (MODEL_SCALE 4 and the 16 px tile pad mirror src/index.js, where DEFAULT_TILE_PAD is not exported, so keep them in sync by hand; the tile size comes from _MODES.high.tile),
 // and the tile count. The arrays are arithmetic, not measured: infer() and getSession() are not exported.
 const { spawnSync } = require('node:child_process');
+const { checkFlags } = require('./flags');
 
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const MB = (b) => b / 1048576;
@@ -93,7 +94,15 @@ if (process.argv[2] === '--tiles') {
     console.log(JSON.stringify({ size, w, h, afterRequire, afterSession, peak, afterCall, maxRss, geo: geometry(w, h, _MODES.high.tile) }));
   })();
 } else {
-  const sizes = arg('sizes', '400,800').split(',').filter(Boolean).map(Number);
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--sizes'], switches: ['--arena'] });
+  if (flagError) { console.error(flagError); process.exit(1); }
+  const sizesArg = String(arg('sizes', '400,800'));
+  if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 400 || Number(v) > 800)) {
+    // before any child starts (test/throughput-breakdown-args.test.js)
+    console.error('--sizes must be a comma list of integers from 400 to 800');
+    process.exit(1);
+  }
+  const sizes = sizesArg.split(',').map(Number);
   console.log('input   rss_require  rss_session  peak_sampled  max_rss  rss_after_call  (MB)');
   const rows = [];
   for (const size of sizes) {

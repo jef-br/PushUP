@@ -8,6 +8,7 @@
 // The probe runs on the main thread, so it shows how long the main thread cannot serve timers, not CPU use.
 process.env.PUSHUP_DEVICE = 'cpu';
 
+const { checkFlags } = require('./flags');
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 // A rejected flag prints one line naming it and exits 1 (tested by test/eventloop-args.test.js).
 const fail = (msg) => { console.error(msg); process.exit(1); };
@@ -15,6 +16,8 @@ const fail = (msg) => { console.error(msg); process.exit(1); };
 const TICK_MS = 2;
 const BLOCKED_GAP_MS = 10;
 
+const flagError = checkFlags(process.argv.slice(2), { values: ['--sizes', '--calls', '--threads', '--quality'] });
+if (flagError) fail(flagError);
 const sizesArg = String(arg('sizes', '400,800'));
 const callsArg = String(arg('calls', '3'));
 const threadsArg = String(arg('threads', 'default'));

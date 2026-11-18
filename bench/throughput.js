@@ -1,7 +1,7 @@
 'use strict';
 // Task P4: throughput of one process using all N cores vs several processes with fewer threads
 // each, `fast` model, CPU.
-// Usage: node bench/throughput.js [--seconds 30] [--sizes 400,800]
+// Usage: node bench/throughput.js [--seconds 30 (number >= 0.5)] [--sizes 400,800 (integers 100-800)]
 // Configurations (N = os.availableParallelism()): 1 process x N threads, N processes x 1 thread,
 // and N/2 processes x 2 threads when N >= 4. Each process creates one CPU session
 // (_sessionOptions from src/index.js, only intraOpNumThreads changed), does 1 warm-up run, waits
@@ -11,6 +11,7 @@
 const os = require('node:os');
 const path = require('node:path');
 const { fork } = require('node:child_process');
+const { checkFlags } = require('./flags');
 
 const arg = (n, d) => {
   const i = process.argv.indexOf('--' + n);
@@ -111,8 +112,16 @@ async function measure(kids, deaths, seconds) {
 }
 
 async function main() {
-  const seconds = Number(arg('seconds', 30));
-  const sizes = arg('sizes', '400,800').split(',').map(Number);
+  // A rejected flag prints one line naming it and exits 1, before any child starts (test/throughput-breakdown-args.test.js).
+  const fail = (msg) => { console.error(msg); process.exit(1); };
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--seconds', '--sizes'] });
+  if (flagError) fail(flagError);
+  const secondsArg = String(arg('seconds', 30));
+  const sizesArg = String(arg('sizes', '400,800'));
+  if (!/^\d+(\.\d+)?$/.test(secondsArg) || Number(secondsArg) < 0.5) fail('--seconds must be a number >= 0.5');
+  if (sizesArg.split(',').some((v) => !/^\d+$/.test(v) || Number(v) < 100 || Number(v) > 800)) fail('--sizes must be a comma list of integers from 100 to 800');
+  const seconds = Number(secondsArg);
+  const sizes = sizesArg.split(',').map(Number);
   const N = os.availableParallelism();
   const configs = [[1, N], [N, 1]];
   if (N >= 4) configs.splice(1, 0, [Math.floor(N / 2), 2]);

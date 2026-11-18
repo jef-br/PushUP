@@ -10,11 +10,14 @@
 process.env.PUSHUP_QUALITY = 'fast';
 process.env.PUSHUP_DEVICE = 'cpu';
 
+const { checkFlags } = require('./flags');
 const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
 const MB = (b) => b / 1048576;
 const arena = arg('arena', 'on');
 // A rejected flag prints one line naming it and exits 1 (R15: tested by test/memory-creep-args.test.js).
 const fail = (msg) => { console.error(msg); process.exit(1); };
+const flagError = checkFlags(process.argv.slice(2), { values: ['--calls', '--size', '--arena'] });
+if (flagError) fail(flagError);
 if (arena !== 'on' && arena !== 'off') fail('--arena must be on or off');
 
 function synth(longest) {

@@ -12,6 +12,7 @@
 const { Worker, isMainThread, parentPort } = require('node:worker_threads');
 const crypto = require('node:crypto');
 const { spawnSync } = require('node:child_process');
+const { checkFlags } = require('./flags');
 
 const FACTOR = 1.5;
 const TICK_MS = 2;
@@ -98,6 +99,8 @@ if (process.argv[2] === '--child') {
   child(process.argv[3], Number(process.argv[4]), Number(process.argv[5])).catch((e) => { console.error(e); process.exit(2); });
 } else {
   // ---- parent side: validate, then one fresh child process per (size, mode).
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--sizes', '--calls'] });
+  if (flagError) fail(flagError);
   const sizes = String(arg('sizes', '400,800')).split(',').map((s) => (/^\d+$/.test(s) ? Number(s) : NaN));
   const callsArg = String(arg('calls', '5'));
   if (sizes.length === 0 || sizes.some((s) => !(s >= 400 && s <= 800))) fail('--sizes must be a comma list of integers from 400 to 800');
