@@ -32,7 +32,8 @@ async function writeImage(file, w, h) {
 function run(args) {
   const t0 = Date.now();
   const r = spawnSync(process.execPath, [SCRIPT, ...args], {
-    encoding: 'utf8', timeout: 60000, env: { ...process.env, PUSHUP_DEVICE: 'cpu' },
+    encoding: 'utf8', timeout: 300000, // ~10 s alone; CI runs test files in parallel on 4 vCPU and the 60 s limit was hit (F-2026-11-19-0025)
+    env: { ...process.env, PUSHUP_DEVICE: 'cpu' },
   });
   return { status: r.status, out: r.stdout, err: r.stderr, elapsed: Date.now() - t0 };
 }
