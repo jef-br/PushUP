@@ -35,7 +35,7 @@ function run(args) {
     encoding: 'utf8', timeout: 300000, // ~10 s alone; the 60 s limit was hit on a loaded CI runner (F-2026-11-19-0025)
     env: { ...process.env, PUSHUP_DEVICE: 'cpu' },
   });
-  return { status: r.status, out: r.stdout, err: r.stderr || `no stderr; signal=${r.signal} error=${r.error && r.error.code}`, elapsed: Date.now() - t0 };
+  return { status: r.status, out: r.stdout, err: r.stderr, why: `${r.stderr}\n[signal=${r.signal} error=${r.error && r.error.code}]`, elapsed: Date.now() - t0 };
 }
 
 function cells(line) { return line.split('|').slice(1, -1).map((c) => c.trim()); }
@@ -46,7 +46,7 @@ test('bench/pad.js on two generated images prints the header and the three varia
   await writeImage(path.join(dir, 'a.png'), 900, 600);
   await writeImage(path.join(dir, 'b.png'), 600, 900);
   const r = run(['--dir', dir, '--limit', '2']);
-  assert.strictEqual(r.status, 0, r.err);
+  assert.strictEqual(r.status, 0, r.why);
   assert.strictEqual(r.err, '');
   const lines = r.out.split('\n');
   assert.match(lines[0], /^images scored: 2 of 2; /);
@@ -67,6 +67,6 @@ test('--limit 1 scores one image', async () => {
   await writeImage(path.join(dir, 'a.png'), 900, 600);
   await writeImage(path.join(dir, 'b.png'), 600, 900);
   const r = run(['--dir', dir, '--limit', '1']);
-  assert.strictEqual(r.status, 0, r.err);
+  assert.strictEqual(r.status, 0, r.why);
   assert.match(r.out.split('\n')[0], /^images scored: 1 of 1; /);
 });
