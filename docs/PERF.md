@@ -575,3 +575,82 @@ changed; the opt-in `high` case of `bench/arena.js` (50.6 s, own 120 s timeout, 
 `test/bench-run-timeouts.test.js` is a guard rail, not a contract: it fails if a numeric child timeout in those files is
 below 20 s, so an edit cannot lower one by accident. (`bench-run-pad` once timed out at 60 s on a loaded CI runner, so a
 runner can be much slower than this table; the 5x rule is a minimum, not a promise.)
+
+## Test suite time (BL6)
+
+Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVICE` / `PUSHUP_QUALITY` set (see below), each file run alone with `node --test test/<file>` (one run per file; the five slowest were run once more and agreed within 0.4 s: `device` 18.2 s, `upscale` 16.4 s, `bench-run-pad` 15.0 s, `aspect` 14.2 s, `device-fallback` 8.2 s). A file's time includes starting Node and loading the model session. The shares are of the sum of the files, 164 s; `npm test` on `main` took 172 s the same day, so running the files together costs about what running them one by one does (each model call already uses all cores).
+
+| Test file | Seconds | Share |
+| --- | ---: | ---: |
+| `device.test.js` | 17.9 | 10.9% |
+| `upscale.test.js` | 16.1 | 9.8% |
+| `bench-run-pad.test.js` | 14.9 | 9.1% |
+| `aspect.test.js` | 14.0 | 8.5% |
+| `device-fallback.test.js` | 8.5 | 5.2% |
+| `bench-run-arena-eventloop-worker.test.js` | 7.5 | 4.6% |
+| `bench-run-profile-threads.test.js` | 6.3 | 3.8% |
+| `bench-json.test.js` | 5.8 | 3.6% |
+| `convert.test.js` | 5.6 | 3.4% |
+| `determinism.test.js` | 5.2 | 3.2% |
+| `extremes.test.js` | 5.2 | 3.1% |
+| `bench-run-memory.test.js` | 4.6 | 2.8% |
+| `downscale.test.js` | 4.0 | 2.4% |
+| `queue.test.js` | 3.9 | 2.4% |
+| `bench-args.test.js` | 3.9 | 2.4% |
+| `input.test.js` | 3.8 | 2.3% |
+| `bench-run-throughput-cold.test.js` | 3.5 | 2.1% |
+| `edges-border.test.js` | 3.1 | 1.9% |
+| `tiling.test.js` | 2.8 | 1.7% |
+| `package.test.js` | 2.8 | 1.7% |
+| `threads-profile-args.test.js` | 2.3 | 1.4% |
+| `bench-run-edges-real.test.js` | 1.9 | 1.1% |
+| `mix.test.js` | 1.5 | 0.9% |
+| `flags.test.js` | 1.5 | 0.9% |
+| `batch-reject.test.js` | 1.2 | 0.7% |
+| `arena-cold-args.test.js` | 1.2 | 0.7% |
+| `throughput-stop.test.js` | 1.1 | 0.6% |
+| `gate.test.js` | 1.0 | 0.6% |
+| `throughput-breakdown-args.test.js` | 0.9 | 0.5% |
+| `bench-method-validate.test.js` | 0.9 | 0.5% |
+| `branches.test.js` | 0.8 | 0.5% |
+| `pad-args.test.js` | 0.8 | 0.5% |
+| `edges-args.test.js` | 0.7 | 0.5% |
+| `memory-args.test.js` | 0.7 | 0.4% |
+| `bench-exports.test.js` | 0.7 | 0.4% |
+| `readme.test.js` | 0.7 | 0.4% |
+| `length.test.js` | 0.5 | 0.3% |
+| `edges-real.test.js` | 0.5 | 0.3% |
+| `eventloop-args.test.js` | 0.5 | 0.3% |
+| `ort-loglevel.test.js` | 0.4 | 0.2% |
+| `worker-args.test.js` | 0.4 | 0.2% |
+| `degrade.test.js` | 0.4 | 0.2% |
+| `exit.test.js` | 0.4 | 0.2% |
+| `mixed-queue.test.js` | 0.4 | 0.2% |
+| `quiet.test.js` | 0.4 | 0.2% |
+| `model-input.test.js` | 0.3 | 0.2% |
+| `memory-creep-args.test.js` | 0.3 | 0.2% |
+| `esm.test.js` | 0.3 | 0.2% |
+| `tiny-factor.test.js` | 0.3 | 0.2% |
+| `session-retry.test.js` | 0.3 | 0.2% |
+| `arr-types.test.js` | 0.3 | 0.2% |
+| `env-per-call.test.js` | 0.2 | 0.1% |
+| `readme-errors.test.js` | 0.2 | 0.1% |
+| `models.test.js` | 0.2 | 0.1% |
+| `profile-sync.test.js` | 0.1 | 0.1% |
+| `readme-links.test.js` | 0.1 | 0.1% |
+| `suite-time.test.js` | 0.1 | 0.1% |
+| `readme-env.test.js` | 0.1 | 0.1% |
+| `readme-bench.test.js` | 0.1 | 0.1% |
+| `owner-decisions.test.js` | 0.1 | 0.1% |
+| `bench-method.test.js` | 0.1 | 0.1% |
+| `contract-tests.test.js` | 0.1 | 0.1% |
+| `decision-refs.test.js` | 0.1 | 0.1% |
+| `lockfile.test.js` | 0.1 | 0.1% |
+| `bench-run-timeouts.test.js` | 0.1 | 0.0% |
+| **Total** | **164.4** | |
+
+The three costliest files are `device.test.js`, `upscale.test.js` and `bench-run-pad.test.js` (together about 30% of the time). Two of them call the real model many times (`device.test.js` runs `_run` on a real image in most of its cases, `upscale.test.js` makes 14 `upscale` calls), and `bench-run-pad.test.js` starts `bench/pad.js` as child processes that each load the model. Most other files take under 2 s.
+
+Do not export `PUSHUP_DEVICE=cpu` for the whole suite when you time it: `device.test.js` "a GPU that fails while running falls back to CPU and retries" fails with it set, because that test stubs a GPU attempt.
+
+`test/suite-time.test.js` checks that this table lists every `test/*.test.js` file (and no other name), sorted slowest first, with shares that add up to about 100%. It does not check the seconds: a new test file must be added here, and the numbers are a record of one measurement, not a limit.
