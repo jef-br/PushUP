@@ -37,7 +37,7 @@ test('the definitions in docs/DECISIONS.md are unique and run D1..Dn without gap
 });
 
 test('every D-number cited in the README, PROGRESS.md, TASKS.md, CLAUDE.md and docs/ is defined', () => {
-  assert.ok(citations.length >= 30, `only ${citations.length} citations found; is the scan broken?`);
+  assert.ok(citations.length >= 70, `only ${citations.length} citations found; is the scan broken?`);
   const known = new Set(defined.map((n) => 'D' + n));
   const dead = citations.filter((c) => !known.has(c.id)).map((c) => `${c.rel}: ${c.id}`);
   assert.deepStrictEqual(dead, [], 'cited but not defined in docs/DECISIONS.md');
