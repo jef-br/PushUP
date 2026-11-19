@@ -1,7 +1,7 @@
 'use strict';
 // BL3: guard rail, not a contract. The child timeouts of test/bench-run-*.test.js must not be lowered by accident:
 // docs/PERF.md ("Bench-run test timeouts") records the measured time of every case, and every timeout
-// there is at least 8x it (4 vCPU, 2026-11-19). A CI runner has been seen at 10x slower (F-2026-11-19-0025), so
+// there is at least 8x it (4 vCPU, 2026-11-19). A CI runner has been seen at 6x or more slower (a ~10 s case hit 60 s, F-2026-11-19-0025), so
 // a value below 20 s would leave no room. The floor is pinned here; raising a timeout is always fine.
 // The opt-in `high` case of bench-run-arena-eventloop-worker.test.js passes its 120 s as a call argument, which this
 // scan does not read (it is skipped by default and exempt from the floor).
