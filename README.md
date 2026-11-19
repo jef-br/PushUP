@@ -322,7 +322,7 @@ node bench/eventloop.js               # is the event loop blocked during a call?
 node bench/worker.js                  # cost of running `upscale` in a worker_threads worker: latency, cold start, memory, event loop (results: docs/PERF.md "Worker")
 ```
 
-- `PUSHUP_SLOW_TESTS=1 npm test` also runs the tests that are skipped by default because they take a minute or more on a CPU (today: the `high` case of `bench/arena.js`, about 50 s).
+- `PUSHUP_SLOW_TESTS=1 npm test` also runs the tests that are skipped by default because they are slow on a CPU (today: the `high` case of `bench/arena.js`, about 50 s). Only the value `1` turns it on.
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
   (Linux x64 only; Windows and macOS don't download them). Use it where that download is
   blocked or not wanted; PushUP then runs on the CPU there (see "Quality modes and GPU").
