@@ -549,3 +549,29 @@ numbers are for this machine and will differ elsewhere. Two runs (`node bench/wo
   of concurrent calls. A worker would not remove the one-call-at-a-time rule inside one worker. No change to code or
   defaults is proposed here: whether to move inference to a worker is an owner decision (row 9 of
   `docs/OWNER_DECISIONS.md`).
+
+## Bench-run test timeouts (BL3)
+
+Each `test/bench-run-*.test.js` runs a `bench/` script as a child process with a timeout. Measured 2026-11-19, 4 vCPU,
+`PUSHUP_DEVICE=cpu`, `node --test <file>` three times, longest of the three per case (the case time includes
+starting the child and the asserts). Headroom = timeout / longest time. Every case has at least 5x, so no timeout was
+changed; the opt-in `high` case of `bench/arena.js` (50.6 s, own 120 s timeout, skipped unless `PUSHUP_SLOW_TESTS=1`) is exempt.
+
+| Test file | Case | Child timeout | Longest of 3 runs | Headroom |
+| --- | --- | --- | --- | --- |
+| `bench-run-arena-eventloop-worker` | `arena.js` (`fast:400`) | 30 s | 2.30 s | 13x |
+| `bench-run-arena-eventloop-worker` | `eventloop.js` | 30 s | 1.95 s | 15x |
+| `bench-run-arena-eventloop-worker` | `worker.js` | 30 s | 2.03 s | 15x |
+| `bench-run-edges-real` | `edges-real.js` | 60 s | 1.52 s | 39x |
+| `bench-run-memory` | `memory.js` | 30 s | 1.12 s | 27x |
+| `bench-run-memory` | `memory-creep.js` | 30 s | 2.54 s | 11x |
+| `bench-run-pad` | `pad.js` (two-image run) | 300 s | 6.34 s | 47x |
+| `bench-run-pad` | `pad.js --limit 1` | 300 s | 5.55 s | 54x |
+| `bench-run-profile-threads` | `profile.js` | 30 s | 1.37 s | 21x |
+| `bench-run-profile-threads` | `threads.js` | 30 s | 3.65 s | 8x |
+| `bench-run-throughput-cold` | `throughput.js` | 30 s | 2.12 s | 14x |
+| `bench-run-throughput-cold` | `cold.js` | 30 s | 0.94 s | 31x |
+
+`test/bench-run-timeouts.test.js` is a guard rail, not a contract: it fails if a numeric child timeout in those files is
+below 20 s, so an edit cannot lower one by accident. (`bench-run-pad` once timed out at 60 s on a loaded CI runner, so a
+runner can be much slower than this table; the 5x rule is a minimum, not a promise.)
