@@ -37,6 +37,14 @@ test('bench.js --methods lanczos,sr-full runs the model and reports different, f
     }
     const [lan, sr] = out.rows;
     assert.ok(lan.psnr !== sr.psnr && lan.ssim !== sr.ssim, 'sr-full gives the same figures as lanczos: the model did not run');
+    // BL14: the model really contributes, not only differs. Measured on this fixture (identical in three runs, CPU `fast`):
+    // lanczos PSNR 28.09 / SSIM 0.878 / GMSD 0.213, sr-full 35.42 / 0.977 / 0.094; with the shipped `fast` Lanczos mix
+    // (MODES.fast.lanczosMix, 0.2) raised to 0.999 or 1 the sr-full row equals the lanczos row (the check above fails), at 0.9
+    // it reads PSNR 28.94 / SSIM 0.898 (only the margins below fail). The margins are about half the measured gaps.
+    assert.ok(sr.psnr - lan.psnr >= 3, `sr-full PSNR ${sr.psnr.toFixed(2)} is not at least 3 dB above lanczos ${lan.psnr.toFixed(2)}: the model is bypassed or degraded`);
+    assert.ok(sr.ssim - lan.ssim >= 0.05, `sr-full SSIM ${sr.ssim.toFixed(4)} is not at least 0.05 above lanczos ${lan.ssim.toFixed(4)}`);
+    assert.ok(lan.gmsd - sr.gmsd >= 0.05, `sr-full GMSD ${sr.gmsd.toFixed(4)} is not at least 0.05 below lanczos ${lan.gmsd.toFixed(4)}`);
+    assert.ok(sr.psnr > 30, `sr-full PSNR ${sr.psnr.toFixed(2)} is below the sanity floor of 30 dB`);
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
