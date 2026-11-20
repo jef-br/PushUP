@@ -107,3 +107,47 @@ The three images with the largest `fast` bias (R/G/B, bytes): `abo_1df379d8.png`
   task. The largest excess is 0.99 bytes (R), so no follow-up task is added and nothing in the pipeline changes.
 - **Limits:** 20 images at one input size (400 px), JPEG q85 degradation, one run (the script is deterministic); the reference is itself a
   resized photo, so a bias shared by both methods would not show. Saturated flat product backgrounds are in the set but not separated out.
+
+### 800 px and 600 px input (BL17)
+
+Same script, same 20 images, same degradation (the input is the 1000 px reference downscaled to the given size, cubic, JPEG q85), factor 1000/800 and
+1000/600. Run 2026-11-20 (CPU, `fast`): `PUSHUP_DEVICE=cpu PUSHUP_QUALITY=fast node bench/colors-real.js --size 800` and `... --size 600` (about 15 s each).
+
+| input | region | method | channel | bias | mean abs diff | 99th percentile abs diff |
+| --- | --- | --- | --- | --- | --- | --- |
+| 800 px | whole image | `fast` | R | −1.14 | 2.76 | 22 |
+| 800 px | whole image | `fast` | G | −0.97 | 2.65 | 22 |
+| 800 px | whole image | `fast` | B | −0.04 | 2.36 | 23 |
+| 800 px | whole image | Lanczos | R | −0.03 | 3.39 | 44 |
+| 800 px | whole image | Lanczos | G | 0.00 | 3.45 | 49 |
+| 800 px | whole image | Lanczos | B | −0.01 | 3.71 | 50 |
+| 800 px | more than 16 px from the border | `fast` | R | −1.15 | 2.84 | 23 |
+| 800 px | more than 16 px from the border | `fast` | G | −0.96 | 2.72 | 22 |
+| 800 px | more than 16 px from the border | `fast` | B | −0.05 | 2.47 | 24 |
+| 800 px | more than 16 px from the border | Lanczos | R | −0.03 | 3.54 | 45 |
+| 800 px | more than 16 px from the border | Lanczos | G | −0.00 | 3.60 | 50 |
+| 800 px | more than 16 px from the border | Lanczos | B | −0.01 | 3.87 | 51 |
+| 600 px | whole image | `fast` | R | −1.14 | 3.35 | 31 |
+| 600 px | whole image | `fast` | G | −0.98 | 3.34 | 33 |
+| 600 px | whole image | `fast` | B | −0.06 | 3.09 | 34 |
+| 600 px | whole image | Lanczos | R | −0.04 | 3.57 | 44 |
+| 600 px | whole image | Lanczos | G | −0.01 | 3.59 | 48 |
+| 600 px | whole image | Lanczos | B | −0.01 | 3.90 | 50 |
+| 600 px | more than 16 px from the border | `fast` | R | −1.15 | 3.44 | 31 |
+| 600 px | more than 16 px from the border | `fast` | G | −0.98 | 3.44 | 33 |
+| 600 px | more than 16 px from the border | `fast` | B | −0.07 | 3.22 | 35 |
+| 600 px | more than 16 px from the border | Lanczos | R | −0.04 | 3.73 | 45 |
+| 600 px | more than 16 px from the border | Lanczos | G | −0.01 | 3.75 | 49 |
+| 600 px | more than 16 px from the border | Lanczos | B | −0.02 | 4.08 | 51 |
+
+The three images with the largest `fast` bias (R/G/B, bytes). At 800 px: `abo_1df379d8.png` −2.72/−1.82/−1.35, `abo_002a7de9.png` −1.44/−0.68/−0.43,
+`lamoda_Tshirts_11382.png` −1.32/−0.79/−0.01. At 600 px: `abo_1df379d8.png` −2.84/−1.70/−1.19, `abo_1d8c3146.png` −1.34/−1.48/−0.46,
+`abo_002a7de9.png` −1.41/−0.64/−0.40.
+
+- **Reading:** the bias does not depend on the input size: red −1.09 / −1.14 / −1.14 and green −0.96 / −0.97 / −0.98 at 400 / 600 / 800 px, blue −0.03 to −0.06; Lanczos stays
+  at 0 to −0.1. The worst single image is the same one at every size (`abo_1df379d8.png`, red −2.7 to −2.8). The mean absolute difference of `fast`
+  falls with the input size (red 4.15, 3.35, 2.76) and is below Lanczos at 600 and 800 px on all three channels; the 99th percentile is 13 to 27 levels
+  lower than Lanczos. Whole-image and interior rows agree within 0.1 byte.
+- **Decision rule of the task** (excess of the `fast` bias over Lanczos above 2 bytes on any channel): the largest excess is 1.11 bytes (red, 800 px;
+  600 px: 1.10), so it is not exceeded at any size, no follow-up task is added and nothing changes.
+- **Limits:** as above (20 images, JPEG q85 degradation, deterministic script, a bias shared with the reference would not show); three input sizes, not the whole 400–800 px range.
