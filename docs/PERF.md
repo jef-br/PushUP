@@ -555,7 +555,7 @@ numbers are for this machine and will differ elsewhere. Two runs (`node bench/wo
 Each `test/bench-run-*.test.js` runs a `bench/` script as a child process with a timeout. Measured 2026-11-19, 4 vCPU,
 `PUSHUP_DEVICE=cpu`, `node --test <file>` three times, longest of the three per case (the case time includes
 starting the child and the asserts). Headroom = timeout / longest time. Every case has at least 5x, so no timeout was
-changed; the opt-in `high` case of `bench/arena.js` (50.6 s, own 120 s timeout, skipped unless `PUSHUP_SLOW_TESTS=1`) the opt-in `bench/memory-breakdown.js` case (15.2–15.8 s, own 90 s timeout, same variable) and the opt-in `bench/colors.js` case (23.7–25.2 s, own 150 s timeout, same variable) are exempt.
+changed; the opt-in `high` case of `bench/arena.js` (50.6 s, own 120 s timeout, skipped unless `PUSHUP_SLOW_TESTS=1`), the opt-in `bench/memory-breakdown.js` case (15.2–15.8 s, own 90 s timeout, same variable) and the opt-in `bench/colors.js` case (23.7–25.2 s, own 150 s timeout, same variable) are exempt.
 
 | Test file | Case | Child timeout | Longest of 3 runs | Headroom |
 | --- | --- | --- | --- | --- |
