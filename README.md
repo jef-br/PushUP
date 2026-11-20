@@ -191,7 +191,7 @@ node bench/bench.js bench/out/set --methods lanczos,sr-full
 
 The usual route, as the overnight runs do it: `bench/fetch_testset.sh` downloads the source
 parquet files from Hugging Face and builds `bench/out/set` (60 images) and `bench/out/sub20`
-(20 images, the quality-gate subset). To check that a change doesn't lower quality, score
+(20 images, the quality-gate subset). It installs `pyarrow` and `pillow` with `python3 -m pip`, or into a virtual environment under `bench/out/venv` if a global install is refused. To check that a change doesn't lower quality, score
 `sub20` before and after it and compare the two runs:
 
 ```bash
