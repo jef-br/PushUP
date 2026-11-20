@@ -569,6 +569,7 @@ changed; the opt-in `high` case of `bench/arena.js` (50.6 s, own 120 s timeout, 
 | `bench-run-pad` | `pad.js --limit 1` | 300 s | 5.55 s | 54x |
 | `bench-run-profile-threads` | `profile.js` | 30 s | 1.37 s | 21x |
 | `bench-run-profile-threads` | `threads.js` | 30 s | 3.65 s | 8x |
+| `bench-run-sr` | `bench.js --methods lanczos,sr-full` (BL12) | 60 s | 2.59 s | 23x |
 | `bench-run-throughput-cold` | `throughput.js` | 30 s | 2.12 s | 14x |
 | `bench-run-throughput-cold` | `cold.js` | 30 s | 0.94 s | 31x |
 
@@ -602,6 +603,7 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 | `edges-border.test.js` | 3.1 | 1.9% |
 | `tiling.test.js` | 2.8 | 1.7% |
 | `package.test.js` | 2.8 | 1.7% |
+| `bench-run-sr.test.js` | 2.5 | 1.5% |
 | `threads-profile-args.test.js` | 2.3 | 1.4% |
 | `bench-run-edges-real.test.js` | 1.9 | 1.1% |
 | `mix.test.js` | 1.5 | 0.9% |
