@@ -296,7 +296,7 @@ case, so the model always gets the full-size input.
   exactly; the 20 % mix only scales it by about 0.8). Most of it is a band within about 8 px of the
   image border (model alone, more than 16 px from the border: magenta 6 bytes); saturated green also shifts by
   10 to 14 bytes in the interior ([docs/COLOR.md](docs/COLOR.md)). On 20 real photos the shipped `fast` pipeline has a mean bias of about −1 byte in red and green
-  (Lanczos −0.1), none in blue, and a lower mean error than Lanczos ([docs/COLOR.md](docs/COLOR.md#real-photos-bl13)); one input size, 20 images.
+  (Lanczos −0.1), none in blue, and about the same mean error as Lanczos (lower in blue) ([docs/COLOR.md](docs/COLOR.md#real-photos-bl13)); one input size, 20 images.
 - **Other vendors:** only Claid.ai has been compared, using the vendor's own published
   before/after images. Comparing more vendors needs their sites added to the network
   allowlist. The bench can score any output folder.

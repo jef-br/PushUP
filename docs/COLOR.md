@@ -69,8 +69,7 @@ saturated green, which also shifts by 10 to 14 bytes in the interior.
   exactly the "away from the border" values in every distance band (magenta 0/0/6, blue 1/0/4, green 10/11/14, (128,255,0) 9/7/12), and
   showed the border effect reaching about 8 px from the edge, so 16 px is enough. Uniform images only; textured photos were not tested. The change costs about 19 % more pixels through the model (432×332 vs 400×300, from the sizes, time
   not measured) and changes default output, so it needs a quality-gate run and an owner decision. The interior green shift would need a different model.
-- **Limits:** synthetic uniform images (no texture, no gradient), one size, `fast` only; natural photos were not measured, so how visible this is on real
-  product images is open.
+- **Limits:** synthetic uniform images (no texture, no gradient), one size, `fast` only; natural photos are measured in "Real photos (BL13)" below (the border band is not visible there; the bias is about −1 byte in R and G).
 
 ## Real photos (BL13)
 
