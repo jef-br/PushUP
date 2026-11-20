@@ -5,35 +5,10 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
+const { anchorsOf } = require('./helpers/links');
 
 const root = path.join(__dirname, '..');
 const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
-
-function slug(heading) {
-  return heading
-    .trim()
-    .toLowerCase()
-    .replace(/`/g, '')
-    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
-    .replace(/\s/g, '-');
-}
-
-function anchorsOf(file) {
-  const text = fs.readFileSync(file, 'utf8');
-  const seen = new Map();
-  const out = new Set();
-  let fence = false;
-  for (const line of text.split('\n')) {
-    if (/^```/.test(line)) fence = !fence;
-    const m = !fence && /^#{1,6}\s+(.*)$/.exec(line);
-    if (!m) continue;
-    let s = slug(m[1]);
-    const n = seen.get(s) || 0;
-    seen.set(s, n + 1);
-    out.add(n ? `${s}-${n}` : s);
-  }
-  return out;
-}
 
 test('README has links to docs/*.md and each one resolves (file and anchor)', () => {
   const links = [...readme.matchAll(/\]\((docs\/[\w.-]+\.md)(?:#([^)\s]*))?\)/g)].map((m) => ({ file: m[1], anchor: m[2] }));
