@@ -295,7 +295,8 @@ case, so the model always gets the full-size input.
   255,0,255), 26 on saturated green. The model causes it (plain Lanczos returns every colour
   exactly; the 20 % mix only scales it by about 0.8). Most of it is a band within about 8 px of the
   image border (model alone, more than 16 px from the border: magenta 6 bytes); saturated green also shifts by
-  10 to 14 bytes in the interior ([docs/COLOR.md](docs/COLOR.md)). Uniform images only; real photos were not measured.
+  10 to 14 bytes in the interior ([docs/COLOR.md](docs/COLOR.md)). On 20 real photos the shipped `fast` pipeline has a mean bias of about −1 byte in red and green
+  (Lanczos −0.1), none in blue, and about the same mean error as Lanczos (lower in blue) ([docs/COLOR.md](docs/COLOR.md#real-photos-bl13)); one input size, 20 images.
 - **Other vendors:** only Claid.ai has been compared, using the vendor's own published
   before/after images. Comparing more vendors needs their sites added to the network
   allowlist. The bench can score any output folder.
@@ -316,6 +317,7 @@ node bench/arena.js                   # latency, memory and output bytes with th
 node bench/memory-creep.js            # does memory keep growing over repeated `fast` calls? (30 calls, one process)
 node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos (--quality high: Remacri)
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
+node bench/colors-real.js              # colour bias of `fast` vs plain Lanczos on real photos (needs bench/out/sub20; results: docs/COLOR.md "Real photos (BL13)")
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
