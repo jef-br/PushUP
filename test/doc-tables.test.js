@@ -32,6 +32,8 @@ test('the checker accepts good tables and reports short rows, long rows and skip
   const broken = ['| a | b |', '|---|---|', '| 1 |', '| 1 | 2 | 3 |'].join('\n');
   const r = checkTables('f.md', broken);
   assert.deepStrictEqual(r.bad, ['f.md:3 row has 1 cells, expected 2', 'f.md:4 row has 3 cells, expected 2']);
+  // GitHub splits on an unescaped pipe even inside a code span: that row has three cells.
+  assert.deepStrictEqual(checkTables('f.md', '| a | b |\n|---|---|\n| `x|y` | 2 |').bad, ['f.md:3 row has 3 cells, expected 2']);
   const fenced = ['```', '| a | b |', '|---|---|', '| 1 |', '```'].join('\n');
   assert.deepStrictEqual(checkTables('f.md', fenced), { tables: 0, rows: 0, bad: [] });
   assert.match(checkTables('f.md', '| a | b |\n|---|\n').bad[0], /f\.md:2 separator has 1 cells, header has 2/);
