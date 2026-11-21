@@ -306,6 +306,7 @@ case, so the model always gets the full-size input.
 ```bash
 npm install                           # if the CUDA download fails: npm install --onnxruntime-node-install-cuda=skip
 npm test                              # unit + contract tests (node --test)
+npm run bench -- bench/out/set --methods lanczos,sr-full   # compare methods on the test set (same as node bench/bench.js ...; set: bash bench/fetch_testset.sh)
 bash scripts/pack-smoke.sh            # pack the package, install it in a temp dir, run one upscale there
 node bench/profile.js                 # per-stage latency of the fast pipeline (synthetic images)
 node bench/cold.js --modes fast       # first-call vs warm latency, each in a fresh process
