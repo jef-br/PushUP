@@ -675,4 +675,14 @@ What `PUSHUP_SLOW_TESTS=1` costs. Measured 2026-11-20, 4 vCPU, `PUSHUP_DEVICE` /
 | `bench-run-memory.test.js` | 3.7 (2 pass, 1 skipped) | 16.9 (3 pass) | `memory-breakdown.js` | 13.2 |
 | Sum | 10.0 | 92.4 | | 82.4 |
 
-Alone, all 8 tests of the three files pass with the flag (0 skipped). Run together in one `node --test` command with the flag the three files took 123 s (earlier the same day, 8 pass), more than the 92.4 s sum, because they share the CPU. **In the whole suite they do not:** `PUSHUP_SLOW_TESTS=1 npm test` took 245 s (default `npm test` 158 s the same day) and reported 483 tests, 482 pass, 1 fail, 0 skipped, in two runs out of two. The failing case is `arena.js --runs 1 --cases high:400 prints arena on and off, with identical output bytes`: the child process is killed at the case's own 120 s cap (`status` is `null`, the assertion `null !== 0`), because the other test files use the CPU at the same time (58 s alone). The cap was not changed; follow-up task BL21 in `TASKS.md`.
+Alone, all 8 tests of the three files pass with the flag (0 skipped). Run together in one `node --test` command with the flag the three files took 123 s (earlier the same day, 8 pass), more than the 92.4 s sum, because they share the CPU. **In the whole suite they do not:** `PUSHUP_SLOW_TESTS=1 npm test` took 245 s (default `npm test` 158 s the same day) and reported 483 tests, 482 pass, 1 fail, 0 skipped, in two runs out of two. The failing case is `arena.js --runs 1 --cases high:400 prints arena on and off, with identical output bytes`: the child process is killed at the case's own 120 s cap (`status` is `null`, the assertion `null !== 0`), because the other test files use the CPU at the same time (58 s alone). The cap was not changed (BL21, below).
+
+**Fix (BL21).** Measured on the same machine: with a throwaway 600 s cap the parallel flagged run passes and the `high:400` case takes 236.7 s inside it (whole run 285 s); with `--test-concurrency=1` the case takes 51.6 s and the whole run 229 s, so running the files one at a time is also faster overall (the default `npm test` is unchanged). `npm run test:slow` (`PUSHUP_SLOW_TESTS=1 node --test --test-concurrency=1 test/*.test.js`, Linux/macOS shell syntax) was run three times in a row, 483 tests, 483 pass, 0 fail, 0 skipped each time:
+
+| Run | Whole run (s) | `high:400` case (s) |
+| --- | ---: | ---: |
+| 1 | 228.3 | 52.2 |
+| 2 | 237.7 | 53.4 |
+| 3 | 233.8 | 53.6 |
+
+The case keeps its 120 s cap (about 2.2x the slowest of these runs) and all its assertions.
