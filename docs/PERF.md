@@ -583,40 +583,41 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 
 | Test file | Seconds | Share |
 | --- | ---: | ---: |
-| `device.test.js` | 17.9 | 10.4% |
-| `upscale.test.js` | 16.1 | 9.4% |
-| `bench-run-pad.test.js` | 14.9 | 8.7% |
-| `aspect.test.js` | 14.0 | 8.2% |
-| `device-fallback.test.js` | 8.5 | 5.0% |
-| `bench-run-arena-eventloop-worker.test.js` | 7.5 | 4.4% |
-| `bench-run-profile-threads.test.js` | 6.3 | 3.7% |
-| `bench-json.test.js` | 5.8 | 3.4% |
-| `convert.test.js` | 5.6 | 3.3% |
-| `determinism.test.js` | 5.2 | 3.0% |
-| `extremes.test.js` | 5.2 | 3.0% |
-| `bench-run-memory.test.js` | 4.6 | 2.7% |
-| `downscale.test.js` | 4.0 | 2.3% |
-| `queue.test.js` | 3.9 | 2.3% |
-| `bench-args.test.js` | 3.9 | 2.3% |
-| `input.test.js` | 3.8 | 2.2% |
-| `colors-real-args.test.js` | 3.8 | 2.2% |
+| `device.test.js` | 17.9 | 10.0% |
+| `upscale.test.js` | 16.1 | 9.0% |
+| `bench-run-pad.test.js` | 14.9 | 8.3% |
+| `aspect.test.js` | 14.0 | 7.8% |
+| `device-fallback.test.js` | 8.5 | 4.7% |
+| `bench-run-arena-eventloop-worker.test.js` | 7.5 | 4.2% |
+| `output-ownership.test.js` | 7.2 | 4.0% |
+| `bench-run-profile-threads.test.js` | 6.3 | 3.5% |
+| `bench-json.test.js` | 5.8 | 3.2% |
+| `convert.test.js` | 5.6 | 3.1% |
+| `determinism.test.js` | 5.2 | 2.9% |
+| `extremes.test.js` | 5.2 | 2.9% |
+| `bench-run-memory.test.js` | 4.6 | 2.6% |
+| `downscale.test.js` | 4.0 | 2.2% |
+| `queue.test.js` | 3.9 | 2.2% |
+| `bench-args.test.js` | 3.9 | 2.2% |
+| `input.test.js` | 3.8 | 2.1% |
+| `colors-real-args.test.js` | 3.8 | 2.1% |
 | `bench-run-throughput-cold.test.js` | 3.5 | 2.0% |
-| `edges-border.test.js` | 3.1 | 1.8% |
+| `edges-border.test.js` | 3.1 | 1.7% |
 | `tiling.test.js` | 2.8 | 1.6% |
 | `package.test.js` | 2.8 | 1.6% |
-| `bench-run-sr.test.js` | 2.5 | 1.5% |
+| `bench-run-sr.test.js` | 2.5 | 1.4% |
 | `threads-profile-args.test.js` | 2.3 | 1.3% |
 | `bench-run-edges-real.test.js` | 1.9 | 1.1% |
-| `mix.test.js` | 1.5 | 0.9% |
-| `flags.test.js` | 1.5 | 0.9% |
+| `mix.test.js` | 1.5 | 0.8% |
+| `flags.test.js` | 1.5 | 0.8% |
 | `batch-reject.test.js` | 1.2 | 0.7% |
 | `arena-cold-args.test.js` | 1.2 | 0.7% |
 | `throughput-stop.test.js` | 1.1 | 0.6% |
 | `gate.test.js` | 1.0 | 0.6% |
 | `throughput-breakdown-args.test.js` | 0.9 | 0.5% |
 | `bench-method-validate.test.js` | 0.9 | 0.5% |
-| `branches.test.js` | 0.8 | 0.5% |
-| `pad-args.test.js` | 0.8 | 0.5% |
+| `branches.test.js` | 0.8 | 0.4% |
+| `pad-args.test.js` | 0.8 | 0.4% |
 | `edges-args.test.js` | 0.7 | 0.4% |
 | `memory-args.test.js` | 0.7 | 0.4% |
 | `bench-exports.test.js` | 0.7 | 0.4% |
@@ -659,7 +660,7 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 | `lockfile.test.js` | 0.1 | 0.1% |
 | `bench-run-timeouts.test.js` | 0.1 | 0.1% |
 | `fetch-testset.test.js` | 0.1 | 0.1% |
-| **Total** | **172.2** | |
+| **Total** | **179.4** | |
 
 The three costliest files are `device.test.js`, `upscale.test.js` and `bench-run-pad.test.js` (together about 30% of the time). Two of them call the real model many times (`device.test.js` runs `_run` on a real image in most of its cases, `upscale.test.js` makes 14 `upscale` calls), and `bench-run-pad.test.js` starts `bench/pad.js` as child processes that each load the model. Most other files take under 2 s.
 
