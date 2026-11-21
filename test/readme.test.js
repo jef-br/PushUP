@@ -37,3 +37,37 @@ test('the README upscale example runs and returns the documented shape', async (
     if (saved.d === undefined) delete process.env.PUSHUP_DEVICE; else process.env.PUSHUP_DEVICE = saved.d;
   }
 });
+
+// BL24: the README "Development" section names every npm script of package.json, so a new script is not left undocumented.
+// npm lifecycle hooks (they run by themselves, nobody types them) are exempt: the fixed names below, and `pre<x>` / `post<x>`
+// of another script <x>.
+const LIFECYCLE = new Set(['prepublishOnly', 'prepublish', 'prepare', 'prepack', 'postpack', 'preinstall', 'install', 'postinstall', 'preversion', 'version', 'postversion']);
+
+// Names of `scripts` that the text of the "Development" section does not mention as `npm run <name>` (or `npm test` for `test`).
+function undocumentedScripts(scripts, dev) {
+  const names = Object.keys(scripts);
+  const hook = (n) => LIFECYCLE.has(n) || /^(pre|post)(.+)/.test(n) && names.includes(n.replace(/^(pre|post)/, ''));
+  const mentioned = (n) => (n === 'test'
+    ? /\bnpm (run )?test(?![\w:-])/.test(dev)
+    : new RegExp(`\\bnpm run ${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\w:-])`).test(dev));
+  return names.filter((n) => !hook(n) && !mentioned(n));
+}
+
+test('README "Development" names every npm script in package.json', () => {
+  const root = path.join(__dirname, '..');
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+  const dev = readme.split(/^## /m).find((s) => s.startsWith('Development'));
+  assert.ok(dev, 'README has no "## Development" section');
+  const { scripts } = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  assert.deepStrictEqual(undocumentedScripts(scripts, dev), [], 'npm scripts that README "Development" does not mention (add `npm run <name>` there)');
+});
+
+test('undocumentedScripts reports a missing script, and accepts a documented one and the exempt hooks', () => {
+  const scripts = { test: 'x', 'test:slow': 'x', bench: 'x', build: 'x', pretest: 'x', prepublishOnly: 'x' };
+  const dev = 'npm test\nnpm run test:slow\nnpm run bench -- a';
+  assert.deepStrictEqual(undocumentedScripts(scripts, dev), ['build']);
+  assert.deepStrictEqual(undocumentedScripts(scripts, `${dev}\nnpm run build`), []);
+  // `npm run test:slow` is not a mention of `test`, and `npm run benchmark` is not a mention of `bench`
+  assert.deepStrictEqual(undocumentedScripts({ test: 'x', bench: 'x' }, 'npm run test:slow\nnpm run benchmark'), ['test', 'bench']);
+  assert.deepStrictEqual(undocumentedScripts({ test: 'x' }, 'npm run test'), []);
+});
