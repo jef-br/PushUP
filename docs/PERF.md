@@ -663,3 +663,16 @@ The three costliest files are `device.test.js`, `upscale.test.js` and `bench-run
 Do not export `PUSHUP_DEVICE=cpu` for the whole suite when you time it: `device.test.js` "a GPU that fails while running falls back to CPU and retries" fails with it set, because that test stubs a GPU attempt.
 
 `test/suite-time.test.js` checks that this table lists every `test/*.test.js` file (and no other name), sorted slowest first, with shares that add up to about 100%. It does not check the seconds: a new test file must be added here, and the numbers are a record of one measurement, not a limit.
+
+### Opt-in slow tests (BL20)
+
+What `PUSHUP_SLOW_TESTS=1` costs. Measured 2026-11-20, 4 vCPU, `PUSHUP_DEVICE` / `PUSHUP_QUALITY` unset, each file run alone (`node --test test/<file>`), one run per figure. The default suite is the table above; this does not change it.
+
+| Test file | Default (s) | With `PUSHUP_SLOW_TESTS=1` (s) | Opt-in case | Added (s) |
+| --- | ---: | ---: | --- | ---: |
+| `bench-run-arena-eventloop-worker.test.js` | 6.2 (3 pass, 1 skipped) | 58.3 (4 pass) | `arena.js` `high:400` | 52.1 |
+| `bench-run-colors.test.js` | 0.1 (1 skipped) | 17.2 (1 pass) | `colors.js` | 17.1 |
+| `bench-run-memory.test.js` | 3.7 (2 pass, 1 skipped) | 16.9 (3 pass) | `memory-breakdown.js` | 13.2 |
+| Sum | 10.0 | 92.4 | | 82.4 |
+
+Alone, all 8 tests of the three files pass with the flag (0 skipped). Run together in one `node --test` command with the flag the three files took 123 s (earlier the same day, 8 pass), more than the 92.4 s sum, because they share the CPU. **In the whole suite they do not:** `PUSHUP_SLOW_TESTS=1 npm test` took 245 s (default `npm test` 158 s the same day) and reported 483 tests, 482 pass, 1 fail, 0 skipped, in two runs out of two. The failing case is `arena.js --runs 1 --cases high:400 prints arena on and off, with identical output bytes`: the child process is killed at the case's own 120 s cap (`status` is `null`, the assertion `null !== 0`), because the other test files use the CPU at the same time (58 s alone). The cap was not changed; follow-up task BL21 in `TASKS.md`.
