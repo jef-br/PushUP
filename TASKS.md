@@ -1347,7 +1347,7 @@ The backlog for PushUP. Scheduled overnight runs pick work from here; see
 - **Done (2026-11-21):** measured first (see `docs/PERF.md` "Opt-in slow tests (BL20)", "Fix (BL21)"): parallel flagged run with a throwaway 600 s cap passes, the case takes 236.7 s in it; `--test-concurrency=1`: 51.6 s, whole run 229 s. Fix: `npm run test:slow` in `package.json` (`PUSHUP_SLOW_TESTS=1 node --test --test-concurrency=1 test/*.test.js`, POSIX shell syntax, no new dependency), documented in README "Development". Three flagged full runs in a row: 483/483 pass, 228.3 / 237.7 / 233.8 s. No assertion or cap changed; default `npm test` unchanged. **For BL18:** the workflow must run `npm run test:slow` (not `PUSHUP_SLOW_TESTS=1 npm test`), and the 2-vCPU runner note about the 120 s cap still applies.
 
 
-### [~] BACKLOG-2026-11-21-0300 — (started 2026-11-21) Add four small test/robustness tasks BL22–BL25
+### [x] BACKLOG-2026-11-21-0300 — (done 2026-11-21, tasks BL22–BL25 below) Add four small test/robustness tasks BL22–BL25
 - **Goal:** nothing was ready (open tasks are blocked on the owner), so this adds four small tasks from gaps found on 2026-11-21: full-suite coverage (`node --test --experimental-test-coverage test/*.test.js`: `src/index.js` 100%, all files 97.55%; the lines left are in `bench/colors-real.js:61`, `bench/edges.js:63` and the opt-in cases), the workflow files, `package.json` scripts and `tools/*.py`.
 - **Accept:** the four tasks below are in `TASKS.md` with a goal, verifiable acceptance criteria, a one-run scope, and nothing from the "never as a self-made task" list (`docs/OVERNIGHT_RUN.md` section 5).
 
