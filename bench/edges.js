@@ -11,6 +11,7 @@
 //   image border (BK8); --include-border keeps them. The disc never reaches the border.
 const sharp = require('sharp');
 const { checkFlags } = require('./flags');
+const { crossing } = require('./stats');
 
 const flagError = checkFlags(process.argv.slice(2), { values: ['--factors', '--quality'], switches: ['--include-border'] });
 if (flagError) {
@@ -51,16 +52,6 @@ function build(kind) {
     }
   }
   return a;
-}
-
-// Position (output px) where the profile crosses `level` going up (dir +1) or down (dir -1),
-// first crossing at or after index `from`, linear interpolation; null if there is none.
-function crossing(p, level, dir, from) {
-  for (let i = Math.max(from, 1); i < p.length; i++) {
-    const a = p[i - 1], b = p[i];
-    if (dir > 0 ? a < level && b >= level : a > level && b <= level) return i - 1 + (level - a) / (b - a);
-  }
-  return null;
 }
 
 const lvl = (pct) => DARK + (LIGHT - DARK) * pct;

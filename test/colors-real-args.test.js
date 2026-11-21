@@ -75,3 +75,17 @@ test('a valid run on two generated images prints the table and --json prints one
   }
   assert.strictEqual(o.largest_fast_bias.length, 2);
 });
+
+// BL22: p99 lives in bench/stats.js (the script runs on load), so a test can require it.
+test('p99 of a 256-bin histogram: normal case, counts below the wanted count give 255, n = 0 gives 0', () => {
+  const { p99 } = require('../bench/stats');
+  const hist = (counts) => { const h = new Array(256).fill(0); for (const [v, c] of Object.entries(counts)) h[v] = c; return h; };
+  assert.strictEqual(p99(hist({ 7: 10 }), 10), 7);
+  assert.strictEqual(p99(hist({ 0: 98, 40: 1, 200: 1 }), 100), 40); // want = ceil(99) = 99: reached at bin 40
+  assert.strictEqual(p99(hist({ 0: 98, 40: 1, 200: 1 }), 101), 200); // want = ceil(99.99) = 100: reached at bin 200
+  // n > 0 but the bins add up to less than want = ceil(10 * 0.99) = 10: never reached, falls through to 255
+  assert.strictEqual(p99(hist({}), 10), 255);
+  assert.strictEqual(p99(hist({ 3: 9 }), 10), 255);
+  // n = 0: want is 0, reached at bin 0 (current behaviour, pinned)
+  assert.strictEqual(p99(hist({}), 0), 0);
+});

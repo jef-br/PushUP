@@ -12,6 +12,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const sharp = require('sharp');
 const { checkFlags } = require('./flags');
+const { p99 } = require('./stats');
 
 const EDGE = 16, CH = ['R', 'G', 'B'];
 
@@ -54,12 +55,6 @@ function score(a, out, ref, w, h, perImage) {
   }
 }
 
-function p99(h, n) {
-  const want = Math.ceil(n * 0.99);
-  let seen = 0;
-  for (let v = 0; v < 256; v++) { seen += h[v]; if (seen >= want) return v; }
-  return 255;
-}
 const summary = (t) => ({ bias: t.sum / t.n, mean_abs: t.abs / t.n, p99_abs: p99(t.hist, t.n) });
 
 (async () => {
