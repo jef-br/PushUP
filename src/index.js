@@ -338,3 +338,5 @@ module.exports._reset = () => {
   gpuBroken = false;
   warnedNoGpu = false;
 };
+// Tests only: the contract limits, so a test can compare them with CLAUDE.md and the README.
+module.exports._LIMITS = { MIN_INPUT, MAX_INPUT, MAX_OUTPUT };
