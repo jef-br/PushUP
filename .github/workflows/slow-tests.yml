@@ -1,0 +1,26 @@
+name: Slow tests
+
+# BL18: the opt-in tests (skipped by default because they are slow on a CPU) run here, weekly and on demand.
+# Not on push or pull request: ci.yml stays the fast gate.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 0'
+
+permissions:
+  contents: read
+
+jobs:
+  slow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # No GPU on the runner: skip onnxruntime-node's CUDA download (as pack-smoke in ci.yml does).
+      - run: npm ci --onnxruntime-node-install-cuda=skip
+      # One test file at a time (BL21): in parallel the `high` arena case hits its own 120 s cap.
+      - run: npm run test:slow
