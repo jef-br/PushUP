@@ -20,11 +20,15 @@ function parseProblem(file) {
   return r.status === 0 ? null : `${file}: ${(r.stderr || '').trim().split('\n').slice(-3).join(' | ') || `exit ${r.status}`}`;
 }
 
+// Generated or vendored directories are not ours: bench/out (the test set, and the venv bench/fetch_testset.sh may create
+// there, with thousands of third-party files), node_modules, caches and hidden directories.
+const SKIP_DIRS = new Set(['out', 'node_modules', 'venv', '__pycache__']);
+
 function pyFiles(dir) {
   const out = [];
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) out.push(...pyFiles(p));
+    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name) && !e.name.startsWith('.')) out.push(...pyFiles(p)); }
     else if (e.name.endsWith('.py')) out.push(p);
   }
   return out;
@@ -39,6 +43,19 @@ test('there are Python build tools to check', () => {
 test('every .py file under tools/, bench/ and scripts/ parses', { skip }, () => {
   const problems = files.map(parseProblem).filter(Boolean);
   assert.deepStrictEqual(problems, [], `${problems.length} of ${files.length} Python files do not parse`);
+});
+
+test('pyFiles skips generated and vendored directories (bench/out, venv, node_modules) and finds nested tools', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pushup-pyfiles-'));
+  try {
+    for (const f of ['a.py', 'sub/b.py', 'out/venv/lib/c.py', 'venv/d.py', 'node_modules/e.py', '.hidden/f.py', '__pycache__/g.py', 'sub/notes.txt']) {
+      fs.mkdirSync(path.dirname(path.join(tmp, f)), { recursive: true });
+      fs.writeFileSync(path.join(tmp, f), '');
+    }
+    assert.deepStrictEqual(pyFiles(tmp).map((f) => path.relative(tmp, f)).sort(), ['a.py', path.join('sub', 'b.py')]);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('parseProblem reports a syntax error and accepts a good file', { skip }, () => {
