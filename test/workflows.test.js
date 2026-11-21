@@ -14,7 +14,7 @@ const MORE_PERMISSIONS = new Map([]);
 // Returns the list of problems in one workflow's text (empty when it is fine).
 function workflowProblems(text, file = 'workflow.yml') {
   const problems = [];
-  const lines = text.split('\n').map((l) => l.replace(/\s+#.*$/, '').replace(/\s+$/, ''));
+  const lines = text.split('\n').map((l) => (/^#/.test(l) ? '' : l.replace(/\s+#.*$/, '')).replace(/\s+$/, '')); // a column-0 comment is a blank line
   const at = lines.findIndex((l) => /^permissions:/.test(l));
   if (at < 0) problems.push(`${file}: no top-level "permissions:" block`);
   else if (!MORE_PERMISSIONS.has(file)) {
@@ -51,6 +51,7 @@ test('workflowProblems reports each problem and accepts a good workflow', () => 
   assert.deepStrictEqual(workflowProblems(good), []);
   const no = (text) => workflowProblems(text);
   assert.match(no(good.replace('permissions:\n  contents: read\n', ''))[0], /no top-level "permissions:"/);
+  assert.match(no(good.replace('contents: read', 'contents: read\n# a comment at column 0\n  issues: write'))[0], /must be exactly "contents: read"/); // a comment must not hide later entries
   assert.match(no(good.replace('contents: read', 'contents: write'))[0], /must be exactly "contents: read"/);
   assert.match(no(good.replace('contents: read', 'contents: read\n  pull-requests: write'))[0], /must be exactly "contents: read"/);
   assert.match(no(good.replace('permissions:\n  contents: read', 'permissions: write-all'))[0], /must be exactly "contents: read"/);
