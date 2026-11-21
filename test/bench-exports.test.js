@@ -94,3 +94,31 @@ test('the scan understands each form of use', () => {
   assert.deepStrictEqual(t("const { a, // why\n  b, ...rest } = require('../src/index');"), ['a', 'b']);
   assert.deepStrictEqual(t("// const { gone } = require('../src');\n/* const { gone2 } = require('../src'); */\nconst { kept } = require('../src'); // trailing"), ['kept']);
 });
+
+// BL27: the public surface of the package. Everything exported from src/index.js is a test hook with a leading
+// underscore, except `upscale` (the contract) and `default` (an alias that test/esm.test.js deliberately does NOT
+// pin: in an ES-module import `default` is the whole module.exports object, so pinning the alias would make it a
+// public promise). `default` is therefore allowed but not required. Returns a list of problems.
+function publicExportProblems(mod) {
+  const problems = [];
+  const names = Object.keys(mod).filter((n) => !n.startsWith('_'));
+  for (const n of names) if (n !== 'upscale' && n !== 'default') problems.push(`public export "${n}" is not part of the contract (name test hooks with a leading underscore)`);
+  if (!names.includes('upscale')) problems.push('no public export "upscale"');
+  else if (typeof mod.upscale !== 'function') problems.push('"upscale" is not a function');
+  return problems;
+}
+
+test('the only public exports of the package are upscale (and the unpinned default alias)', () => {
+  assert.deepStrictEqual(publicExportProblems(require('../src')), []);
+  // The `main` of package.json resolves to the module the tests load.
+  assert.strictEqual(require.resolve(root), require.resolve('../src'));
+});
+
+test('the public-export check reports an extra name and accepts upscale, default and underscore names', () => {
+  const up = () => {};
+  assert.deepStrictEqual(publicExportProblems({ upscale: up }), []);
+  assert.deepStrictEqual(publicExportProblems({ upscale: up, default: up, _run: 1, _MODES: 2 }), []);
+  assert.ok(publicExportProblems({ upscale: up, helper: 1 }).some((p) => p.includes('"helper"')));
+  assert.ok(publicExportProblems({ default: up }).some((p) => p.includes('no public export')));
+  assert.ok(publicExportProblems({ upscale: 1 }).some((p) => p.includes('not a function')));
+});
