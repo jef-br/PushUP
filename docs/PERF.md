@@ -579,13 +579,13 @@ runner can be much slower than this table; the 5x rule is a minimum, not a promi
 
 ## Test suite time (BL6)
 
-Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVICE` / `PUSHUP_QUALITY` set (see below), each file run alone with `node --test test/<file>` (one run per file; the five slowest were run once more and agreed within 0.4 s: `device` 18.2 s, `upscale` 16.4 s, `bench-run-pad` 15.0 s, `aspect` 14.2 s, `device-fallback` 8.2 s). A file's time includes starting Node and loading the model session. The shares are of the sum of the files, 185.0 s (164 s on 2026-11-19, plus the files added since, measured later); `npm test` on `main` took 172 s the same day, so running the files together costs about what running them one by one does (each model call already uses all cores).
+Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVICE` / `PUSHUP_QUALITY` set (see below), each file run alone with `node --test test/<file>` (one run per file; the five slowest were run once more and agreed within 0.4 s: `device` 18.2 s, `upscale` 16.4 s, `bench-run-pad` 15.0 s, `aspect` 14.2 s, `device-fallback` 8.2 s). A file's time includes starting Node and loading the model session. The shares are of the sum of the files, 185.1 s (164 s on 2026-11-19, plus the files added since, measured later); `npm test` on `main` took 172 s the same day, so running the files together costs about what running them one by one does (each model call already uses all cores).
 
 | Test file | Seconds | Share |
 | --- | ---: | ---: |
 | `device.test.js` | 17.9 | 9.7% |
 | `upscale.test.js` | 16.1 | 8.7% |
-| `bench-run-pad.test.js` | 14.9 | 8.1% |
+| `bench-run-pad.test.js` | 14.9 | 8.0% |
 | `aspect.test.js` | 14.0 | 7.6% |
 | `device-fallback.test.js` | 8.5 | 4.6% |
 | `bench-run-arena-eventloop-worker.test.js` | 7.5 | 4.1% |
@@ -662,7 +662,8 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 | `lockfile.test.js` | 0.1 | 0.1% |
 | `bench-run-timeouts.test.js` | 0.1 | 0.1% |
 | `fetch-testset.test.js` | 0.1 | 0.1% |
-| **Total** | **185.0** | |
+| `readme-timings.test.js` | 0.1 | 0.1% |
+| **Total** | **185.1** | |
 
 The three costliest files are `device.test.js`, `upscale.test.js` and `bench-run-pad.test.js` (together about 30% of the time). Two of them call the real model many times (`device.test.js` runs `_run` on a real image in most of its cases, `upscale.test.js` makes 14 `upscale` calls), and `bench-run-pad.test.js` starts `bench/pad.js` as child processes that each load the model. Most other files take under 2 s.
 
