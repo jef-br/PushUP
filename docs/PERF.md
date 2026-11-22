@@ -9,7 +9,7 @@
   one-off ONNX session load is excluded). Stage columns replay the same steps in the
   script, median of N runs, and are indicative (they don't sum exactly to `total`).
 - Machine: 4 vCPU cloud container (`cpus=4`), Node 22 (v22.23.4 in the 2026-11-11 run), onnxruntime-node 1.31, sharp 0.35,
-  `DEFAULT_LANCZOS_MIX` 0.2, full input fed to the model. Re-measure on your own hardware.
+  `fast` mode Lanczos mix 0.2 (`MODES.fast.lanczosMix`), full input fed to the model. Re-measure on your own hardware.
 
 ## Results (median ms)
 
