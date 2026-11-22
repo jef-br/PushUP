@@ -4,8 +4,9 @@
 //
 // Opt-in (BL5): bench/memory-breakdown.js. It always loads the `high` model, and HP3 says `high` runs are never
 // part of the default suite, so its valid run only happens with PUSHUP_SLOW_TESTS=1 (measured 2026-11-19 on 4 vCPU,
-// PUSHUP_DEVICE=cpu, `--sizes 400`, 3 runs: 15.2 s, 15.8 s, 15.5 s; 882 MB peak). `--arena` is left untested: it runs the
-// model again twice per size. Its argument checks are in test/throughput-breakdown-args.test.js.
+// PUSHUP_DEVICE=cpu, `--sizes 400`, 3 runs: 15.2 s, 15.8 s, 15.5 s; 882 MB peak). `--arena` (BL33) is a second opt-in case: it
+// runs the model again twice per size (measured 2026-11-22, 4 vCPU: 47.3 s and 47.2 s in total). Its argument checks are in
+// test/throughput-breakdown-args.test.js.
 const test = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
@@ -69,4 +70,23 @@ test('memory-breakdown.js --sizes 400 prints the RSS table and the arithmetic ta
     assert.ok(Number(geo[1]) > 0, r.lines[4]);
     assert.strictEqual(r.lines.length, 5, r.stdout); // one size: no "max_rss growth" line
     assert.ok(!r.stdout.includes('max_rss growth'));
+  });
+
+// BL33: `--arena` adds the ORT-only comparison (two child processes per size, `--tiles <size> arena|noarena`). Own timeout of
+// 240 s (about 5x the 47 s measured alone). Only the shape is checked: no RSS figure is compared with another (arena off is not
+// asserted to be lower), and the numbers of the arithmetic table are not asserted either.
+test('memory-breakdown.js --sizes 400 --arena prints the ORT-only arena comparison',
+  { skip: process.env.PUSHUP_SLOW_TESTS === '1' ? false : 'set PUSHUP_SLOW_TESTS=1' }, () => {
+    const r = run('memory-breakdown.js', ['--sizes', '400', '--arena'], 240000);
+    assert.strictEqual(r.status, 0, r.stderr);
+    assert.ok(!/TypeError|Error:|FAILED/.test(r.stderr + r.stdout), r.stderr + r.stdout);
+    const i = r.lines.indexOf('ORT-only tile loop on the Remacri model, max RSS (MB), shipped session options vs CPU arena off:');
+    assert.ok(i >= 0, r.stdout);
+    assert.strictEqual(r.lines[i + 1], 'input   arena_on  arena_off');
+    const row = r.lines[i + 2].trim().split(/\s+/);
+    assert.strictEqual(row[0], '400x300', r.lines[i + 2]);
+    assert.ok(mb(row[1]), `arena_on cell ${row[1]}`);
+    assert.ok(mb(row[2]), `arena_off cell ${row[2]}`);
+    assert.match(r.lines[i + 2], /\(\d+ tiles\)$/);
+    assert.strictEqual(r.lines.length, i + 3, r.stdout); // one size: one row, nothing after it
   });
