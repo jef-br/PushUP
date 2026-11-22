@@ -74,3 +74,33 @@ test('the default factor is 1.0 by behaviour', async () => {
   assert.strictEqual(dflt.length, w * h * 3, 'with the default factor the largest side stays 400 px');
   assert.ok(Buffer.from(dflt).equals(Buffer.from(one)), 'upscale(arr, stride) differs from upscale(arr, stride, 1.0)');
 });
+
+// BL29: README "How it works" step 3 names where the `fast` Lanczos mix really comes from (`MODES.fast.lanczosMix`;
+// DEFAULT_LANCZOS_MIX only applies to an explicit modelPath) and states the same percentage. Returns a list of problems.
+function pipelineMixProblems(readme, mix) {
+  const m = readme.match(/\n## How it works\n([\s\S]*?)\n### Model choice/);
+  if (!m) return ['README.md: no section between "## How it works" and "### Model choice"'];
+  const text = m[1].replace(/\s+/g, ' ');
+  const problems = [];
+  if (!text.includes('`MODES.fast.lanczosMix`')) problems.push('README.md "How it works" does not name `MODES.fast.lanczosMix`');
+  if (text.includes('DEFAULT_LANCZOS_MIX')) problems.push('README.md "How it works" still names DEFAULT_LANCZOS_MIX (only used with an explicit modelPath)');
+  const pct = text.match(/(\d+)% of a plain Lanczos upscale/);
+  const want = Math.round(mix * 100);
+  if (!pct) problems.push('README.md "How it works" has no "<n>% of a plain Lanczos upscale"');
+  else if (Number(pct[1]) !== want) problems.push(`README.md "How it works" says ${pct[1]}% but MODES.fast.lanczosMix is ${want}%`);
+  return problems;
+}
+
+test('README "How it works" step 3 names MODES.fast.lanczosMix and the same percentage', () => {
+  assert.deepStrictEqual(pipelineMixProblems(read('README.md'), _MODES.fast.lanczosMix), []);
+});
+
+test('the pipeline-mix check reports a wrong percentage, the old constant name and a missing section', () => {
+  const doc = (body) => `\n## How it works\n${body}\n### Model choice\n`;
+  const good = doc('3. In `fast` mode, 20% of a plain\n   Lanczos upscale is mixed in (`MODES.fast.lanczosMix`).');
+  assert.deepStrictEqual(pipelineMixProblems(good, 0.2), []);
+  assert.ok(pipelineMixProblems(good.replace('20%', '30%'), 0.2).some((p) => p.includes('says 30%')));
+  assert.ok(pipelineMixProblems(good.replace('`MODES.fast.lanczosMix`', '`DEFAULT_LANCZOS_MIX`'), 0.2).length >= 2);
+  assert.ok(pipelineMixProblems('# nothing', 0.2).some((p) => p.includes('no section')));
+  assert.ok(pipelineMixProblems(doc('3. mixes some Lanczos in `MODES.fast.lanczosMix`'), 0.2).some((p) => p.includes('no "<n>%')));
+});

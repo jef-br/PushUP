@@ -118,10 +118,11 @@ only**; see `models/LICENSES.md`.
    foolhardy, trained on real photos with JPEG damage. License:
    CC BY-NC-SA 4.0, non-commercial only (see `models/LICENSES.md`).
 2. sharp's Lanczos resize takes that down to the target size.
-3. 20% of a plain Lanczos upscale is mixed in (`DEFAULT_LANCZOS_MIX` in
-   `src/index.js`). Both images agree on the coarse shapes, so the mix only
-   brings back some real fine texture that the model smooths away. It takes
-   a few ms.
+3. In `fast` mode, 20% of a plain Lanczos upscale is mixed in
+   (`MODES.fast.lanczosMix` in `src/index.js`); `high` mode mixes nothing
+   (`MODES.high.lanczosMix` is 0). Both images agree on the coarse shapes, so
+   the mix only brings back some real fine texture that the model smooths
+   away. It takes a few ms.
 
 ### Model choice
 
