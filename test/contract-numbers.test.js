@@ -104,3 +104,41 @@ test('the pipeline-mix check reports a wrong percentage, the old constant name a
   assert.ok(pipelineMixProblems('# nothing', 0.2).some((p) => p.includes('no section')));
   assert.ok(pipelineMixProblems(doc('3. mixes some Lanczos in `MODES.fast.lanczosMix`'), 0.2).some((p) => p.includes('no "<n>%')));
 });
+
+// BL30: CLAUDE.md names the model file and size of each mode (`fast`: `models/4xLSDIRCompactC3.onnx` (~2.5 MB ...)).
+// They must match MODES (the file name) and the file on disk (size within 15%, MB read as decimal MB).
+// `modes` is { fast: { file, bytes }, high: { file, bytes } }. Returns a list of problems.
+function modelLineProblems(file, text, modes) {
+  const problems = [];
+  for (const [mode, { file: name, bytes }] of Object.entries(modes)) {
+    const line = text.split('\n').find((l) => l.includes(`\`${mode}\`:`));
+    if (!line) { problems.push(`${file}: no "\`${mode}\`:" mode line`); continue; }
+    if (!line.includes(`models/${name}`)) problems.push(`${file}: ${mode} line does not name models/${name} (MODES.${mode}.modelPath): ${line.trim()}`);
+    const size = line.match(/~(\d+(?:\.\d+)?) MB/);
+    const mb = bytes / 1e6;
+    if (!size) problems.push(`${file}: ${mode} line has no "~<n> MB" size`);
+    else if (Math.abs(Number(size[1]) - mb) > 0.15 * mb) problems.push(`${file}: ${mode} line says ~${size[1]} MB but ${name} is ${mb.toFixed(1)} MB (more than 15% off)`);
+  }
+  return problems;
+}
+
+test('CLAUDE.md model lines name the MODES model files and state their sizes within 15%', () => {
+  const modes = {};
+  for (const mode of ['fast', 'high']) {
+    const p = _MODES[mode].modelPath;
+    modes[mode] = { file: path.basename(p), bytes: fs.statSync(p).size };
+  }
+  assert.deepStrictEqual(modelLineProblems('CLAUDE.md', read('CLAUDE.md'), modes), []);
+});
+
+test('the model-line check reports a wrong file name, a size more than 15% off and a missing line', () => {
+  const modes = { fast: { file: 'a.onnx', bytes: 2_500_000 }, high: { file: 'b.onnx', bytes: 67_000_000 } };
+  const good = '  - `fast`: `models/a.onnx` (~2.5 MB, CC BY 4.0), whole image.\n  - `high`: `models/b.onnx` (~67 MB, x).';
+  assert.deepStrictEqual(modelLineProblems('x.md', good, modes), []);
+  assert.ok(modelLineProblems('x.md', good.replace('models/a.onnx', 'models/c.onnx'), modes).some((p) => p.includes('fast line does not name models/a.onnx')));
+  assert.ok(modelLineProblems('x.md', good.replace('~67 MB', '~80 MB'), modes).some((p) => p.includes('high line says ~80 MB')));
+  assert.ok(modelLineProblems('x.md', good.replace('~2.5 MB', '~2.0 MB'), modes).some((p) => p.includes('fast line says ~2.0 MB')), '2.0 is 20% off 2.5');
+  assert.deepStrictEqual(modelLineProblems('x.md', good.replace('~2.5 MB', '~2.3 MB'), modes), [], '8% off passes');
+  assert.ok(modelLineProblems('x.md', good.replace('~67 MB', 'big'), modes).some((p) => p.includes('no "~<n> MB"')));
+  assert.ok(modelLineProblems('x.md', '  - `fast`: `models/a.onnx` (~2.5 MB)', modes).some((p) => p.includes('no "`high`:" mode line')));
+});
