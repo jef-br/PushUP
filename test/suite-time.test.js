@@ -62,3 +62,27 @@ test('the Total check reports a wrong total and a wrong share and accepts a good
   assert.deepStrictEqual(totalProblems(table(4.0, 70.0)), ['a.test.js: share 70% but 3 s of 4.0 s is 75.0%']);
   assert.deepStrictEqual(totalProblems('| `a.test.js` | 1.0 | 100.0% |'), ['no "| **Total** | **N** |" row']);
 });
+
+// BL34: the intro sentence "The shares are of the sum of the files, <n> s ..." names the same total as the Total row.
+// Returns a list of problems (empty when they agree within 0.5 s, the tolerance of the Total check above).
+function introProblems(sectionText) {
+  const t = /^\|\s*\*\*Total\*\*\s*\|\s*\*\*([\d.]+)\*\*\s*\|/m.exec(sectionText);
+  const m = /The shares are of the sum of the files, ([\d.]+) s/.exec(sectionText);
+  if (!t) return ['no "| **Total** | **N** |" row'];
+  if (!m) return ['no sentence "The shares are of the sum of the files, N s"'];
+  const total = Number(t[1]), said = Number(m[1]);
+  return Math.abs(said - total) > 0.5 ? [`the intro says the sum is ${said} s but the Total row says ${total} s`] : [];
+}
+
+test('the "Test suite time" intro names the same total as the Total row', () => {
+  assert.deepStrictEqual(introProblems(section), []);
+});
+
+test('the intro check reports a wrong number, a missing sentence and a missing Total row, and accepts a match', () => {
+  const doc = (said, total) => `The shares are of the sum of the files, ${said} s (older).\n| **Total** | **${total}** | |`;
+  assert.deepStrictEqual(introProblems(doc('185.0', '185.0')), []);
+  assert.deepStrictEqual(introProblems(doc('185.3', '185.0')), []);
+  assert.deepStrictEqual(introProblems(doc('171.5', '185.0')), ['the intro says the sum is 171.5 s but the Total row says 185 s']);
+  assert.deepStrictEqual(introProblems('| **Total** | **185.0** | |'), ['no sentence "The shares are of the sum of the files, N s"']);
+  assert.deepStrictEqual(introProblems('The shares are of the sum of the files, 185.0 s'), ['no "| **Total** | **N** |" row']);
+});
