@@ -16,9 +16,22 @@ get() {
 }
 get "$HF/huggingface/amazon-berkeley-objects/resolve/main/images_original/train-00000.parquet" "$OUT/abo.parquet"
 get "$HF/PestoRosso/lamoda-fashion-product-images/resolve/main/data/train_part_0000.parquet" "$OUT/lamoda.parquet"
-python3 -c "import pyarrow, PIL" 2>/dev/null || pip install --quiet pyarrow pillow
+# Use one interpreter for the import check, the install and build_testset.py (a bare `pip` can
+# belong to a different Python). Fall back to a venv under bench/out/venv if a global install fails.
+PY=python3
+if ! "$PY" -c "import pyarrow; from PIL import Image" 2>/dev/null; then
+  "$PY" -m pip install --quiet pyarrow pillow 2>/dev/null || true
+  if ! "$PY" -c "import pyarrow; from PIL import Image" 2>/dev/null; then
+    if "$PY" -m venv "$OUT/venv" 2>/dev/null && "$OUT/venv/bin/python" -m pip install --quiet pyarrow pillow 2>/dev/null; then
+      PY="$OUT/venv/bin/python"
+    else
+      echo "fetch_testset.sh: python packages pyarrow and pillow are missing and could not be installed; run: python3 -m pip install pyarrow pillow" >&2
+      exit 1
+    fi
+  fi
+fi
 if [ ! -d "$OUT/set" ] || [ "$(ls "$OUT/set" | wc -l)" -lt 60 ]; then
-  python3 build_testset.py "$OUT/abo.parquet" "$OUT/lamoda.parquet" "$OUT/set"
+  "$PY" build_testset.py "$OUT/abo.parquet" "$OUT/lamoda.parquet" "$OUT/set"
 fi
 # Fixed 20-image subset: every 3rd image, 13 ABO + 7 Lamoda.
 rm -rf "$OUT/sub20"; mkdir -p "$OUT/sub20"

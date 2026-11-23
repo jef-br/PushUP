@@ -2,7 +2,7 @@
 
 Async, in-memory image upscaler for e-commerce photos (on-model apparel,
 lifestyle shots, packaged goods, appliances, sports gear). It runs
-Real-ESRGAN-style models through ONNX Runtime. It runs on any CPU and uses a GPU
+ESRGAN-family super-resolution models through ONNX Runtime. It runs on any CPU and uses a GPU
 automatically when one is available. No Python at runtime.
 
 ## Install
@@ -118,10 +118,11 @@ only**; see `models/LICENSES.md`.
    foolhardy, trained on real photos with JPEG damage. License:
    CC BY-NC-SA 4.0, non-commercial only (see `models/LICENSES.md`).
 2. sharp's Lanczos resize takes that down to the target size.
-3. 20% of a plain Lanczos upscale is mixed in (`DEFAULT_LANCZOS_MIX` in
-   `src/index.js`). Both images agree on the coarse shapes, so the mix only
-   brings back some real fine texture that the model smooths away. It takes
-   a few ms.
+3. In `fast` mode, 20% of a plain Lanczos upscale is mixed in
+   (`MODES.fast.lanczosMix` in `src/index.js`); `high` mode mixes nothing
+   (`MODES.high.lanczosMix` is 0). Both images agree on the coarse shapes, so
+   the mix only brings back some real fine texture that the model smooths
+   away. It takes a few ms.
 
 ### Model choice
 
@@ -191,7 +192,7 @@ node bench/bench.js bench/out/set --methods lanczos,sr-full
 
 The usual route, as the overnight runs do it: `bench/fetch_testset.sh` downloads the source
 parquet files from Hugging Face and builds `bench/out/set` (60 images) and `bench/out/sub20`
-(20 images, the quality-gate subset). To check that a change doesn't lower quality, score
+(20 images, the quality-gate subset). It installs `pyarrow` and `pillow` with `python3 -m pip`, or into a virtual environment under `bench/out/venv` if a global install is refused. To check that a change doesn't lower quality, score
 `sub20` before and after it and compare the two runs:
 
 ```bash
@@ -295,7 +296,8 @@ case, so the model always gets the full-size input.
   255,0,255), 26 on saturated green. The model causes it (plain Lanczos returns every colour
   exactly; the 20 % mix only scales it by about 0.8). Most of it is a band within about 8 px of the
   image border (model alone, more than 16 px from the border: magenta 6 bytes); saturated green also shifts by
-  10 to 14 bytes in the interior ([docs/COLOR.md](docs/COLOR.md)). Uniform images only; real photos were not measured.
+  10 to 14 bytes in the interior ([docs/COLOR.md](docs/COLOR.md)). On 20 real photos the shipped `fast` pipeline has a mean bias of about −1 byte in red and green
+  (Lanczos −0.1), none in blue, and about the same mean error as Lanczos (lower in blue), at input sizes of 400, 600 and 800 px ([docs/COLOR.md](docs/COLOR.md#real-photos-bl13)); 20 images.
 - **Other vendors:** only Claid.ai has been compared, using the vendor's own published
   before/after images. Comparing more vendors needs their sites added to the network
   allowlist. The bench can score any output folder.
@@ -305,6 +307,7 @@ case, so the model always gets the full-size input.
 ```bash
 npm install                           # if the CUDA download fails: npm install --onnxruntime-node-install-cuda=skip
 npm test                              # unit + contract tests (node --test)
+npm run bench -- bench/out/set --methods lanczos,sr-full   # compare methods on the test set (same as node bench/bench.js ...; set: bash bench/fetch_testset.sh)
 bash scripts/pack-smoke.sh            # pack the package, install it in a temp dir, run one upscale there
 node bench/profile.js                 # per-stage latency of the fast pipeline (synthetic images)
 node bench/cold.js --modes fast       # first-call vs warm latency, each in a fresh process
@@ -316,12 +319,14 @@ node bench/arena.js                   # latency, memory and output bytes with th
 node bench/memory-creep.js            # does memory keep growing over repeated `fast` calls? (30 calls, one process)
 node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos (--quality high: Remacri)
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
+node bench/colors-real.js              # colour bias of `fast` vs plain Lanczos on real photos (needs bench/out/sub20; results: docs/COLOR.md "Real photos (BL13)")
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
 node bench/worker.js                  # cost of running `upscale` in a worker_threads worker: latency, cold start, memory, event loop (results: docs/PERF.md "Worker")
 ```
 
+- `PUSHUP_SLOW_TESTS=1 npm test` also runs the tests that are skipped by default because they are slow on a CPU (today: the `high` case of `bench/arena.js`, about 50 s, `bench/memory-breakdown.js`, about 15 s, and `bench/colors.js`, about 25 s). Only the value `1` turns it on. Run them with `npm run test:slow` (Linux/macOS shell syntax): it sets the variable and runs the test files one at a time, because in parallel the `high` case shares the CPU with the other files and runs into its own 120 s cap (236 s in the parallel run, 52 s one at a time, 4 vCPU). GitHub runs `npm run test:slow` weekly and on demand (`.github/workflows/slow-tests.yml`, Actions tab, "Run workflow"); `ci.yml` does not run them.
 - `npm install --onnxruntime-node-install-cuda=skip` skips the CUDA libraries download
   (Linux x64 only; Windows and macOS don't download them). Use it where that download is
   blocked or not wanted; PushUP then runs on the CPU there (see "Quality modes and GPU").

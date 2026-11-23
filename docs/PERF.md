@@ -9,7 +9,7 @@
   one-off ONNX session load is excluded). Stage columns replay the same steps in the
   script, median of N runs, and are indicative (they don't sum exactly to `total`).
 - Machine: 4 vCPU cloud container (`cpus=4`), Node 22 (v22.23.4 in the 2026-11-11 run), onnxruntime-node 1.31, sharp 0.35,
-  `DEFAULT_LANCZOS_MIX` 0.2, full input fed to the model. Re-measure on your own hardware.
+  `fast` mode Lanczos mix 0.2 (`MODES.fast.lanczosMix`), full input fed to the model. Re-measure on your own hardware.
 
 ## Results (median ms)
 
@@ -549,3 +549,147 @@ numbers are for this machine and will differ elsewhere. Two runs (`node bench/wo
   of concurrent calls. A worker would not remove the one-call-at-a-time rule inside one worker. No change to code or
   defaults is proposed here: whether to move inference to a worker is an owner decision (row 9 of
   `docs/OWNER_DECISIONS.md`).
+
+## Bench-run test timeouts (BL3)
+
+Each `test/bench-run-*.test.js` runs a `bench/` script as a child process with a timeout. Measured 2026-11-19, 4 vCPU,
+`PUSHUP_DEVICE=cpu`, `node --test <file>` three times, longest of the three per case (the case time includes
+starting the child and the asserts). Headroom = timeout / longest time. Every case has at least 5x, so no timeout was
+changed; the opt-in `high` case of `bench/arena.js` (50.6 s, own 120 s timeout, skipped unless `PUSHUP_SLOW_TESTS=1`), the opt-in `bench/memory-breakdown.js` case (15.2–15.8 s, own 90 s timeout, same variable) and the opt-in `bench/colors.js` case (23.7–25.2 s, own 150 s timeout, same variable) are exempt.
+
+| Test file | Case | Child timeout | Longest of 3 runs | Headroom |
+| --- | --- | --- | --- | --- |
+| `bench-run-arena-eventloop-worker` | `arena.js` (`fast:400`) | 30 s | 2.30 s | 13x |
+| `bench-run-arena-eventloop-worker` | `eventloop.js` | 30 s | 1.95 s | 15x |
+| `bench-run-arena-eventloop-worker` | `worker.js` | 30 s | 2.03 s | 15x |
+| `bench-run-edges-real` | `edges-real.js` | 60 s | 1.52 s | 39x |
+| `bench-run-memory` | `memory.js` | 30 s | 1.12 s | 27x |
+| `bench-run-memory` | `memory-creep.js` | 30 s | 2.54 s | 11x |
+| `bench-run-pad` | `pad.js` (two-image run) | 300 s | 6.34 s | 47x |
+| `bench-run-pad` | `pad.js --limit 1` | 300 s | 5.55 s | 54x |
+| `bench-run-profile-threads` | `profile.js` | 30 s | 1.37 s | 21x |
+| `bench-run-profile-threads` | `threads.js` | 30 s | 3.65 s | 8x |
+| `bench-run-sr` | `bench.js --methods lanczos,sr-full` (BL12) | 60 s | 2.59 s | 23x |
+| `bench-run-throughput-cold` | `throughput.js` | 30 s | 2.12 s | 14x |
+| `bench-run-throughput-cold` | `cold.js` | 30 s | 0.94 s | 31x |
+
+`test/bench-run-timeouts.test.js` is a guard rail, not a contract: it fails if a numeric child timeout in those files is
+below 20 s, so an edit cannot lower one by accident. (`bench-run-pad` once timed out at 60 s on a loaded CI runner, so a
+runner can be much slower than this table; the 5x rule is a minimum, not a promise.)
+
+## Test suite time (BL6)
+
+Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVICE` / `PUSHUP_QUALITY` set (see below), each file run alone with `node --test test/<file>` (one run per file; the five slowest were run once more and agreed within 0.4 s: `device` 18.2 s, `upscale` 16.4 s, `bench-run-pad` 15.0 s, `aspect` 14.2 s, `device-fallback` 8.2 s). A file's time includes starting Node and loading the model session. The shares are of the sum of the files, 189.1 s (164 s on 2026-11-19, plus the files added since, measured later); `npm test` on `main` took 172 s the same day, so running the files together costs about what running them one by one does (each model call already uses all cores).
+
+| Test file | Seconds | Share |
+| --- | ---: | ---: |
+| `device.test.js` | 17.9 | 9.5% |
+| `upscale.test.js` | 16.1 | 8.5% |
+| `bench-run-pad.test.js` | 14.9 | 7.9% |
+| `aspect.test.js` | 14.0 | 7.4% |
+| `device-fallback.test.js` | 8.5 | 4.5% |
+| `bench-run-arena-eventloop-worker.test.js` | 7.5 | 4.0% |
+| `output-ownership.test.js` | 7.2 | 3.8% |
+| `package.test.js` | 6.8 | 3.6% |
+| `bench-run-profile-threads.test.js` | 6.3 | 3.3% |
+| `bench-json.test.js` | 5.8 | 3.1% |
+| `convert.test.js` | 5.6 | 3.0% |
+| `determinism.test.js` | 5.2 | 2.7% |
+| `extremes.test.js` | 5.2 | 2.7% |
+| `pack-run.test.js` | 4.7 | 2.5% |
+| `bench-run-memory.test.js` | 4.6 | 2.4% |
+| `downscale.test.js` | 4.0 | 2.1% |
+| `queue.test.js` | 3.9 | 2.1% |
+| `bench-args.test.js` | 3.9 | 2.1% |
+| `input.test.js` | 3.8 | 2.0% |
+| `colors-real-args.test.js` | 3.8 | 2.0% |
+| `bench-run-throughput-cold.test.js` | 3.5 | 1.9% |
+| `edges-border.test.js` | 3.1 | 1.6% |
+| `tiling.test.js` | 2.8 | 1.5% |
+| `bench-run-sr.test.js` | 2.5 | 1.3% |
+| `threads-profile-args.test.js` | 2.3 | 1.2% |
+| `bench-run-edges-real.test.js` | 1.9 | 1.0% |
+| `mix.test.js` | 1.5 | 0.8% |
+| `flags.test.js` | 1.5 | 0.8% |
+| `batch-reject.test.js` | 1.2 | 0.6% |
+| `arena-cold-args.test.js` | 1.2 | 0.6% |
+| `throughput-stop.test.js` | 1.1 | 0.6% |
+| `gate.test.js` | 1.0 | 0.5% |
+| `throughput-breakdown-args.test.js` | 0.9 | 0.5% |
+| `bench-method-validate.test.js` | 0.9 | 0.5% |
+| `contract-numbers.test.js` | 0.9 | 0.5% |
+| `branches.test.js` | 0.8 | 0.4% |
+| `pad-args.test.js` | 0.8 | 0.4% |
+| `edges-args.test.js` | 0.7 | 0.4% |
+| `memory-args.test.js` | 0.7 | 0.4% |
+| `bench-exports.test.js` | 0.7 | 0.4% |
+| `readme.test.js` | 0.7 | 0.4% |
+| `length.test.js` | 0.5 | 0.3% |
+| `edges-real.test.js` | 0.5 | 0.3% |
+| `eventloop-args.test.js` | 0.5 | 0.3% |
+| `ort-loglevel.test.js` | 0.4 | 0.2% |
+| `worker-args.test.js` | 0.4 | 0.2% |
+| `degrade.test.js` | 0.4 | 0.2% |
+| `exit.test.js` | 0.4 | 0.2% |
+| `mixed-queue.test.js` | 0.4 | 0.2% |
+| `quiet.test.js` | 0.4 | 0.2% |
+| `python-syntax.test.js` | 0.4 | 0.2% |
+| `model-input.test.js` | 0.3 | 0.2% |
+| `memory-creep-args.test.js` | 0.3 | 0.2% |
+| `esm.test.js` | 0.3 | 0.2% |
+| `tiny-factor.test.js` | 0.3 | 0.2% |
+| `session-retry.test.js` | 0.3 | 0.2% |
+| `arr-types.test.js` | 0.3 | 0.2% |
+| `env-per-call.test.js` | 0.2 | 0.1% |
+| `readme-errors.test.js` | 0.2 | 0.1% |
+| `models.test.js` | 0.2 | 0.1% |
+| `profile-sync.test.js` | 0.1 | 0.1% |
+| `readme-links.test.js` | 0.1 | 0.1% |
+| `bench-run-colors.test.js` | 0.1 | 0.1% |
+| `tasks-format.test.js` | 0.1 | 0.1% |
+| `doc-links.test.js` | 0.1 | 0.1% |
+| `doc-tables.test.js` | 0.1 | 0.1% |
+| `node-versions.test.js` | 0.1 | 0.1% |
+| `suite-time.test.js` | 0.1 | 0.1% |
+| `readme-env.test.js` | 0.1 | 0.1% |
+| `readme-bench.test.js` | 0.1 | 0.1% |
+| `owner-decisions.test.js` | 0.1 | 0.1% |
+| `bench-method.test.js` | 0.1 | 0.1% |
+| `slow-workflow.test.js` | 0.1 | 0.1% |
+| `workflows.test.js` | 0.1 | 0.1% |
+| `contract-tests.test.js` | 0.1 | 0.1% |
+| `decision-refs.test.js` | 0.1 | 0.1% |
+| `lockfile.test.js` | 0.1 | 0.1% |
+| `bench-run-timeouts.test.js` | 0.1 | 0.1% |
+| `fetch-testset.test.js` | 0.1 | 0.1% |
+| `readme-timings.test.js` | 0.1 | 0.1% |
+| **Total** | **189.1** | |
+
+The three costliest files are `device.test.js`, `upscale.test.js` and `bench-run-pad.test.js` (together about 30% of the time). Two of them call the real model many times (`device.test.js` runs `_run` on a real image in most of its cases, `upscale.test.js` makes 14 `upscale` calls), and `bench-run-pad.test.js` starts `bench/pad.js` as child processes that each load the model. Most other files take under 2 s.
+
+Do not export `PUSHUP_DEVICE=cpu` for the whole suite when you time it: `device.test.js` "a GPU that fails while running falls back to CPU and retries" fails with it set, because that test stubs a GPU attempt.
+
+`test/suite-time.test.js` checks that this table lists every `test/*.test.js` file (and no other name), sorted slowest first, with shares that add up to about 100%. It does not check the seconds: a new test file must be added here, and the numbers are a record of one measurement, not a limit.
+
+### Opt-in slow tests (BL20)
+
+What `PUSHUP_SLOW_TESTS=1` costs. Measured 2026-11-20 (the `bench-run-memory.test.js` row again on 2026-11-22, BL33, two runs), 4 vCPU, `PUSHUP_DEVICE` / `PUSHUP_QUALITY` unset, each file run alone (`node --test test/<file>`), one run per figure otherwise. The default suite is the table above; this does not change it.
+
+| Test file | Default (s) | With `PUSHUP_SLOW_TESTS=1` (s) | Opt-in case | Added (s) |
+| --- | ---: | ---: | --- | ---: |
+| `bench-run-arena-eventloop-worker.test.js` | 6.2 (3 pass, 1 skipped) | 58.3 (4 pass) | `arena.js` `high:400` | 52.1 |
+| `bench-run-colors.test.js` | 0.1 (1 skipped) | 17.2 (1 pass) | `colors.js` | 17.1 |
+| `bench-run-memory.test.js` | 3.7 (2 pass, 2 skipped) | 70.5 (4 pass) | `memory-breakdown.js` and `memory-breakdown.js --arena` (BL33) | 66.8 |
+| Sum | 10.0 | 146.0 | | 136.0 |
+
+Alone, all 9 tests of the three files pass with the flag (0 skipped). The `bench-run-memory.test.js` row was measured again on 2026-11-22 (BL33, two runs: 70.2 s and 70.8 s, so 70.5 s) after the `--arena` case was added; the `--arena` run alone takes 47.2 s; the other rows are from 2026-11-20. The figures in the rest of this paragraph (123 s together, 92.4 s sum, 483 tests, 245 s whole suite) are from 2026-11-20, before BL33, and are not re-measured. In a plain parallel flagged run (`PUSHUP_SLOW_TESTS=1 node --test test/*.test.js`, 2026-11-22, 517 tests, 350 s) the `--arena` case took 188 s of its 240 s cap (about 4x its solo time), so it passed there, but with less margin than under `npm run test:slow`. Run together in one `node --test` command with the flag the three files took 123 s (earlier the same day, 8 pass), more than the 92.4 s sum, because they share the CPU. **In the whole suite they do not:** `PUSHUP_SLOW_TESTS=1 npm test` took 245 s (default `npm test` 158 s the same day) and reported 483 tests, 482 pass, 1 fail, 0 skipped, in two runs out of two. The failing case is `arena.js --runs 1 --cases high:400 prints arena on and off, with identical output bytes`: the child process is killed at the case's own 120 s cap (`status` is `null`, the assertion `null !== 0`), because the other test files use the CPU at the same time (58 s alone). The cap was not changed (BL21, below).
+
+**Fix (BL21).** Measured on the same machine: with a throwaway 600 s cap the parallel flagged run passes and the `high:400` case takes 236.7 s inside it (whole run 285 s); with `--test-concurrency=1` the case takes 51.6 s and the whole run 229 s, so running the files one at a time is also faster overall (the default `npm test` is unchanged). `npm run test:slow` (`PUSHUP_SLOW_TESTS=1 node --test --test-concurrency=1 test/*.test.js`, Linux/macOS shell syntax) was run three times in a row, 483 tests, 483 pass, 0 fail, 0 skipped each time:
+
+| Run | Whole run (s) | `high:400` case (s) |
+| --- | ---: | ---: |
+| 1 | 228.3 | 52.2 |
+| 2 | 237.7 | 53.4 |
+| 3 | 233.8 | 53.6 |
+
+The case keeps its 120 s cap (about 2.2x the slowest of these runs) and all its assertions.
