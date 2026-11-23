@@ -2,7 +2,7 @@
 
 Async, in-memory image upscaler for e-commerce photos (on-model apparel,
 lifestyle shots, packaged goods, appliances, sports gear). It runs
-Real-ESRGAN-style models through ONNX Runtime. It runs on any CPU and uses a GPU
+ESRGAN-family super-resolution models through ONNX Runtime. It runs on any CPU and uses a GPU
 automatically when one is available. No Python at runtime.
 
 ## Install
