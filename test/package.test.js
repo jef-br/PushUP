@@ -76,3 +76,25 @@ test('the Install size check reports a figure 20% off, and accepts one 8% off', 
   assert.deepStrictEqual(installSizeProblems('# T\n## Install\nno size here\n## Usage\n', 64.3e6), ['README "Install": no "~<n> MB" download size']);
   assert.deepStrictEqual(installSizeProblems('# T\n', 64.3e6), ['README: no "## Install" section']);
 });
+
+// BL37: the npm description and keywords must not name a model that does not ship (they said "Real-ESRGAN" after D6
+// replaced it). Model-like words are looked up in the file names under models/ and in models/LICENSES.md.
+const MODEL_WORDS = ['real-esrgan', 'realesr', 'lsdir', 'remacri'];
+function unknownModelWords(pkg, known) {
+  const text = [pkg.description || '', ...(pkg.keywords || [])].join(' ').toLowerCase();
+  const hay = known.toLowerCase();
+  return MODEL_WORDS.filter((w) => text.includes(w) && !hay.includes(w));
+}
+test('package.json description and keywords name only models that ship', () => {
+  const fs = require('node:fs');
+  const dir = path.join(__dirname, '..', 'models');
+  const known = fs.readdirSync(dir).join(' ') + ' ' + fs.readFileSync(path.join(dir, 'LICENSES.md'), 'utf8');
+  const pkg = require('../package.json');
+  assert.deepStrictEqual(unknownModelWords(pkg, known), []);
+});
+test('the model-word check reports real-esrgan when no shipped model has that name', () => {
+  const known = '4xLSDIRCompactC3.onnx 4x_foolhardy_Remacri.onnx';
+  assert.deepStrictEqual(unknownModelWords({ description: 'upscaler (Real-ESRGAN via ONNX)', keywords: ['upscale'] }, known), ['real-esrgan']);
+  assert.deepStrictEqual(unknownModelWords({ description: 'upscaler', keywords: ['real-esrgan', 'remacri'] }, known), ['real-esrgan']);
+  assert.deepStrictEqual(unknownModelWords({ description: 'ESRGAN-family models', keywords: ['esrgan', 'lsdir'] }, known), []);
+});
