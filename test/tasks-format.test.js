@@ -33,18 +33,49 @@ function check(text) {
   return problems;
 }
 
-test('TASKS.md follows its conventions', () => {
-  const text = fs.readFileSync(path.join(__dirname, '..', 'TASKS.md'), 'utf8');
-  const count = (s) => (text.match(new RegExp(`^### \\[${s}\\] `, 'gm')) || []).length;
-  assert.ok(count('x') >= 100, `only ${count('x')} finished tasks found; is the scan broken?`);
-  assert.deepStrictEqual(check(text), []);
+// BL40: finished tasks are in docs/TASKS_DONE.md, open ones in TASKS.md. Every rule applies to both files together
+// (so a finished task that has not been moved yet still needs its done note, and an ID used in one file cannot be
+// reused in the other).
+const root = path.join(__dirname, '..');
+const tasksText = fs.readFileSync(path.join(root, 'TASKS.md'), 'utf8');
+const doneText = fs.readFileSync(path.join(root, 'docs', 'TASKS_DONE.md'), 'utf8');
+const checkFiles = (...texts) => check(texts.join('\n'));
+
+// TASKS.md must stay readable in one call (a single file read is refused above 256 KB).
+const TASKS_MAX_BYTES = 200000;
+function sizeProblems(bytes) {
+  return bytes < TASKS_MAX_BYTES ? []
+    : [`TASKS.md is ${bytes} bytes, over ${TASKS_MAX_BYTES}: move its [x] tasks to docs/TASKS_DONE.md`];
+}
+
+test('TASKS.md and docs/TASKS_DONE.md follow the conventions', () => {
+  const count = (t, s) => (t.match(new RegExp(`^### \\[${s}\\] `, 'gm')) || []).length;
+  assert.ok(count(doneText, 'x') >= 100, `only ${count(doneText, 'x')} finished tasks found in docs/TASKS_DONE.md; is the scan broken?`);
+  assert.deepStrictEqual(checkFiles(tasksText, doneText), []);
+});
+
+test('TASKS.md is small enough to read in one call', () => {
+  assert.deepStrictEqual(sizeProblems(Buffer.byteLength(tasksText)), []);
+});
+
+test('the size check reports an oversized file', () => {
+  assert.deepStrictEqual(sizeProblems(199999), []);
+  assert.deepStrictEqual(sizeProblems(316990),
+    ['TASKS.md is 316990 bytes, over 200000: move its [x] tasks to docs/TASKS_DONE.md']);
 });
 
 test('the legacy set is still needed: T4 really has no done marker', () => {
-  const text = fs.readFileSync(path.join(__dirname, '..', 'TASKS.md'), 'utf8');
-  const t4 = text.split(/^(?=### )/m).find((p) => p.startsWith('### [x] T4 '));
-  assert.ok(t4, 'T4 not found');
+  const t4 = doneText.split(/^(?=### )/m).find((p) => p.startsWith('### [x] T4 '));
+  assert.ok(t4, 'T4 not found in docs/TASKS_DONE.md');
   assert.ok(!/\(done/.test(t4.split('\n', 1)[0]) && !/\*\*Done/.test(t4));
+});
+
+test('an ID used in both files is reported', () => {
+  const open = '### [ ] A4 — ready\n';
+  const done = '### [x] A1 — (done 2026-11-19) fine\n';
+  assert.deepStrictEqual(checkFiles(open, done), []);
+  assert.deepStrictEqual(checkFiles(open, done.replace('A1', 'A4')), ['A4: ID appears twice']);
+  assert.match(checkFiles(open, '### [x] A1 — no note\n')[0], /A1: finished task has no/);
 });
 
 test('the rules catch what they are meant to catch', () => {

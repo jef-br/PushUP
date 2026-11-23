@@ -16,9 +16,9 @@ const defined = [...read('docs/DECISIONS.md').matchAll(/^## D(\d+) — /gm)].map
 const files = ['README.md', 'PROGRESS.md', 'TASKS.md', 'CLAUDE.md',
   ...fs.readdirSync(path.join(root, 'docs')).filter((f) => f.endsWith('.md')).map((f) => 'docs/' + f)];
 
-// Matches that are not decisions. TASKS.md only: BL4's own text uses D65 and D140 as examples of
-// numbers that do not exist. The same numbers in any other file still fail the test.
-const NOT_DECISIONS = { 'TASKS.md': new Set(['D65', 'D140']) };
+// Matches that are not decisions. BL4's own text uses D65 and D140 as examples of numbers that do not exist; it
+// was in TASKS.md and, finished, moved to docs/TASKS_DONE.md (BL40). The same numbers in any other file still fail.
+const NOT_DECISIONS = { 'TASKS.md': new Set(['D65', 'D140']), 'docs/TASKS_DONE.md': new Set(['D65', 'D140']) };
 
 const citations = [];
 for (const rel of files) {

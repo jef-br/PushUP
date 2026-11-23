@@ -9,7 +9,8 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const decisions = fs.readFileSync(path.join(root, 'docs', 'OWNER_DECISIONS.md'), 'utf8');
-const tasks = fs.readFileSync(path.join(root, 'TASKS.md'), 'utf8');
+// BL40: finished tasks are in docs/TASKS_DONE.md, so the headings of both files are read.
+const tasks = fs.readFileSync(path.join(root, 'TASKS.md'), 'utf8') + '\n' + fs.readFileSync(path.join(root, 'docs', 'TASKS_DONE.md'), 'utf8');
 
 // Table rows: lines starting with "| <number> |".
 const rows = decisions.split('\n').filter((l) => /^\|\s*\d+\s*\|/.test(l)).map((l) => {
