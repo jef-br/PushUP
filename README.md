@@ -32,7 +32,9 @@ const [arr_out, stride_out] = await upscale(arr, stride, 1.5);
 
 Examples: 800 px at 1.5 gives 1000 px (1200, capped); 400 px at 2.5 gives
 1000 px; 400 px at 1.5 gives 600 px. With 1.0 the size stays the same, but the
-model still runs, so JPEG blocks are removed and edges get sharper.
+model still runs: it makes JPEG block borders less visible (about two thirds of the excess
+block contrast is gone at JPEG quality 50 and 75; PSNR rises 0.7 dB at quality 50 and falls 0.4 dB
+at quality 75, [docs/JPEG.md](docs/JPEG.md)) and edges get sharper.
 
 Calls are async (`upscale` returns a promise) and run one at a time, because each one
 already uses every CPU core. They do **not** leave the Node.js event loop free: while the model
@@ -321,6 +323,7 @@ node bench/edges.js                   # overshoot and edge width on synthetic ha
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
 node bench/colors-real.js              # colour bias of `fast` vs plain Lanczos on real photos (needs bench/out/sub20; results: docs/COLOR.md "Real photos (BL13)")
 node bench/banding.js                   # banding of soft shadows and gradients through `fast` (synthetic, no download; results: docs/BANDING.md)
+node bench/jpeg.js                      # does a factor-1 call remove JPEG blocking? (needs bench/out/set; results: docs/JPEG.md)
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
