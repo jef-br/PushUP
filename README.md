@@ -320,6 +320,7 @@ node bench/memory-creep.js            # does memory keep growing over repeated `
 node bench/edges.js                   # overshoot and edge width on synthetic hard edges, `fast` vs plain Lanczos (--quality high: Remacri)
 node bench/colors.js                  # how far flat colours move through `fast` (27 colours; model vs mix; border vs interior)
 node bench/colors-real.js              # colour bias of `fast` vs plain Lanczos on real photos (needs bench/out/sub20; results: docs/COLOR.md "Real photos (BL13)")
+node bench/banding.js                   # banding of soft shadows and gradients through `fast` (synthetic, no download; results: docs/BANDING.md)
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
