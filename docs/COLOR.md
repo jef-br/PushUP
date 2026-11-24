@@ -214,5 +214,5 @@ Question: how much of this comes from the model, and how much does the shipped 2
 | 0.6 | 0.86 | 3 | 3.86 |
 | 1 (plain Lanczos, from the table above) | 0.64 | 2 | 0.17 |
 
-- **Result:** the share of pixels with spread ≥ 3 falls steadily as the mix grows (17.19 → 16.32 → 11.70 → 3.86 %), but the shipped 20% takes away only 0.87 points of the 17.19 the model alone produces. The effect comes from the model, not from the mix,. A larger mix would lower it further, but what that costs in texture or sharpness is not measured here, and a mix change is a default change that needs the quality gate and the owner.
+- **Result:** the share of pixels with spread ≥ 3 falls steadily as the mix grows (17.19 → 16.32 → 11.70 → 3.86 %), but the shipped 20% takes away only 0.87 points of the 17.19 the model alone produces. The effect comes from the model, not from the mix. A larger mix would lower it further, but what that costs in texture or sharpness is not measured here, and a mix change is a default change that needs the quality gate and the owner.
 
