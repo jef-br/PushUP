@@ -185,3 +185,19 @@ horizontal ramp 16 → 240; seeded grey noise 128 ± 8) at factors 1 and 1.5. Sp
   levels (the task's threshold), so the finding is added to [OWNER_DECISIONS.md](OWNER_DECISIONS.md) (row 13). No change to `src/`. A test pins the flat-grey
   figure (`test/bench-run-neutral.test.js`: the measured largest spread plus 1), so a later model change that adds a cast fails it.
 - **Limits:** synthetic images, one size, `fast` only, grey noise of one amplitude; no real photographs of grey backdrops.
+
+## Neutral backdrops on real photos (BL46, 2026-11-24)
+
+Question: the synthetic noisy grey of BL43 (row 13 of [OWNER_DECISIONS.md](OWNER_DECISIONS.md)) turned into colour noise. Does the same happen on the flat, near-neutral backdrops of real product photos?
+
+`node bench/neutral-real.js` (needs `bench/out/sub20`, `fast`, CPU, about 11 s). Inputs are built as in `bench/colors-real.js` (source at 1000 px, downscaled to 400 px, JPEG q85). Regions are found in the **input**: 16×16 blocks on a grid starting 16 px from the left and top edge, at least 16 px from every edge, with a largest per-pixel channel spread (max(R,G,B) − min(R,G,B)) of at most 2 and a luma standard deviation between 0.5 and 8. Each block is measured in the `fast` output (factor 1000 / longest side) and in plain Lanczos to the same size, in the output box from ceil(x·f) to floor((x+16)·f) (f = 1000 / longest side), so the box lies inside the block's pixels.
+
+20 images, 12 with a region, 317 blocks (no region: abo_002a7de9, abo_1d441bcb, abo_1d8c3146, abo_1df379d8, abo_69a18908, abo_69e928d0, lamoda_Jeans_39386, lamoda_Tshirts_5095).
+
+| method | pixels | mean spread | 99th percentile spread | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|
+| `fast` | 507200 | 1.60 | 4 | 16.32 |
+| Lanczos | 507200 | 0.64 | 2 | 0.17 |
+
+- **Result:** yes. In near-neutral flat regions of real photos, 16.32% of `fast` output pixels have a channel spread of 3 or more against 0.17% for plain Lanczos (16.15 percentage points more, far above the 1 point of the task's rule); the mean spread is 1.60 against 0.64 and the 99th percentile 4 against 2. So the colour noise seen on synthetic grey noise is real on photos, but small in size (a spread of 3 to 4 levels at the 99th percentile); it is not measured whether it is visible.
+- **Limits:** one input size (400 px), JPEG q85 degradation, 12 of 20 images have a qualifying region, the blocks are chosen on the input (a region where the input is already neutral), `fast` only, no visual judgement. No change to `src/`.
