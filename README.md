@@ -324,6 +324,7 @@ node bench/colors.js                  # how far flat colours move through `fast`
 node bench/colors-real.js              # colour bias of `fast` vs plain Lanczos on real photos (needs bench/out/sub20; results: docs/COLOR.md "Real photos (BL13)")
 node bench/banding.js                   # banding of soft shadows and gradients through `fast` (synthetic, no download; results: docs/BANDING.md)
 node bench/jpeg.js                      # does a factor-1 call remove JPEG blocking? (needs bench/out/set; results: docs/JPEG.md)
+node bench/neutral.js                   # do neutral greys stay neutral through `fast`? (synthetic, no download; results: docs/COLOR.md "Neutral greys (BL43)")
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")

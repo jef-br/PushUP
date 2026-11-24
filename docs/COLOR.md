@@ -151,3 +151,37 @@ The three images with the largest `fast` bias (R/G/B, bytes). At 800 px: `abo_1d
 - **Decision rule of the task** (excess of the `fast` bias over Lanczos above 2 bytes on any channel): the largest excess is 1.11 bytes (red, 800 px;
   600 px: 1.10), so it is not exceeded at any size, no follow-up task is added and nothing changes.
 - **Limits:** as above (20 images, JPEG q85 degradation, deterministic script, a bias shared with the reference would not show); three input sizes, not the whole 400–800 px range.
+
+## Neutral greys (BL43, 2026-11-24)
+
+Question: product shots on grey or white backdrops need R = G = B to stay equal. A few levels of colour cast in a grey backdrop shows.
+The sections above measure flat saturated colours; this one measures greys.
+
+`node bench/neutral.js` (no download, `fast`, CPU): synthetic 400×300 images with R = G = B everywhere (flat grey at 64, 128, 192 and 240; a
+horizontal ramp 16 → 240; seeded grey noise 128 ± 8) at factors 1 and 1.5. Spread = max(R,G,B) − min(R,G,B) of an output pixel (0 for a neutral pixel);
+"away from the border" = more than 16 px from every edge, as in `bench/colors.js`.
+
+| case | factor | out | max spread (whole image) | mean spread (whole image) | max spread (away from the border) | mean spread (away from the border) |
+|---|---|---|---|---|---|---|
+| flat64 | 1 | 400x300 | 2 | 1.016 | 2 | 1.001 |
+| flat64 | 1.5 | 600x450 | 2 | 1.000 | 1 | 1.000 |
+| flat128 | 1 | 400x300 | 2 | 1.034 | 2 | 1.020 |
+| flat128 | 1.5 | 600x450 | 3 | 1.000 | 1 | 1.000 |
+| flat192 | 1 | 400x300 | 2 | 1.025 | 1 | 1.000 |
+| flat192 | 1.5 | 600x450 | 3 | 0.999 | 1 | 1.000 |
+| flat240 | 1 | 400x300 | 3 | 1.005 | 1 | 1.000 |
+| flat240 | 1.5 | 600x450 | 2 | 1.000 | 1 | 1.000 |
+| ramp | 1 | 400x300 | 3 | 1.470 | 2 | 1.481 |
+| ramp | 1.5 | 600x450 | 3 | 1.317 | 3 | 1.317 |
+| noise | 1 | 400x300 | 6 | 1.570 | 6 | 1.578 |
+| noise | 1.5 | 600x450 | 8 | 1.720 | 7 | 1.727 |
+
+- **Flat greys:** the output is never exactly neutral. Almost every pixel has a spread of exactly 1 level (mean 1.00–1.03; interior largest 1–2, whole
+  image 2–3 including the border). One level between channels is not visible.
+- **Ramp:** mean spread 1.3–1.5, largest 3.
+- **Noisy grey:** the model turns grey noise into colour noise: mean spread 1.6–1.7, largest 6 at factor 1 and 8 (7 away from the border) at factor 1.5.
+  A few isolated pixels reach 6–8 levels; the mean stays under 2.
+- **Result:** greys stay neutral to within 1–2 levels on flat areas and 3 on ramps, but noisy grey areas get isolated pixels with a spread above 2
+  levels (the task's threshold), so the finding is added to [OWNER_DECISIONS.md](OWNER_DECISIONS.md) (row 13). No change to `src/`. A test pins the flat-grey
+  figure (`test/bench-run-neutral.test.js`: the measured largest spread plus 1), so a later model change that adds a cast fails it.
+- **Limits:** synthetic images, one size, `fast` only, grey noise of one amplitude; no real photographs of grey backdrops.
