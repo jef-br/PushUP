@@ -2,7 +2,7 @@
 // BL43: neutral greys through `fast` (bench/neutral.js, docs/COLOR.md "Neutral greys (BL43)").
 // Measured 2026-11-24, 4 vCPU, CPU, `fast`: a flat grey 400x300 image at factor 1 comes out with a per-pixel channel spread
 // (max(R,G,B) - min(R,G,B)) of at most 2 for 64, 128, 192 (3 for 240 over the whole image, 1 away from the border) and a mean of
-// about 1.0 (1.00-1.03). The product test below allows that figure plus 1, so a later model change that adds a colour cast fails it.
+// about 1.0 (1.00-1.02 away from the border, up to 1.03 over the whole image). The product test below allows that figure plus 1, so a later model change that adds a colour cast fails it.
 const test = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');

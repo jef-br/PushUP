@@ -181,7 +181,7 @@ horizontal ramp 16 → 240; seeded grey noise 128 ± 8) at factors 1 and 1.5. Sp
 - **Ramp:** mean spread 1.3–1.5, largest 3.
 - **Noisy grey:** the model turns grey noise into colour noise: mean spread 1.6–1.7, largest 6 at factor 1 and 8 (7 away from the border) at factor 1.5.
   A few isolated pixels reach 6–8 levels; the mean stays under 2.
-- **Result:** greys stay neutral to within 1 level on flat areas and 3 on ramps, but noisy grey areas get isolated pixels with a spread above 2
+- **Result:** greys stay neutral to within 1–2 levels on flat areas and 3 on ramps, but noisy grey areas get isolated pixels with a spread above 2
   levels (the task's threshold), so the finding is added to [OWNER_DECISIONS.md](OWNER_DECISIONS.md) (row 13). No change to `src/`. A test pins the flat-grey
   figure (`test/bench-run-neutral.test.js`: the measured largest spread plus 1), so a later model change that adds a cast fails it.
 - **Limits:** synthetic images, one size, `fast` only, grey noise of one amplitude; no real photographs of grey backdrops.
