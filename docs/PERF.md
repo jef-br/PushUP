@@ -579,32 +579,33 @@ runner can be much slower than this table; the 5x rule is a minimum, not a promi
 
 ## Test suite time (BL6)
 
-Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVICE` / `PUSHUP_QUALITY` set (see below), each file run alone with `node --test test/<file>` (one run per file; the five slowest were run once more and agreed within 0.4 s: `device` 18.2 s, `upscale` 16.4 s, `bench-run-pad` 15.0 s, `aspect` 14.2 s, `device-fallback` 8.2 s). A file's time includes starting Node and loading the model session. The shares are of the sum of the files, 189.7 s (164 s on 2026-11-19, plus the files added since, measured later); `npm test` on `main` took 172 s the same day, so running the files together costs about what running them one by one does (each model call already uses all cores).
+Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVICE` / `PUSHUP_QUALITY` set (see below), each file run alone with `node --test test/<file>` (one run per file; the five slowest were run once more and agreed within 0.4 s: `device` 18.2 s, `upscale` 16.4 s, `bench-run-pad` 15.0 s, `aspect` 14.2 s, `device-fallback` 8.2 s). A file's time includes starting Node and loading the model session. The shares are of the sum of the files, 192.7 s (164 s on 2026-11-19, plus the files added since, measured later); `npm test` on `main` took 172 s the same day, so running the files together costs about what running them one by one does (each model call already uses all cores).
 
 | Test file | Seconds | Share |
 | --- | ---: | ---: |
-| `device.test.js` | 17.9 | 9.5% |
-| `upscale.test.js` | 16.1 | 8.5% |
-| `bench-run-pad.test.js` | 14.9 | 7.9% |
-| `aspect.test.js` | 14.0 | 7.4% |
-| `device-fallback.test.js` | 8.5 | 4.5% |
-| `bench-run-arena-eventloop-worker.test.js` | 7.5 | 4.0% |
-| `output-ownership.test.js` | 7.2 | 3.8% |
-| `package.test.js` | 6.8 | 3.6% |
+| `device.test.js` | 17.9 | 9.3% |
+| `upscale.test.js` | 16.1 | 8.4% |
+| `bench-run-pad.test.js` | 14.9 | 7.7% |
+| `aspect.test.js` | 14.0 | 7.3% |
+| `device-fallback.test.js` | 8.5 | 4.4% |
+| `bench-run-arena-eventloop-worker.test.js` | 7.5 | 3.9% |
+| `output-ownership.test.js` | 7.2 | 3.7% |
+| `package.test.js` | 6.8 | 3.5% |
 | `bench-run-profile-threads.test.js` | 6.3 | 3.3% |
-| `bench-json.test.js` | 5.8 | 3.1% |
-| `convert.test.js` | 5.6 | 3.0% |
+| `bench-json.test.js` | 5.8 | 3.0% |
+| `convert.test.js` | 5.6 | 2.9% |
 | `determinism.test.js` | 5.2 | 2.7% |
 | `extremes.test.js` | 5.2 | 2.7% |
-| `pack-run.test.js` | 4.7 | 2.5% |
+| `pack-run.test.js` | 4.7 | 2.4% |
 | `bench-run-memory.test.js` | 4.6 | 2.4% |
 | `downscale.test.js` | 4.0 | 2.1% |
-| `queue.test.js` | 3.9 | 2.1% |
-| `bench-args.test.js` | 3.9 | 2.1% |
+| `queue.test.js` | 3.9 | 2.0% |
+| `bench-args.test.js` | 3.9 | 2.0% |
 | `input.test.js` | 3.8 | 2.0% |
 | `colors-real-args.test.js` | 3.8 | 2.0% |
-| `bench-run-throughput-cold.test.js` | 3.5 | 1.9% |
+| `bench-run-throughput-cold.test.js` | 3.5 | 1.8% |
 | `edges-border.test.js` | 3.1 | 1.6% |
+| `bench-run-jpeg.test.js` | 3.0 | 1.6% |
 | `tiling.test.js` | 2.8 | 1.5% |
 | `bench-run-sr.test.js` | 2.5 | 1.3% |
 | `threads-profile-args.test.js` | 2.3 | 1.2% |
@@ -664,7 +665,7 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 | `bench-run-timeouts.test.js` | 0.1 | 0.1% |
 | `fetch-testset.test.js` | 0.1 | 0.1% |
 | `readme-timings.test.js` | 0.1 | 0.1% |
-| **Total** | **189.7** | |
+| **Total** | **192.7** | |
 
 The three costliest files are `device.test.js`, `upscale.test.js` and `bench-run-pad.test.js` (together about 30% of the time). Two of them call the real model many times (`device.test.js` runs `_run` on a real image in most of its cases, `upscale.test.js` makes 14 `upscale` calls), and `bench-run-pad.test.js` starts `bench/pad.js` as child processes that each load the model. Most other files take under 2 s.
 
