@@ -9,7 +9,7 @@ super-resolution model turn a smooth 8-bit gradient into visible steps (banding)
 `node bench/banding.js` (no downloads, `fast` mode, `PUSHUP_DEVICE=cpu`, 4 vCPU). Synthetic grey images, 400×300 and
 800×600: a horizontal ramp 255 → 200, a diagonal ramp 255 → 200 and a radial "shadow" (grey 150 in the centre to white
 at 120 px), each without noise and with seeded ±1 level noise. Each image goes through the shipped `upscale` at factor 1
-and 1.5; the reference is a sharp Lanczos3 resize of the same input to the same output size. Measured on the middle row
+and 1.5; the reference is a sharp Lanczos3 resize of the same input to the same output size (at factor 1 this is the input itself, so the Lanczos figures are the input's own). Measured on the middle row
 of each output, on the gradient only (for the radial shadow: its left half, centre to 120 px out, scaled by the factor):
 
 - **levels:** number of distinct grey values (fewer means coarser steps);
