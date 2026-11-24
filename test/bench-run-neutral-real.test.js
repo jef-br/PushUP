@@ -1,0 +1,80 @@
+'use strict';
+// BL46: bench/neutral-real.js (docs/COLOR.md "Neutral backdrops on real photos (BL46)"). The real run needs bench/out/sub20,
+// which CI lacks, so the run case uses a generated folder of two small images: a neutral gradient with noise (has regions)
+// and a saturated red one (none). Measured 2026-11-24, 4 vCPU, CPU: the 20-image sub20 run takes about 11 s; the generated
+// two-image run about 2 s. Timeout 60 s.
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
+const sharp = require('sharp');
+const { findBlocks, scaleBox, summary, newAcc, addBox } = require('../bench/neutral-real.js');
+
+const SCRIPT = path.join(__dirname, '..', 'bench', 'neutral-real.js');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pushup-neutralreal-'));
+test.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
+const run = (args) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8', timeout: 60000, env: { ...process.env, PUSHUP_DEVICE: 'cpu' } });
+
+const img = (w, h, f) => { const d = Buffer.alloc(w * h * 3); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) d.set(f(x, y), (y * w + x) * 3); return d; };
+
+test('findBlocks keeps flat neutral blocks away from the edges and rejects the rest', () => {
+  const w = 96, h = 96;
+  // Grey 100 with a deterministic +-1 pattern (luma sd about 1): every inner 16x16 grid block qualifies (grid x, y = 16, 32, 48, 64).
+  const grey = img(w, h, (x, y) => { const v = 100 + ((x * 7 + y * 13) % 3) - 1; return [v, v, v]; });
+  const blocks = findBlocks(grey, w, h);
+  assert.strictEqual(blocks.length, 16);
+  assert.ok(blocks.every((b) => b.x >= 16 && b.y >= 16 && b.x + 16 <= w - 16 && b.y + 16 <= h - 16));
+  // Perfectly flat: luma sd 0 < 0.5, no block.
+  assert.strictEqual(findBlocks(img(w, h, () => [100, 100, 100]), w, h).length, 0);
+  // Too noisy: luma sd above 8.
+  assert.strictEqual(findBlocks(img(w, h, (x, y) => { const v = (x + y) % 2 ? 80 : 120; return [v, v, v]; }), w, h).length, 0);
+  // Colour cast above 2 in one pixel of one block rejects exactly that block.
+  const cast = Buffer.from(grey); cast[((20 * w) + 20) * 3] += 5;
+  assert.strictEqual(findBlocks(cast, w, h).length, 15);
+  // Saturated: none. Too small for any block: none.
+  assert.strictEqual(findBlocks(img(w, h, () => [255, 0, 0]), w, h).length, 0);
+  assert.strictEqual(findBlocks(img(40, 40, () => [100, 101, 100]), 40, 40).length, 0);
+});
+
+test('scaleBox rounds the edges inward and clamps to the output', () => {
+  assert.deepStrictEqual(scaleBox({ x: 16, y: 16 }, 2.5, 1000, 750), { x0: 40, y0: 40, x1: 80, y1: 80 });
+  assert.deepStrictEqual(scaleBox({ x: 17, y: 16 }, 2.5, 1000, 750), { x0: 43, y0: 40, x1: 82, y1: 80 });
+  assert.deepStrictEqual(scaleBox({ x: 100, y: 100 }, 2.5, 280, 270), { x0: 250, y0: 250, x1: 280, y1: 270 });
+});
+
+test('summary counts mean, 99th percentile and the share of spread >= 3', () => {
+  const a = newAcc();
+  const data = Buffer.from([10, 10, 10, 10, 13, 10, 0, 0, 0, 0, 0, 0]); // spreads 0, 3, 0, 0
+  addBox(a, data, 4, { x0: 0, y0: 0, x1: 4, y1: 1 });
+  const s = summary(a);
+  assert.deepStrictEqual([s.pixels, s.mean, s.p99, s.share3], [4, 0.75, 3, 25]);
+});
+
+test('missing folder: exit 1 with the fetch hint; bad usage: exit 1', () => {
+  const r = run(['--dir', path.join(tmp, 'nope')]);
+  assert.strictEqual(r.status, 1);
+  assert.match(r.stderr.trim(), /does not exist; run bash bench\/fetch_testset\.sh$/);
+  assert.strictEqual(r.stdout, '');
+  assert.strictEqual(run(['--size', '399']).status, 1);
+});
+
+test('a generated folder of two images prints the table and lists the saturated one as "no region"', async () => {
+  const dir = path.join(tmp, 'imgs');
+  fs.mkdirSync(dir);
+  const w = 600, h = 450;
+  const grey = img(w, h, (x, y) => { const v = Math.round(140 + (x / w) * 20 + (((x * 31 + y * 17) % 5) - 2)); return [v, v, v]; });
+  await sharp(grey, { raw: { width: w, height: h, channels: 3 } }).png().toFile(path.join(dir, 'a_grey.png'));
+  await sharp(img(w, h, () => [255, 0, 0]), { raw: { width: w, height: h, channels: 3 } }).png().toFile(path.join(dir, 'b_red.png'));
+  const r = run(['--dir', dir]);
+  assert.strictEqual(r.status, 0, r.stderr);
+  const lines = r.stdout.split('\n').filter((l) => l !== '');
+  assert.match(lines[0], /^images: 2; with a region: 1; blocks: \d+; input 400 px, output 1000 px$/);
+  assert.strictEqual(lines[1], 'no region: b_red.png');
+  assert.strictEqual(lines[2], '| method | pixels | mean spread | 99th percentile spread | share of pixels with spread >= 3 (%) |');
+  assert.match(lines[3], /^\|---\|/);
+  assert.match(lines[4], /^\| `fast` \| \d+ \| \d+\.\d\d \| \d+ \| \d+\.\d\d \|$/);
+  assert.match(lines[5], /^\| Lanczos \| \d+ \| \d+\.\d\d \| \d+ \| \d+\.\d\d \|$/);
+  assert.match(lines[6], /^share >= 3, fast minus Lanczos: -?\d+\.\d\d percentage points; more than 1 point above Lanczos: (yes|no)$/);
+});
