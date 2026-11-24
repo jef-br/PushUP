@@ -28,7 +28,10 @@ Plain blockiness falls by 16.5% at quality 50 but only 9.6% at quality 75, becau
 mixed picture: +0.74 dB at quality 50, but −0.40 dB at quality 75, where the model changes more of the (already good)
 picture than it repairs. "JPEG blocks are removed" overstated it, so the README now says block borders become less visible
 (about two thirds of the excess contrast gone) and gives the PSNR numbers. Blocks are reduced, not removed; this does not
-say how they look to a person.
+say how they look to a person. Blockiness alone can also be lowered by blurring: a control on the first 6 images at
+quality 50 (decoded JPEG, then a plain Gaussian blur, no model; run by the adversary reviewer, not part of the script)
+took blockiness from 1.514 to 1.200 with sigma 0.8, but PSNR from 34.86 to 31.33 dB. The model lowers blockiness
+(−17.4% on those 6 images) while PSNR rises (+0.65 dB), which blur does not do; that is why both figures are reported.
 
 Limits: one JPEG encoder and two qualities; synthetic re-compression of the set's own 600 px images, not photos that
 were JPEG-compressed by a shop; luma only.
