@@ -1,6 +1,6 @@
 'use strict';
 // BL41: bench/banding.js runs (one small case) and its helpers measure what they claim. The full table is in
-// docs/BANDING.md. Measured 2026-11-24 on 4 vCPU, CPU: the single case below takes about 3 s; timeout 120 s.
+// docs/BANDING.md. Measured 2026-11-24 on 4 vCPU, CPU: the single case below takes about 0.6 s; timeout 120 s.
 const test = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');

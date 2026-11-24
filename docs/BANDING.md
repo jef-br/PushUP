@@ -46,18 +46,24 @@ Model / Lanczos figures:
 | 800x600 | 1 | radial | ±1 | 800x600 | 86/86 | 3/3 | 0.82/1.42 | no |
 | 800x600 | 1.5 | radial | ±1 | 1000x750 | 68/65 | 4/5 | 0.98/1.14 | no |
 
-real	0m25.239s
-user	1m30.372s
-sys	0m1.413s
 
 ## Result
 
-**No banding found.** The model keeps the number of grey levels (equal in all ramp cases; the radial shadow at factor 1
-has 89 against 105 levels, the worst case, 15% fewer), and its longest runs are the same as Lanczos's on noise-free
-input (9 against 8 px up to 16 against 15 px; diagonal ramps even shorter). The 10 strict `yes` rows are small: 1 px on
-noise-free ramps, and on ±1 noise the model flattens the noise into plateaus (at most 19 against 10 px on a 800 px
-ramp, under 3% of the width), which is denoising, not steps. On noise-free ramps the model adds a small wobble
-(roughness 0.1–0.8 levels against 0.05–0.25 for Lanczos), less than one grey level. Nothing here suggests a change; no
-owner decision is needed.
+**The strict rule flags 10 of 24 cases as banded; none looks like a visible step.** The worst case by run length is
+800×600 horizontal ramp with ±1 noise at factor 1: longest run 19 px against 10 px for Lanczos (21 against 10 px on
+the diagonal ramp). The others are small. On noise-free input the model's longest run is at most 1 px longer than
+Lanczos's (9 against 8 px, 16 against 15 px, and 3 against 2 px on the radial shadow); the other 6 flagged rows are ±1
+noise cases at factor 1 or 1.5 (11 against 7 px up to 21 against 10 px), where the model flattens the noise into
+plateaus about 2× as long as Lanczos's. A plateau of 19–21 px on an 800 px ramp (255 → 200, one level per 14 px on
+average) is about one natural step width, not a new step; but the numbers do not prove it is invisible, since
+visibility is a judgement, and the ±1 cases are not simply denoising.
+
+Other figures: grey levels differ from Lanczos by at most 3 in 20 of 24 cases (the model has more in some, fewer in
+others). The four exceptions are all radial shadows: 89 against 105 (16 fewer, 15%) at factor 1 at both sizes, 86
+against 79 (7 more) at 400 px factor 1 with noise, and 95 against 83 (12 more) at 400 px factor 1.5 with noise. On
+noise-free input the model's roughness is 0.11–0.76 levels against 0.05–0.67 for Lanczos, always below one grey
+level, and equal to or higher than Lanczos's in every noise-free case (up to 4× on the diagonal ramp).
+
+Nothing here is large enough to change `src/` or a default, and no owner decision is needed.
 
 Limits: synthetic grey ramps on one image row, not photographs; shadows with colour or texture are not covered.
