@@ -50,11 +50,11 @@ Model / Lanczos figures:
 ## Result
 
 **The strict rule flags 10 of 24 cases as banded; none looks like a visible step.** The worst case by run length is
-800×600 horizontal ramp with ±1 noise at factor 1: longest run 19 px against 10 px for Lanczos (21 against 10 px on
-the diagonal ramp). The others are small. On noise-free input the model's longest run is at most 1 px longer than
+800×600 diagonal ramp with ±1 noise at factor 1: longest run 21 px against 10 px for Lanczos (19 against 10 px on
+the horizontal ramp). The others are small. On noise-free input the model's longest run is at most 1 px longer than
 Lanczos's (9 against 8 px, 16 against 15 px, and 3 against 2 px on the radial shadow); the other 6 flagged rows are ±1
 noise cases at factor 1 or 1.5 (11 against 7 px up to 21 against 10 px), where the model flattens the noise into
-plateaus about 2× as long as Lanczos's. A plateau of 19–21 px on an 800 px ramp (255 → 200, one level per 14 px on
+plateaus 1.3–2.1× as long as Lanczos's. A plateau of 19–21 px on an 800 px ramp (255 → 200, one level per 14 px on
 average) is about one natural step width, not a new step; but the numbers do not prove it is invisible, since
 visibility is a judgement, and the ±1 cases are not simply denoising.
 
@@ -62,7 +62,7 @@ Other figures: grey levels differ from Lanczos by at most 3 in 20 of 24 cases (t
 others). The four exceptions are all radial shadows: 89 against 105 (16 fewer, 15%) at factor 1 at both sizes, 86
 against 79 (7 more) at 400 px factor 1 with noise, and 95 against 83 (12 more) at 400 px factor 1.5 with noise. On
 noise-free input the model's roughness is 0.11–0.76 levels against 0.05–0.67 for Lanczos, always below one grey
-level, and equal to or higher than Lanczos's in every noise-free case (up to 4× on the diagonal ramp).
+level, and equal to or higher than Lanczos's in every noise-free case (up to about 8× on the diagonal ramp, from 0.07 to 0.54 levels).
 
 Nothing here is large enough to change `src/` or a default, and no owner decision is needed.
 
