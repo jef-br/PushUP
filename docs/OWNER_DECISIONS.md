@@ -2,7 +2,7 @@
 
 One list of what scheduled runs have left open because only the owner can decide it. Nothing here is
 decided: each entry says where the evidence is and what the owner would have to say to unblock it.
-Tasks in `TASKS.md` are named by ID (search for the ID there). Maintained by hand; last updated 2026-11-23.
+Tasks in `TASKS.md` are named by ID (search for the ID there). Maintained by hand; last updated 2026-11-24.
 
 | # | Decision | Evidence | To unblock, say |
 | --- | --- | --- | --- |
