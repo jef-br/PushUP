@@ -229,6 +229,6 @@ Question: the BL46 figures are for 400 px input (a 2.5x upscale to 1000 px). Doe
 | 800 px | 18 of 20 | 1661 | 664400 | `fast` | 1.65 | 4 | 17.82 |
 | 800 px | 18 of 20 | 1661 | 664400 | Lanczos | 0.71 | 2 | 0.17 |
 
-- **Result:** the share of pixels with spread ≥ 3 in the `fast` output stays more than 1 point above Lanczos's at both sizes: 600 px yes (17.82 points above), 800 px yes (17.64 points above). It does not shrink with a smaller upscale factor.
+- **Result:** the share of pixels with spread ≥ 3 in the `fast` output stays more than 1 point above Lanczos's at both sizes: 600 px yes (17.82 points above), 800 px yes (17.64 points above). It does not fall at 600 or 800 px in this set (the regions differ between sizes, so this is not a controlled trend).
 - **Limits:** the sets of regions differ between sizes (more regions qualify at larger input), so the three rows are not the same pixels; JPEG q85 degradation, `fast` only, no visual judgement.
 
