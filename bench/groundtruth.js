@@ -3,7 +3,7 @@
 //   loadGt(file) -> { data, w, h }: the source resized so its longest side is 1000 px (lanczos3, fit 'fill'), packed 8-bit RGB;
 //   inputAt(gt, size) -> { data, w, h }: gt downscaled to `size` px on its longest side (cubic), JPEG q85, decoded (a marketplace upload);
 //   crop(buf, w, cw, ch): the top-left cw x ch part of a packed RGB buffer of width w.
-// bench/bench.js output is unchanged by moving this code here (checked by test/bench-groundtruth.test.js).
+// bench/bench.js output is unchanged by moving this code here (checked by a before/after comparison of `--json` rows, and the helpers by test/bench-run-grey-step.test.js).
 const sharp = require('sharp');
 
 async function raw(img) {
