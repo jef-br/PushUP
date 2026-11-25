@@ -344,3 +344,49 @@ Question: the BL51 step acts on the whole image, so how many pixels does it chan
 - **Result for T=4:** the step does not move the changed pixels closer to the ground truth on average (no: mean absolute error 1.493 before, 1.745 after), and 3.48% of the changed pixels had a real tint (spread above 4) in the ground truth.
 - **Reading:** the step changes about half of all pixels (it reaches every pixel with spread of 4 or less, in smooth areas of any colour, not only backdrops), and on those pixels the grey mean is on average further from the ground truth than the model output was, although whole-image PSNR barely moves (-0.012 dB) because the errors involved are small (about 1.5 levels per channel). The ground truth is mostly near-neutral where the step acts (spread of T or less for 96-98% of the changed pixels), but it is not exactly grey, so the exact mean is further from it than the model output was. This is a measurement of error, not a visual judgement.
 - **Limits:** `fast` only, 400 px input only, T = 2, 3 and 4, 20 images, JPEG q85; pixels the step leaves unchanged are not scored here.
+
+### Grey-preserving step on the 60-image set (BL56, 2026-11-26)
+
+Question: the BL51, BL53 and BL55 figures come from the 20 images of `bench/out/sub20`. Do they hold on the 60 images of `bench/out/set`? `bench/out/sub20` is every third image of `bench/out/set`, so the 60 contain the 20. Same script and options as before (`node bench/grey-step.js --dir bench/out/set --changed`, about 2 min, and `--size 800`, about 3 min), `fast`, T = 2, 3, 4, JPEG q85.
+
+400 px input, output 1000 px: 29 of 60 images have a neutral region (888 blocks; sub20: 12 of 20, 317 blocks).
+
+| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|---|
+| Lanczos | 28.71 | 0.8826 | 0.1315 | 0.67 | 0.18 |
+| `fast` (no step) | 31.02 | 0.9006 | 0.1114 | 1.87 | 27.27 |
+| `fast` + step T=2 | 31.01 | 0.9005 | 0.1114 | 0.95 | 27.27 |
+| `fast` + step T=3 | 31.01 | 0.9005 | 0.1114 | 0.46 | 10.94 |
+| `fast` + step T=4 | 31.02 | 0.9005 | 0.1113 | 0.11 | 2.06 |
+
+800 px input, output 1000 px: 44 of 60 images have a neutral region (4016 blocks; sub20: 18 of 20, 1661 blocks).
+
+| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|---|
+| Lanczos | 30.38 | 0.9293 | 0.0895 | 0.65 | 0.26 |
+| `fast` (no step) | 36.53 | 0.9624 | 0.0460 | 1.75 | 24.01 |
+| `fast` + step T=2 | 36.48 | 0.9623 | 0.0461 | 0.80 | 24.01 |
+| `fast` + step T=3 | 36.50 | 0.9623 | 0.0461 | 0.31 | 7.51 |
+| `fast` + step T=4 | 36.50 | 0.9623 | 0.0461 | 0.02 | 0.45 |
+
+Differences to `fast` (no step), as printed by the script:
+
+- **T=2 at 400 px:** PSNR -0.015, SSIM -0.00011, GMSD -0.00002: passes the quality gate. Share 27.09 points above Lanczos: not within 1 point.
+- **T=3 at 400 px:** PSNR -0.009, SSIM -0.00013, GMSD -0.00003: passes the quality gate. 10.76 points above Lanczos: not within 1 point.
+- **T=4 at 400 px:** PSNR -0.007, SSIM -0.00015, GMSD -0.00003: passes the quality gate. 1.88 points above Lanczos: not within 1 point.
+- **T=2 at 800 px:** PSNR -0.052, SSIM -0.00005, GMSD +0.00002: fails the quality gate. 23.75 points above Lanczos: not within 1 point.
+- **T=3 at 800 px:** PSNR -0.036, SSIM -0.00007, GMSD +0.00002: fails the quality gate. 7.24 points above Lanczos: not within 1 point.
+- **T=4 at 800 px:** PSNR -0.031, SSIM -0.00009, GMSD +0.00004: fails the quality gate. 0.19 points above Lanczos: within 1 point.
+
+What the step changes (`--changed`, 400 px input, 60 images):
+
+|---|---|---|---|---|---|
+| T | pixels changed (% of all) | of those: ground truth spread > T (%) | mean abs error before | mean abs error after |
+|---|---|---|---|---|
+| 2 | 56.21 | 1.78 | 1.168 | 1.440 |
+| 3 | 59.36 | 2.24 | 1.395 | 1.654 |
+| 4 | 61.68 | 2.90 | 1.601 | 1.856 |
+
+- **T=4 on the 60 images:** the step passes the gate at 400 px and fails it at 800 px (PSNR -0.031 dB against a limit of 0.02), the same pass/fail at both sizes as on sub20 (agree: yes). The step changes 61.68% of all output pixels; it does not move them closer to the ground truth on average (mean absolute error 1.601 before, 1.856 after), and 2.90% of the changed pixels had a real tint (spread above 4) in the ground truth (sub20: 54.49%, 3.48%).
+- **Where the 60 images differ from sub20:** the share of spread >= 3 in neutral backdrops is larger without the step (27.27% at 400 px against 16.32%; 24.01% at 800 px against 17.82%), and at 400 px T=4 leaves 2.06% instead of 0.22%, so it is **not** within 1 point of Lanczos on the 60 images (it is at 800 px). The gate result does not depend on which of the two sets is used.
+- **Limits:** `fast` only, T = 2, 3 and 4, JPEG q85, no visual judgement; the 60 images contain the 20, so the two sets are not independent.
