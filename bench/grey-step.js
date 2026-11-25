@@ -1,7 +1,7 @@
 'use strict';
 // Would a grey-preserving post-step pass the quality gate? (BL51; docs/COLOR.md "Grey-preserving step, offline (BL51)")
 // Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4] [--size 400|800] [--quality fast|high]
-//   --quality (BL54): model mode, sets PUSHUP_QUALITY for the run (default fast); rows are labelled with it. `high` takes about 3 min on CPU.
+//   --quality (BL54): model mode, sets PUSHUP_QUALITY for the run (default fast); rows are labelled with it. `high` takes about 5 min per run on CPU.
 //   --size (BL53): input size in px, 400 (default) or 800; the output is always 1000 px on its longest side.
 //   Offline only: nothing here is part of the shipped pipeline (src/ is untouched).
 //   Per image: ground truth and the degraded input (400 px unless --size) as bench/bench.js builds them (bench/groundtruth.js); the shipped `fast`
