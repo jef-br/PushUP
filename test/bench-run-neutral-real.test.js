@@ -148,3 +148,27 @@ test('docs/COLOR.md BL48 table: rows for 400, 600 and 800 px, and the result sen
     assert.ok(Math.abs(quoted - diff) <= 0.011, `${px} px: sentence says ${quoted}, table gives ${diff}`);
   }
 });
+
+// BL50: docs/COLOR.md "Cost of a larger Lanczos mix" keeps its shape (five methods at each of two sizes) and the gate sentence
+// agrees with the table. Reads the file only, no model run.
+test('docs/COLOR.md BL50 table: five rows per size and the gate sentence matches the differences', () => {
+  const doc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'COLOR.md'), 'utf8');
+  const at = doc.indexOf('### Cost of a larger Lanczos mix (BL50');
+  assert.ok(at >= 0, 'section missing');
+  const end = doc.indexOf('\n### ', at + 5);
+  const text = doc.slice(at, end < 0 ? undefined : end);
+  const rows = text.split('\n').filter((l) => l.startsWith('|')).slice(2).map((l) => l.split('|').slice(1, -1).map((c) => c.trim()));
+  assert.strictEqual(rows.length, 10);
+  for (const r of rows) assert.strictEqual(r.length, 8, r.join(' | '));
+  for (const px of ['400', '800']) {
+    const mine = rows.filter((r) => r[0] === `${px} px`);
+    assert.deepStrictEqual(mine.map((r) => r[1].replace(/ \(.*\)/, '')), ['Lanczos', '`sr-full@0`', '`sr-full@0.2`', '`sr-full@0.4`', '`sr-full@0.6`']);
+    const m = (name) => mine.find((r) => r[1].startsWith(name));
+    const pass = (r) => Number(r[5]) >= -0.02 && Number(r[6]) >= -0.001 && Number(r[7]) <= 0.001;
+    const sentence = text.match(new RegExp(`at ${px} px: (yes|no)`)) || text.match(new RegExp(`passes at ${px} px: (yes|no)`));
+    assert.ok(sentence, `${px} px gate sentence missing`);
+    assert.strictEqual(sentence[1] === 'yes', pass(m('`sr-full@0.4`')), `${px} px: sentence disagrees with the table`);
+    // The shipped row's differences are zero by definition.
+    assert.deepStrictEqual(m('`sr-full@0.2`').slice(5), ['0', '0', '0']);
+  }
+});

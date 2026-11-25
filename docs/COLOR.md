@@ -245,3 +245,24 @@ Question: row 13 of `docs/OWNER_DECISIONS.md` only knew the `fast` figures; `hig
 
 - **Result:** yes, `high` has a share of pixels with spread >= 3 more than 1 point above Lanczos's: 50.27 points above (`fast`: 16.15). The effect is about three times as large in `high`.
 - **Limits:** CPU run of the GPU model (same weights; GPU rounding may differ slightly), JPEG q85 inputs, 400 px input only, no visual judgement.
+
+### Cost of a larger Lanczos mix (BL50, 2026-11-25)
+
+Question: BL47 found that a 40% Lanczos mix cuts the share of neutral-backdrop pixels with spread >= 3 from 16.3% to 11.7% (60%: 3.9%), but what that costs in quality was not measured. `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/bench.js bench/out/sub20 --sizes 400,800 --methods lanczos,sr-full@0,sr-full@0.2,sr-full@0.4,sr-full@0.6` (all 20 images, no `--limit`, about 4 min). The differences are to `sr-full@0.2`, the shipped mix.
+
+| input | method | PSNR | SSIM | GMSD | PSNR diff | SSIM diff | GMSD diff |
+|---|---|---|---|---|---|---|---|
+| 400 px | Lanczos | 28.97 | 0.8785 | 0.1271 | -2.54 | -0.0156 | +0.0195 |
+| 400 px | `sr-full@0` | 31.20 | 0.8898 | 0.1082 | -0.31 | -0.0043 | +0.0006 |
+| 400 px | `sr-full@0.2` (shipped mix) | 31.51 | 0.8941 | 0.1076 | 0 | 0 | 0 |
+| 400 px | `sr-full@0.4` | 31.34 | 0.8954 | 0.1096 | -0.17 | +0.0013 | +0.0020 |
+| 400 px | `sr-full@0.6` | 30.80 | 0.8931 | 0.1140 | -0.71 | -0.0010 | +0.0064 |
+| 800 px | Lanczos | 30.44 | 0.9226 | 0.0875 | -5.84 | -0.0317 | +0.0383 |
+| 800 px | `sr-full@0` | 36.39 | 0.9537 | 0.0484 | +0.11 | -0.0006 | -0.0008 |
+| 800 px | `sr-full@0.2` (shipped mix) | 36.28 | 0.9543 | 0.0492 | 0 | 0 | 0 |
+| 800 px | `sr-full@0.4` | 35.05 | 0.9514 | 0.0568 | -1.23 | -0.0029 | +0.0076 |
+| 800 px | `sr-full@0.6` | 33.54 | 0.9449 | 0.0666 | -2.74 | -0.0094 | +0.0174 |
+
+- **Gate (PSNR down at most 0.02 dB, SSIM down at most 0.001, GMSD up at most 0.001):** a 40% mix passes at 400 px: no (PSNR -0.17, GMSD +0.0020; SSIM improves by 0.0013); at 800 px: no (PSNR -1.23, SSIM -0.0029, GMSD +0.0076). A 60% mix fails at both sizes too.
+- **Reading:** at 400 px a 40% mix gives slightly higher SSIM but lower PSNR and worse GMSD; at 800 px every figure is worse, and the loss grows with the mix. The BL47 neutral-region gain from a 40% mix (4.6 points of pixels) is therefore paid for with a measurable quality loss, most at 800 px.
+- **Limits:** CPU, `fast` only, JPEG q85 inputs, 20 images, PSNR/SSIM/GMSD are not texture judgements. `sr-full@0.2` is the shipped configuration by construction (whole image, mix 0.2, `src/index.js`); it was not compared byte for byte with `upscale`.
