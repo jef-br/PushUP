@@ -285,4 +285,24 @@ Differences to `fast` (no step), and the two questions per T:
 - **T=3:** PSNR -0.012, SSIM -0.00013, GMSD -0.00004: passes the gate. 3.56 points above Lanczos: not within 1 point.
 - **T=4:** PSNR -0.012, SSIM -0.00015, GMSD -0.00006: passes the gate. 0.06 points above Lanczos: within 1 point.
 - **Result:** the smallest T that passes the gate and brings the share within 1 point of Lanczos's is T=4.
-- **Limits:** the step acts on the whole image, not only on neutral regions, so it also flattens genuine slight tints with a spread of 4 or less (the metric cost above is small, a visual cost is not judged); `fast` only, 400 px input only (the quality gate needs 800 px too before shipping), T = 2, 3 and 4 only (larger T not tried), 20 images, JPEG q85. Shipping it would change default output, so it is an owner decision (row 13, option (b)).
+- **Limits:** the step acts on the whole image, not only on neutral regions, so it also flattens genuine slight tints with a spread of 4 or less (the metric cost above is small, a visual cost is not judged); `fast` only, 400 px input only (the 800 px result, which fails the gate, is in the next subsection), T = 2, 3 and 4 only (larger T not tried), 20 images, JPEG q85. Shipping it would change default output, so it is an owner decision (row 13, option (b)).
+
+### Grey-preserving step at 800 px (BL53, 2026-11-25)
+
+Question: the quality gate in `docs/OVERNIGHT_RUN.md` is "at each size" (400 and 800 px), and BL51 measured 400 px only. `node bench/grey-step.js --size 800` (new option `--size 400|800`, default 400, output unchanged without it; about 1 min) on `bench/out/sub20`: same step, same scoring, 800 px degraded input, output 1000 px. 18 of 20 images have a neutral region (1661 blocks), as in BL48.
+
+| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|---|
+| Lanczos | 30.44 | 0.9226 | 0.0875 | 0.71 | 0.17 |
+| `fast` (no step) | 36.28 | 0.9543 | 0.0492 | 1.65 | 17.82 |
+| `fast` + step T=2 | 36.24 | 0.9542 | 0.0492 | 0.58 | 17.82 |
+| `fast` + step T=3 | 36.24 | 0.9542 | 0.0492 | 0.19 | 4.71 |
+| `fast` + step T=4 | 36.25 | 0.9542 | 0.0492 | 0.01 | 0.18 |
+
+Differences to `fast` (no step), and the two questions per T:
+
+- **T=2:** PSNR -0.042, SSIM -0.00005, GMSD +0.00001: fails the quality gate at 800 px (PSNR down more than 0.02 dB). Share 17.64 points above Lanczos: not within 1 point.
+- **T=3:** PSNR -0.038, SSIM -0.00008, GMSD +0.00001: fails the gate at 800 px (PSNR). 4.54 points above Lanczos: not within 1 point.
+- **T=4:** PSNR -0.035, SSIM -0.00011, GMSD +0.00004: fails the gate at 800 px (PSNR; SSIM and GMSD are within their limits). 0.01 points above Lanczos: within 1 point.
+- **Result:** at 800 px no T passes the gate, because PSNR falls by 0.035 to 0.042 dB against a limit of 0.02 dB; at 400 px all three passed (BL51, drops of 0.012 to 0.014 dB). So T=4 does not pass at both sizes, and by the gate rule the step could not ship as a default. The share figures behave as at 400 px (T=4: 17.82% to 0.18%).
+- **Limits:** the `fast` row equals the BL48 and BL50 800 px figures (36.28 / 0.9543 / 0.0492, 17.82%); `fast` only, 20 images, JPEG q85, no visual judgement. A step limited to near-neutral regions of the input (instead of the whole image) was not tried.

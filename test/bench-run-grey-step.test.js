@@ -44,6 +44,9 @@ test('bad flags and a missing folder exit 1 with one stderr line before any mode
     [['--t', 'x'], '--t must be a non-negative integer'],
     [['--t', '-1'], '--t must be a non-negative integer'],
     [['--limit', '0'], '--limit must be a positive integer'],
+    [['--size', '799'], '--size must be 400 or 800'],
+    [['--size', 'x'], '--size must be 400 or 800'],
+    [['--size', '600'], '--size must be 400 or 800'],
     [['--dir', path.join(tmp, 'nope')], /does not exist; run bash bench\/fetch_testset\.sh$/],
   ];
   for (const [args, want] of cases) {
@@ -78,6 +81,13 @@ test('a generated folder of two images prints the table and one gate line per T'
   const gates = lines.slice(8);
   assert.strictEqual(gates.length, 3);
   gates.forEach((l, i) => assert.match(l, new RegExp(`^T=${i + 2}: PSNR -?\\d+\\.\\d{3}, SSIM -?\\d+\\.\\d{5}, GMSD -?\\d+\\.\\d{5}; quality gate: (pass|fail); share -?\\d+\\.\\d\\d points above Lanczos: (within 1 point|not within 1 point)$`)));
+  // --size 800 (BL53): same layout, the size shows in the first line.
+  const big = run(['--dir', dir, '--size', '800']);
+  assert.strictEqual(big.status, 0, big.stderr);
+  const bigLines = big.stdout.split('\n').filter((l) => l !== '');
+  assert.match(bigLines[0], /^images: 2; with a neutral region: \d+; blocks: \d+; input 800 px, output 1000 px$/);
+  assert.deepStrictEqual(bigLines.map((l) => l.split('|')[1] && l.split('|')[1].trim()).slice(3, 8), ['Lanczos', '`fast` (no step)', '`fast` + step T=2', '`fast` + step T=3', '`fast` + step T=4']);
+  assert.strictEqual(bigLines.filter((l) => l.startsWith('T=')).length, 3);
   // --t picks one value.
   const one = run(['--dir', dir, '--t', '3']);
   assert.strictEqual(one.status, 0, one.stderr);
@@ -105,4 +115,23 @@ test('groundtruth: loadGt, inputAt and crop build what bench/bench.js used to bu
   assert.strictEqual(c.length, 998 * 713 * 3);
   assert.ok(c.subarray(0, 998 * 3).equals(gt.data.subarray(0, 998 * 3)));
   assert.ok(c.subarray(998 * 3, 998 * 6).equals(gt.data.subarray(1000 * 3, 1000 * 3 + 998 * 3)));
+});
+
+// BL53: docs/COLOR.md "Grey-preserving step at 800 px (BL53...)" has the same rows as the 400 px table of BL51 and one line per T;
+// the gate words agree with the printed differences. Reads the file only, no model run.
+test('docs/COLOR.md BL53 section: same rows as the BL51 table and gate words that agree with the differences', () => {
+  const doc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'COLOR.md'), 'utf8');
+  const sec = (h) => { const at = doc.indexOf(h); assert.ok(at >= 0, `${h} missing`); const e = doc.indexOf('\n### ', at + 5); return doc.slice(at, e < 0 ? undefined : e); };
+  const first = (t) => t.split('\n').filter((l) => l.startsWith('|')).slice(2).map((l) => l.split('|')[1].trim());
+  const s51 = sec('### Grey-preserving step, offline (BL51'), s53 = sec('### Grey-preserving step at 800 px (BL53');
+  assert.deepStrictEqual(first(s53), first(s51));
+  for (const t of [2, 3, 4]) {
+    const line = new RegExp(`\\*\\*T=${t}:\\*\\* PSNR (-?[\\d.]+), SSIM (-?[\\d.]+), GMSD ([+-]?[\\d.]+): (passes|fails) the (?:quality )?gate`);
+    for (const [name, text] of [['BL51', s51], ['BL53', s53]]) {
+      const m = line.exec(text);
+      assert.ok(m, `${name} T=${t} line missing`);
+      const pass = Number(m[1]) >= -0.02 && Number(m[2]) >= -0.001 && Number(m[3]) <= 0.001;
+      assert.strictEqual(m[4] === 'passes', pass, `${name} T=${t}: "${m[4]}" disagrees with PSNR ${m[1]}, SSIM ${m[2]}, GMSD ${m[3]}`);
+    }
+  }
 });

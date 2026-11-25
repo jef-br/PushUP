@@ -42,6 +42,8 @@ function figureProblems(row, doc) {
   const t51 = (n) => find(s51, (r) => r[0].includes(`T=${n}`), `BL51 T=${n}`);
   const none51 = find(s51, (r) => r[0].startsWith('`fast` (no step)'), 'BL51 no step'), lan51 = find(s51, (r) => r[0] === 'Lanczos', 'BL51 Lanczos');
   const t4 = /\*\*T=4:\*\* PSNR (-?[\d.]+), SSIM (-?[\d.]+), GMSD (-?[\d.]+)/.exec(sec51);
+  const t4at800 = /\*\*T=4:\*\* PSNR (-?[\d.]+)/.exec(section(doc, '### Grey-preserving step at 800 px (BL53'));
+  if (!t4at800) throw new Error('COLOR.md BL53 section has no "**T=4:** PSNR ..." line');
   if (!t4) throw new Error('COLOR.md BL51 section has no "**T=4:** PSNR ..., SSIM ..., GMSD ..." line');
   const pct = (cell) => r1(Number(cell));
 
@@ -53,7 +55,7 @@ function figureProblems(row, doc) {
     [/a 40% mix gives (\d+\.\d)%, a 60% mix (\d+\.\d)%/, (m) => [['BL47 40% share', m[1], pct(mix('0.4')[3])], ['BL47 60% share', m[2], pct(mix('0.6')[3])]]],
     [/(\d+\.\d)% of pixels with spread of 3 or more at 400 px input \(99th percentile (\d+)\)/, (m) => [['BL49 high share', m[1], pct(h49[3])], ['BL49 high p99', m[2], Number(h49[2])]]],
     [/PSNR (-[\d.]+) and (-[\d.]+) dB against the shipped 20%, GMSD (\+[\d.]+) and (\+[\d.]+);/, (m) => [['BL50 400 px PSNR diff', m[1], d50('400')[5]], ['BL50 800 px PSNR diff', m[2], d50('800')[5]], ['BL50 400 px GMSD diff', m[3], d50('400')[7]], ['BL50 800 px GMSD diff', m[4], d50('800')[7]]]],
-    [/\(PSNR (-[\d.]+) dB, SSIM (-[\d.]+), GMSD (-[\d.]+);/, (m) => [['BL51 T=4 PSNR diff', m[1], t4[1]], ['BL51 T=4 SSIM diff', m[2], t4[2]], ['BL51 T=4 GMSD diff', m[3], t4[3]]]],
+    [/passes the quality gate at 400 px \(PSNR (-[\d.]+) dB, SSIM (-[\d.]+), GMSD (-[\d.]+)\) but fails it at 800 px \(PSNR (-[\d.]+) dB against a limit of 0\.02/, (m) => [['BL51 T=4 PSNR diff', m[1], t4[1]], ['BL51 T=4 SSIM diff', m[2], t4[2]], ['BL51 T=4 GMSD diff', m[3], t4[3]], ['BL53 T=4 PSNR diff at 800 px', m[4], t4at800[1]]]],
     [/from (\d+\.\d)% to (\d+\.\d)% \(Lanczos (\d+\.\d)%\); T=3 gives (\d+\.\d)%/, (m) => [['BL51 no-step share', m[1], pct(none51[5])], ['BL51 T=4 share', m[2], pct(t51(4)[5])], ['BL51 Lanczos share', m[3], pct(lan51[5])], ['BL51 T=3 share', m[4], pct(t51(3)[5])]]],
   ];
   const problems = [];

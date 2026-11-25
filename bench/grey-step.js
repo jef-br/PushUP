@@ -1,8 +1,9 @@
 'use strict';
 // Would a grey-preserving post-step pass the quality gate? (BL51; docs/COLOR.md "Grey-preserving step, offline (BL51)")
-// Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4]
+// Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4] [--size 400|800]
+//   --size (BL53): input size in px, 400 (default) or 800; the output is always 1000 px on its longest side.
 //   Offline only: nothing here is part of the shipped pipeline (src/ is untouched).
-//   Per image: ground truth and the 400 px degraded input as bench/bench.js builds them (bench/groundtruth.js); the shipped `fast`
+//   Per image: ground truth and the degraded input (400 px unless --size) as bench/bench.js builds them (bench/groundtruth.js); the shipped `fast`
 //   output (`upscale`, factor 1000 / longest side, CPU); then the step "every pixel whose channel spread (max - min of R, G, B)
 //   is at most T becomes its channel mean, rounded" for T = 2, 3 and 4 (--t picks one value). Rows: Lanczos, `fast` (no step), `fast` + step.
 //   Columns: whole-image PSNR, SSIM, GMSD against the ground truth (means over all images, scored as bench/bench.js scores);
@@ -15,7 +16,6 @@ const { checkFlags } = require('./flags');
 const { psnr, ssim, gmsd } = require('./metrics');
 const { findBlocks, scaleBox, summary, newAcc, addBox } = require('./neutral-real');
 
-const SIZE = 400;
 const MAX_PSNR_DROP = 0.02, MAX_SSIM_DROP = 0.001, MAX_GMSD_RISE = 0.001, EPS = 1e-9;
 
 // New buffer: pixels of a packed RGB buffer with channel spread <= t become their channel mean (rounded half up); others copied.
@@ -38,12 +38,15 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--t'], switches: [] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--t', '--size'], switches: [] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), tArg = opt('--t', null);
   if (!/^\d+$/.test(limitArg) || Number(limitArg) < 1) fail('--limit must be a positive integer');
   if (tArg !== null && !/^[0-9]+$/.test(String(tArg))) fail('--t must be a non-negative integer');
+  const sizeArg = String(opt('--size', '400'));
+  if (sizeArg !== '400' && sizeArg !== '800') fail('--size must be 400 or 800');
+  const SIZE = Number(sizeArg);
   const ts = tArg === null ? [2, 3, 4] : [Number(tArg)];
   let stat = null;
   try { stat = fs.statSync(dir); } catch { /* reported below */ }
