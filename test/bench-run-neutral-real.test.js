@@ -94,7 +94,16 @@ test('--quality rejects bad values with exit 1; --quality fast prints the same t
   const grey = img(w, h, (x, y) => { const v = Math.round(140 + (x / w) * 20 + (((x * 31 + y * 17) % 5) - 2)); return [v, v, v]; });
   await sharp(grey, { raw: { width: w, height: h, channels: 3 } }).png().toFile(path.join(dir, 'a_grey.png'));
   assert.strictEqual(run(['--dir', dir, '--quality', 'fast']).stdout, run(['--dir', dir]).stdout);
-  // high: row and result line carry the mode name (the high model is ~30x slower, so a 1-image folder, timeout 5 min).
+});
+
+// Opt-in (PUSHUP_SLOW_TESTS=1): runs the real `high` model (about 30x slower than `fast`) on a generated one-image folder.
+test('--quality high labels the row and the result line with the mode (BL49)',
+  { skip: process.env.PUSHUP_SLOW_TESTS === '1' ? false : 'set PUSHUP_SLOW_TESTS=1', timeout: 300000 }, async () => {
+  const dir = path.join(tmp, 'quality-high');
+  fs.mkdirSync(dir);
+  const w = 600, h = 450;
+  const grey = img(w, h, (x, y) => { const v = Math.round(140 + (x / w) * 20 + (((x * 31 + y * 17) % 5) - 2)); return [v, v, v]; });
+  await sharp(grey, { raw: { width: w, height: h, channels: 3 } }).png().toFile(path.join(dir, 'a_grey.png'));
   const h1 = spawnSync(process.execPath, [SCRIPT, '--dir', dir, '--quality', 'high'], { encoding: 'utf8', timeout: 300000, env: { ...process.env, PUSHUP_DEVICE: 'cpu' } });
   assert.strictEqual(h1.status, 0, h1.stderr);
   assert.match(h1.stdout.split('\n')[4], /^\| `high` \|/);
