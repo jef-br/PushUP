@@ -216,3 +216,19 @@ Question: how much of this comes from the model, and how much does the shipped 2
 
 - **Result:** the share of pixels with spread ≥ 3 falls steadily as the mix grows (17.19 → 16.32 → 11.70 → 3.86 %), but the shipped 20% takes away only 0.87 points of the 17.19 the model alone produces. The effect comes from the model, not from the mix. A larger mix would lower it further, but what that costs in texture or sharpness is not measured here, and a mix change is a default change that needs the quality gate and the owner.
 
+### 800 px and 600 px input (BL48, 2026-11-25)
+
+Question: the BL46 figures are for 400 px input (a 2.5x upscale to 1000 px). Does the effect shrink with a smaller upscale factor? `node bench/neutral-real.js --size 600` and `--size 800` (same script, no change; the block rule is the same, the box scales with f = 1000 / longest side). More blocks qualify at larger input, so the pixel counts differ.
+
+| input | images with a region | blocks | pixels per method | method | mean spread | 99th percentile spread | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|---|---|---|
+| 400 px (BL46) | 12 of 20 | 317 | 507200 | `fast` | 1.60 | 4 | 16.32 |
+| 400 px (BL46) | 12 of 20 | 317 | 507200 | Lanczos | 0.64 | 2 | 0.17 |
+| 600 px | 17 of 20 | 850 | 574600 | `fast` | 1.64 | 4 | 17.94 |
+| 600 px | 17 of 20 | 850 | 574600 | Lanczos | 0.69 | 2 | 0.12 |
+| 800 px | 18 of 20 | 1661 | 664400 | `fast` | 1.65 | 4 | 17.82 |
+| 800 px | 18 of 20 | 1661 | 664400 | Lanczos | 0.71 | 2 | 0.17 |
+
+- **Result:** the share of pixels with spread ≥ 3 in the `fast` output stays more than 1 point above Lanczos's at both sizes: 600 px yes (17.82 points above), 800 px yes (17.64 points above). It does not fall at 600 or 800 px in this set (the regions differ between sizes, so this is not a controlled trend).
+- **Limits:** the sets of regions differ between sizes (more regions qualify at larger input), so the three rows are not the same pixels; JPEG q85 degradation, `fast` only, no visual judgement.
+

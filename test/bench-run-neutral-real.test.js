@@ -99,3 +99,22 @@ test('a generated folder of two images prints the table and lists the saturated 
   assert.match(lines[5], /^\| Lanczos \| \d+ \| \d+\.\d\d \| \d+ \| \d+\.\d\d \|$/);
   assert.match(lines[6], /^share >= 3, fast minus Lanczos: -?\d+\.\d\d percentage points; more than 1 point above Lanczos: (yes|no)$/);
 });
+
+// BL48: docs/COLOR.md "800 px and 600 px input (BL48...)" keeps its table shape: three input sizes, `fast` and Lanczos rows, and the
+// yes/no result sentence agrees with the table. Reads the file only, no model run.
+test('docs/COLOR.md BL48 table: rows for 400, 600 and 800 px, and the result sentence matches the shares', () => {
+  const doc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'COLOR.md'), 'utf8');
+  const at = doc.indexOf('### 800 px and 600 px input (BL48');
+  assert.ok(at >= 0, 'section missing');
+  const rows = doc.slice(at).split('\n').filter((l) => l.startsWith('|')).slice(2).map((l) => l.split('|').slice(1, -1).map((c) => c.trim()));
+  assert.deepStrictEqual(rows.map((r) => `${r[0].split(' ')[0]} ${r[4]}`), ['400 `fast`', '400 Lanczos', '600 `fast`', '600 Lanczos', '800 `fast`', '800 Lanczos']);
+  for (const r of rows) assert.strictEqual(r.length, 8, r.join(' | '));
+  for (const px of ['600', '800']) {
+    const share = (m) => Number(rows.find((r) => r[0].startsWith(px) && r[4] === m)[7]);
+    const diff = share('`fast`') - share('Lanczos');
+    assert.ok(diff > 1, `${px} px: difference ${diff} should be above 1 point`);
+    // The sentence quotes the script's unrounded difference; the table cells are rounded, so allow 0.011.
+    const quoted = Number(doc.match(new RegExp(`${px} px yes \\(([0-9.]+) points above\\)`))[1]);
+    assert.ok(Math.abs(quoted - diff) <= 0.011, `${px} px: sentence says ${quoted}, table gives ${diff}`);
+  }
+});
