@@ -323,10 +323,10 @@ Question: BL49 found the colour noise is three times larger in `high` (50.4% of 
 
 Differences to `high` (no step), and the two questions per T:
 
-- **T=2:** PSNR 0.000, SSIM -0.00000, GMSD -0.00001: passes the quality gate. Share 50.27 points above Lanczos: not within 1 point.
+- **T=2:** PSNR 0.000, SSIM -0.00000, GMSD -0.00001: passes the quality gate. Share 50.27 points above Lanczos (from the unrounded values; the rounded cells give 50.26): not within 1 point.
 - **T=3:** PSNR -0.001, SSIM -0.00002, GMSD +0.00001: passes the gate. 46.32 points above Lanczos: not within 1 point.
 - **T=4:** PSNR -0.005, SSIM -0.00007, GMSD +0.00001: passes the gate. 34.99 points above Lanczos: not within 1 point.
 - **T=5:** PSNR -0.012, SSIM -0.00015, GMSD +0.00001: passes the gate. 11.77 points above Lanczos: not within 1 point.
 - **T=6:** PSNR -0.019, SSIM -0.00013, GMSD +0.00003: passes the gate (PSNR 0.001 dB inside the 0.02 dB limit). 2.94 points above Lanczos: not within 1 point.
-- **Result:** no T from 2 to 6 brings the share of pixels with spread >= 3 within 1 point of Lanczos's in `high` output. The step needs a larger T than in `fast` (where T=4 was enough) because the model's noise is larger (mean spread 2.87, 99th percentile 7), and at T=6 the PSNR cost is already at the gate limit (-0.019 dB), so a larger T would very likely fail it (not run). The step costs more per point of noise removed in `high`.
+- **Result:** no T from 2 to 6 brings the share of pixels with spread >= 3 within 1 point of Lanczos's in `high` output. The step needs a larger T than in `fast` (where T=4 was enough) because the model's noise is larger (mean spread 2.87, 99th percentile 7), and at T=6 the PSNR cost is already at the gate limit (-0.019 dB), so a larger T would very likely fail it (not run). The step is cheap per point of share removed in `high` (T=4: 0.005 dB for 15.3 points; `fast` T=4: 0.012 dB for 16.1 points), but `high` needs a larger T, and that is what brings the PSNR drop to the limit.
 - **Limits:** CPU run of the GPU model, 400 px input only (800 px, where the `fast` step failed the gate, was not run for `high`), T = 2 to 6 only, 20 images, JPEG q85, no visual judgement.
