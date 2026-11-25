@@ -1,10 +1,11 @@
 'use strict';
 // Do near-neutral backdrops of real photos keep R = G = B through `fast`? (BL46; docs/COLOR.md "Neutral backdrops on real photos")
-// Usage: node bench/neutral-real.js [--dir bench/out/sub20] [--limit 20] [--size 400] [--mix 0..1] [--quality fast|high]
+// Usage: node bench/neutral-real.js [--dir bench/out/sub20] [--limit 20] [--size 400] [--mix 0..1] [--quality fast|high] [--jpeg 50..100]
+//   --jpeg (BL57): JPEG quality of the degraded input (integer, default 85); the first output line ends with `; input JPEG q<N>` when it is not 85.
 //   --quality (BL49): model mode, sets PUSHUP_QUALITY for the run (default fast); the table row is labelled with it.
 //   --mix (BL47): Lanczos share of the `fast` output, via the internal `_run`; without it the shipped pipeline (`upscale`) runs.
 //   Inputs are built exactly as bench/colors-real.js builds them: source resized to 1000 px on its longest side
-//   (lanczos3), downscaled to --size px (cubic), JPEG q85, decoded. Near-neutral flat regions of the INPUT are found:
+//   (lanczos3), downscaled to --size px (cubic), JPEG q85 (--jpeg), decoded. Near-neutral flat regions of the INPUT are found:
 //   16x16 blocks on a grid that starts at 16 px from the left/top edge, kept only when the block lies at least 16 px from
 //   every edge, its largest per-pixel channel spread (max(R,G,B) - min(R,G,B)) is <= 2 and the luma standard deviation
 //   (Rec. 601, 0.299 R + 0.587 G + 0.114 B) is between 0.5 and 8. An image with no such block is listed as "no region".
@@ -65,7 +66,7 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size', '--mix', '--quality'], switches: [] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size', '--mix', '--quality', '--jpeg'], switches: [] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), sizeArg = String(opt('--size', '400'));
@@ -76,6 +77,9 @@ async function main(argv) {
   if (mixArg !== null && !(/^(0|1|0?\.\d+|1\.0+)$/.test(String(mixArg)))) fail('--mix must be a number from 0 to 1');
   const quality = String(opt('--quality', 'fast'));
   if (quality !== 'fast' && quality !== 'high') fail('--quality must be fast or high');
+  const jpegArg = String(opt('--jpeg', '85'));
+  if (!/^\d+$/.test(jpegArg) || Number(jpegArg) < 50 || Number(jpegArg) > 100) fail('--jpeg must be an integer from 50 to 100');
+  const jpegQuality = Number(jpegArg);
   let stat = null;
   try { stat = fs.statSync(dir); } catch { /* reported below */ }
   if (!stat) fail(`${dir} does not exist; run bash bench/fetch_testset.sh`);
@@ -99,7 +103,7 @@ async function main(argv) {
     const gw = Math.round((meta.width * 1000) / L), gh = Math.round((meta.height * 1000) / L);
     const gt = await raw(sharp(src).resize(gw, gh, { kernel: 'lanczos3', fit: 'fill' }));
     const iw = Math.round((gw * size) / 1000), ih = Math.round((gh * size) / 1000);
-    const jpg = await sharp(gt.data, { raw: { width: gw, height: gh, channels: 3 } }).resize(iw, ih, { kernel: 'cubic', fit: 'fill' }).jpeg({ quality: 85 }).toBuffer();
+    const jpg = await sharp(gt.data, { raw: { width: gw, height: gh, channels: 3 } }).resize(iw, ih, { kernel: 'cubic', fit: 'fill' }).jpeg({ quality: jpegQuality }).toBuffer();
     const inp = await raw(sharp(jpg));
     const bl = findBlocks(inp.data, inp.w, inp.h);
     if (bl.length === 0) { none.push(f); process.stderr.write('.'); continue; }
@@ -115,7 +119,7 @@ async function main(argv) {
     process.stderr.write('.');
   }
   process.stderr.write('\n');
-  console.log(`images: ${files.length}; with a region: ${used}; blocks: ${blocks}; input ${size} px, output 1000 px`);
+  console.log(`images: ${files.length}; with a region: ${used}; blocks: ${blocks}; input ${size} px, output 1000 px${jpegQuality === 85 ? '' : `; input JPEG q${jpegQuality}`}`);
   console.log(`no region: ${none.length ? none.join(', ') : 'none'}`);
   console.log('| method | pixels | mean spread | 99th percentile spread | share of pixels with spread >= 3 (%) |');
   console.log('|---|---|---|---|---|');

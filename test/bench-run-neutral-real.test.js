@@ -110,6 +110,15 @@ test('--quality high labels the row and the result line with the mode (BL49)',
   assert.match(h1.stdout, /\nshare >= 3, high minus Lanczos:/);
 });
 
+test('--jpeg: bad values exit 1 with one stderr line before any model loads (BL57)', () => {
+  for (const bad of ['49', '101', 'x', '85.5', '-1']) {
+    const r = run(['--dir', tmp, '--jpeg', bad]);
+    assert.strictEqual(r.status, 1, bad);
+    assert.strictEqual(r.stderr.trim(), '--jpeg must be an integer from 50 to 100');
+    assert.strictEqual(r.stdout, '');
+  }
+});
+
 test('a generated folder of two images prints the table and lists the saturated one as "no region"', async () => {
   const dir = path.join(tmp, 'imgs');
   fs.mkdirSync(dir);
@@ -127,6 +136,13 @@ test('a generated folder of two images prints the table and lists the saturated 
   assert.match(lines[4], /^\| `fast` \| \d+ \| \d+\.\d\d \| \d+ \| \d+\.\d\d \|$/);
   assert.match(lines[5], /^\| Lanczos \| \d+ \| \d+\.\d\d \| \d+ \| \d+\.\d\d \|$/);
   assert.match(lines[6], /^share >= 3, fast minus Lanczos: -?\d+\.\d\d percentage points; more than 1 point above Lanczos: (yes|no)$/);
+  // --jpeg (BL57): 85 is the default, so the output is identical; another quality is named at the end of the first line only.
+  assert.strictEqual(run(['--dir', dir, '--jpeg', '85']).stdout, r.stdout);
+  const q = run(['--dir', dir, '--jpeg', '60']);
+  assert.strictEqual(q.status, 0, q.stderr);
+  const ql = q.stdout.split('\n').filter((l) => l !== '');
+  assert.match(ql[0], /^images: 2; with a region: \d; blocks: \d+; input 400 px, output 1000 px; input JPEG q60$/);
+  assert.strictEqual(ql.length, lines.length);
 });
 
 // BL48: docs/COLOR.md "800 px and 600 px input (BL48...)" keeps its table shape: three input sizes, `fast` and Lanczos rows, and the

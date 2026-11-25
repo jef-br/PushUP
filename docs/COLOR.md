@@ -389,3 +389,17 @@ What the step changes (`--changed`, 400 px input, 60 images):
 - **T=4 on the 60 images:** the step passes the gate at 400 px (PSNR -0.007 dB) and fails it at 800 px (PSNR -0.031 dB against a limit of 0.02), the same pass/fail at both sizes as on sub20 (agree: yes). The step changes 61.68% of all output pixels; it does not move them closer to the ground truth on average (mean absolute error 1.601 before, 1.856 after), and 2.90% of the changed pixels had a real tint (spread above 4) in the ground truth (sub20: 54.49%, 3.48%).
 - **Where the 60 images differ from sub20:** the share of spread >= 3 in neutral backdrops is larger without the step (27.27% at 400 px against 16.32%; 24.01% at 800 px against 17.82%), and at 400 px T=4 leaves 2.06% instead of 0.22%, so it is **not** within 1 point of Lanczos on the 60 images (it is at 800 px). The gate result does not depend on which of the two sets is used.
 - **Limits:** `fast` only, T = 2, 3 and 4, JPEG q85, no visual judgement; the 60 images contain the 20, so the two sets are not independent.
+
+### Neutral backdrops by JPEG quality (BL57, 2026-11-26)
+
+Question: every neutral-backdrop figure above builds its input with JPEG q85 (`bench/groundtruth.js`, `bench/neutral-real.js`). JPEG noise is itself colour noise, so does the `fast` share of spread >= 3 depend on the input's JPEG quality? `node bench/neutral-real.js --jpeg <q>` (new option `--jpeg 50..100`, default 85, output unchanged without it) on `bench/out/sub20`, 400 px input, `fast`, the shipped pipeline, CPU. The near-neutral blocks are found on the decoded input, so the set of blocks changes with the quality (the shares below are over different pixels).
+
+| JPEG quality | images with a region | blocks found | `fast` share of spread >= 3 (%) | Lanczos share (%) | `fast` mean spread |
+|---|---|---|---|---|---|
+| q60 | 11 | 237 | 8.36 | 0.26 | 1.49 |
+| q85 | 12 | 317 | 16.32 | 0.17 | 1.60 |
+| q95 | 10 | 310 | 12.60 | 0.10 | 1.42 |
+
+- **Result:** between q60 and q95 the `fast` share changes by 4.24 points (8.36% and 12.60%): not more than 5 points (no). The share is above Lanczos's (0.26% and 0.10%) at every quality, so the effect is present at every quality tried; the share is not monotonic in the quality either (q85, the quality used elsewhere, has the highest share, 16.32%, equal to the BL46 figure).
+- **Reading:** the share moves by a factor of two with the quality, and the blocks differ between the runs (why the share is lowest at q60 and not highest was not investigated), so the figures say the effect exists at q60 to q95, not how large it is for a given photo.
+- **Limits:** `fast` only, 400 px input only, three qualities, 20 images, no visual judgement.

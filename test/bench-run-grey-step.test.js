@@ -200,3 +200,20 @@ test('docs/COLOR.md BL56 section: gate words agree with the printed differences,
     }
   }
 });
+
+// BL57: inputAt takes the JPEG quality as an optional third argument; the default is 85, as before.
+test('inputAt: the default quality is 85 and a lower quality moves the decoded input further from the clean downscale', async () => {
+  const f = path.join(tmp, 'q.png');
+  const w = 700, h = 500;
+  const src = Buffer.alloc(w * h * 3);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let c = 0; c < 3; c++) src[(y * w + x) * 3 + c] = (x * 5 + y * 3 + c * 40 + ((x * 31 + y * 17) % 23)) & 255;
+  await sharp(src, { raw: { width: w, height: h, channels: 3 } }).png().toFile(f);
+  const gt = await loadGt(f);
+  const dflt = await inputAt(gt, 400), q85 = await inputAt(gt, 400, 85);
+  assert.ok(dflt.data.equals(q85.data));
+  const clean = await sharp(gt.data, { raw: { width: gt.w, height: gt.h, channels: 3 } }).resize(dflt.w, dflt.h, { kernel: 'cubic', fit: 'fill' }).raw().toBuffer();
+  const mae = (a) => { let s = 0; for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - clean[i]); return s / a.length; };
+  const lo = await inputAt(gt, 400, 60), hi = await inputAt(gt, 400, 95);
+  assert.ok(mae(lo.data) > mae(hi.data), `q60 ${mae(lo.data)} should be above q95 ${mae(hi.data)}`);
+  assert.ok(!lo.data.equals(q85.data));
+});
