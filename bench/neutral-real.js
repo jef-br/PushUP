@@ -1,6 +1,7 @@
 'use strict';
 // Do near-neutral backdrops of real photos keep R = G = B through `fast`? (BL46; docs/COLOR.md "Neutral backdrops on real photos")
-// Usage: node bench/neutral-real.js [--dir bench/out/sub20] [--limit 20] [--size 400] [--mix 0..1]
+// Usage: node bench/neutral-real.js [--dir bench/out/sub20] [--limit 20] [--size 400] [--mix 0..1] [--quality fast|high]
+//   --quality (BL49): model mode, sets PUSHUP_QUALITY for the run (default fast); the table row is labelled with it.
 //   --mix (BL47): Lanczos share of the `fast` output, via the internal `_run`; without it the shipped pipeline (`upscale`) runs.
 //   Inputs are built exactly as bench/colors-real.js builds them: source resized to 1000 px on its longest side
 //   (lanczos3), downscaled to --size px (cubic), JPEG q85, decoded. Near-neutral flat regions of the INPUT are found:
@@ -64,7 +65,7 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size', '--mix'], switches: [] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size', '--mix', '--quality'], switches: [] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), sizeArg = String(opt('--size', '400'));
@@ -73,6 +74,8 @@ async function main(argv) {
   const size = Number(sizeArg);
   const mixArg = opt('--mix', null);
   if (mixArg !== null && !(/^(0|1|0?\.\d+|1\.0+)$/.test(String(mixArg)))) fail('--mix must be a number from 0 to 1');
+  const quality = String(opt('--quality', 'fast'));
+  if (quality !== 'fast' && quality !== 'high') fail('--quality must be fast or high');
   let stat = null;
   try { stat = fs.statSync(dir); } catch { /* reported below */ }
   if (!stat) fail(`${dir} does not exist; run bash bench/fetch_testset.sh`);
@@ -80,7 +83,7 @@ async function main(argv) {
   const files = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort().slice(0, Number(limitArg));
   if (files.length === 0) fail(`no images in ${dir}`);
 
-  process.env.PUSHUP_QUALITY = 'fast';
+  process.env.PUSHUP_QUALITY = quality;
   process.env.PUSHUP_DEVICE = 'cpu';
   const { upscale, _run } = require('../src/index.js');
   const mix = mixArg === null ? null : Number(mixArg);
@@ -119,10 +122,10 @@ async function main(argv) {
   const res = {};
   for (const m of ['fast', 'lanczos']) {
     const s = res[m] = summary(acc[m]);
-    console.log(`| ${m === 'fast' ? '`fast`' : 'Lanczos'} | ${s.pixels} | ${s.mean.toFixed(2)} | ${s.p99} | ${s.share3.toFixed(2)} |`);
+    console.log(`| ${m === 'fast' ? '`' + quality + '`' : 'Lanczos'} | ${s.pixels} | ${s.mean.toFixed(2)} | ${s.p99} | ${s.share3.toFixed(2)} |`);
   }
   const diff = res.fast.share3 - res.lanczos.share3;
-  console.log(`share >= 3, fast minus Lanczos: ${diff.toFixed(2)} percentage points; more than 1 point above Lanczos: ${diff > 1 ? 'yes' : 'no'}`);
+  console.log(`share >= 3, ${quality} minus Lanczos: ${diff.toFixed(2)} percentage points; more than 1 point above Lanczos: ${diff > 1 ? 'yes' : 'no'}`);
 }
 
 if (require.main === module) main(process.argv.slice(2)).catch((e) => { console.error(e); process.exit(1); });

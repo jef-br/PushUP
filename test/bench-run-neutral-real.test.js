@@ -81,6 +81,26 @@ test('--mix rejects bad values with exit 1 and --mix 0 on a generated folder pri
   assert.strictEqual(run(['--dir', dir, '--mix', '0.2']).stdout, run(['--dir', dir]).stdout);
 });
 
+test('--quality rejects bad values with exit 1; --quality fast prints the same table as no flag (BL49)', async () => {
+  for (const bad of ['bogus', 'auto', '']) {
+    const r = run(['--dir', tmp, '--quality', bad]);
+    assert.strictEqual(r.status, 1, bad);
+    assert.strictEqual(r.stderr.trim(), '--quality must be fast or high');
+    assert.strictEqual(r.stdout, '');
+  }
+  const dir = path.join(tmp, 'quality');
+  fs.mkdirSync(dir);
+  const w = 600, h = 450;
+  const grey = img(w, h, (x, y) => { const v = Math.round(140 + (x / w) * 20 + (((x * 31 + y * 17) % 5) - 2)); return [v, v, v]; });
+  await sharp(grey, { raw: { width: w, height: h, channels: 3 } }).png().toFile(path.join(dir, 'a_grey.png'));
+  assert.strictEqual(run(['--dir', dir, '--quality', 'fast']).stdout, run(['--dir', dir]).stdout);
+  // high: row and result line carry the mode name (the high model is ~30x slower, so a 1-image folder, timeout 5 min).
+  const h1 = spawnSync(process.execPath, [SCRIPT, '--dir', dir, '--quality', 'high'], { encoding: 'utf8', timeout: 300000, env: { ...process.env, PUSHUP_DEVICE: 'cpu' } });
+  assert.strictEqual(h1.status, 0, h1.stderr);
+  assert.match(h1.stdout.split('\n')[4], /^\| `high` \|/);
+  assert.match(h1.stdout, /\nshare >= 3, high minus Lanczos:/);
+});
+
 test('a generated folder of two images prints the table and lists the saturated one as "no region"', async () => {
   const dir = path.join(tmp, 'imgs');
   fs.mkdirSync(dir);
@@ -106,7 +126,8 @@ test('docs/COLOR.md BL48 table: rows for 400, 600 and 800 px, and the result sen
   const doc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'COLOR.md'), 'utf8');
   const at = doc.indexOf('### 800 px and 600 px input (BL48');
   assert.ok(at >= 0, 'section missing');
-  const rows = doc.slice(at).split('\n').filter((l) => l.startsWith('|')).slice(2).map((l) => l.split('|').slice(1, -1).map((c) => c.trim()));
+  const end = doc.indexOf('\n### ', at + 5);
+  const rows = doc.slice(at, end < 0 ? undefined : end).split('\n').filter((l) => l.startsWith('|')).slice(2).map((l) => l.split('|').slice(1, -1).map((c) => c.trim()));
   assert.deepStrictEqual(rows.map((r) => `${r[0].split(' ')[0]} ${r[4]}`), ['400 `fast`', '400 Lanczos', '600 `fast`', '600 Lanczos', '800 `fast`', '800 Lanczos']);
   for (const r of rows) assert.strictEqual(r.length, 8, r.join(' | '));
   for (const px of ['600', '800']) {
