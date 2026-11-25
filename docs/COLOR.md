@@ -232,3 +232,16 @@ Question: the BL46 figures are for 400 px input (a 2.5x upscale to 1000 px). Doe
 - **Result:** the share of pixels with spread ≥ 3 in the `fast` output stays more than 1 point above Lanczos's at both sizes: 600 px yes (17.82 points above), 800 px yes (17.64 points above). It does not fall at 600 or 800 px in this set (the regions differ between sizes, so this is not a controlled trend).
 - **Limits:** the sets of regions differ between sizes (more regions qualify at larger input), so the three rows are not the same pixels; JPEG q85 degradation, `fast` only, no visual judgement.
 
+
+### `high` mode on CPU (BL49, 2026-11-25)
+
+Question: row 13 of `docs/OWNER_DECISIONS.md` only knew the `fast` figures; `high` (Remacri) is what `auto` uses on a GPU. `PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu` gives the same model and tiles as on a GPU, so `node bench/neutral-real.js --quality high` (new option, default `fast`, output unchanged without it) measures it on `bench/out/sub20` at 400 px input, all 20 images, same blocks as BL46 (12 of 20 images, 317 blocks, 507200 pixels per method). `high` mixes in no Lanczos.
+
+| method | mean spread | 99th percentile spread | share of pixels with spread >= 3 (%) |
+|---|---|---|---|
+| `high` | 2.87 | 7 | 50.43 |
+| Lanczos | 0.64 | 2 | 0.17 |
+| `fast` (BL46, for comparison) | 1.60 | 4 | 16.32 |
+
+- **Result:** yes, `high` has a share of pixels with spread >= 3 more than 1 point above Lanczos's: 50.27 points above (`fast`: 16.15). The effect is about three times as large in `high`.
+- **Limits:** CPU run of the GPU model (same weights; GPU rounding may differ slightly), JPEG q85 inputs, 400 px input only, no visual judgement.
