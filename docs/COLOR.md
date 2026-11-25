@@ -403,3 +403,18 @@ Question: every neutral-backdrop figure above builds its input with JPEG q85 (`b
 - **Result:** between q60 and q95 the `fast` share changes by 4.24 points (8.36% and 12.60%): not more than 5 points (no). The share is above Lanczos's (0.26% and 0.10%) at every quality, so the effect is present at every quality tried; the share is not monotonic in the quality either (q85, the quality used elsewhere, has the highest share, 16.32%, equal to the BL46 figure).
 - **Reading:** the share moves by a factor of two with the quality, and the blocks differ between the runs (why the share is lowest at q60 and not highest was not investigated), so the figures say the effect exists at q60 to q95, not how large it is for a given photo.
 - **Limits:** `fast` only, 400 px input only, three qualities, 20 images, no visual judgement.
+
+### Flat coloured backdrops (BL58, 2026-11-26)
+
+Question: BL46 to BL57 only look at near-neutral backdrops (flat saturated colours were measured on synthetic images only, "Flat saturated colours" above). Does `fast` also add chroma noise to flat **coloured** backdrops of real photos? `node bench/chroma-real.js` (new script; `--dir`, `--limit`, `--size` as `bench/neutral-real.js`) on `bench/out/sub20`, 400 px input, JPEG q85, the shipped `fast` pipeline on CPU. Flat coloured blocks of the input: 16x16 blocks on the grid and edge rule of `neutral-real.js`, mean channel spread (max - min of R, G, B) of at least 20, no channel of any pixel more than 6 levels from the block mean of that channel, luma standard deviation between 0.5 and 8. Chroma noise of an output box: the population standard deviation of R-G and of B-G inside the box (levels), averaged over all blocks.
+
+7 of 20 images have such a block (59 blocks; no region: the other 13).
+
+| method | blocks | mean sd of R-G | mean sd of B-G |
+|---|---|---|---|
+| `fast` | 59 | 0.85 | 0.83 |
+| Lanczos | 59 | 0.38 | 0.38 |
+
+- **Result:** `fast` chroma noise on flat coloured backdrops is at least twice Lanczos's (yes): 0.85 against 0.38 in R-G and 0.83 against 0.38 in B-G (2.25x and 2.20x); 7 of the 20 images have such a block.
+- **Reading:** the model adds chroma noise on coloured backdrops too, with a standard deviation 0.4 to 0.5 levels above Lanczos's, so the effect is not limited to grey. The figure is a standard deviation of colour differences, not the channel spread used for the neutral backdrops, so the two are not comparable in size; whether 0.4 to 0.5 levels is visible was not judged. Option (b) of row 13, as tried in BL51 to BL56, acts only on pixels with a channel spread of 4 or less and does not touch these backdrops (by its rule, not measured here: their mean channel spread is at least 20).
+- **Limits:** `fast` only, 400 px input only, 59 blocks in 7 images (the same backdrop contributes many blocks), JPEG q85, no visual judgement. The block rule is one choice among several; a coloured backdrop with a gradient or texture is not covered.
