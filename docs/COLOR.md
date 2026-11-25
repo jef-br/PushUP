@@ -347,7 +347,7 @@ Question: the BL51 step acts on the whole image, so how many pixels does it chan
 
 ### Grey-preserving step on the 60-image set (BL56, 2026-11-26)
 
-Question: the BL51, BL53 and BL55 figures come from the 20 images of `bench/out/sub20`. Do they hold on the 60 images of `bench/out/set`? `bench/out/sub20` is every third image of `bench/out/set`, so the 60 contain the 20. Same script and options as before (`node bench/grey-step.js --dir bench/out/set --changed`, about 2 min, and `--size 800`, about 3 min), `fast`, T = 2, 3, 4, JPEG q85.
+Question: the BL51, BL53 and BL55 figures come from the 20 images of `bench/out/sub20`. Do they hold on the 60 images of `bench/out/set`? `bench/fetch_testset.sh` builds `bench/out/sub20` from `bench/out/set` (every third image of each source), so the 60 contain the 20. Same script and options as before (`node bench/grey-step.js --dir bench/out/set --changed`, about 2 min, and `--size 800`, about 3 min), `fast`, T = 2, 3, 4, JPEG q85.
 
 400 px input, output 1000 px: 29 of 60 images have a neutral region (888 blocks; sub20: 12 of 20, 317 blocks).
 
@@ -380,13 +380,12 @@ Differences to `fast` (no step), as printed by the script:
 
 What the step changes (`--changed`, 400 px input, 60 images):
 
-|---|---|---|---|---|---|
 | T | pixels changed (% of all) | of those: ground truth spread > T (%) | mean abs error before | mean abs error after |
 |---|---|---|---|---|
 | 2 | 56.21 | 1.78 | 1.168 | 1.440 |
 | 3 | 59.36 | 2.24 | 1.395 | 1.654 |
 | 4 | 61.68 | 2.90 | 1.601 | 1.856 |
 
-- **T=4 on the 60 images:** the step passes the gate at 400 px and fails it at 800 px (PSNR -0.031 dB against a limit of 0.02), the same pass/fail at both sizes as on sub20 (agree: yes). The step changes 61.68% of all output pixels; it does not move them closer to the ground truth on average (mean absolute error 1.601 before, 1.856 after), and 2.90% of the changed pixels had a real tint (spread above 4) in the ground truth (sub20: 54.49%, 3.48%).
+- **T=4 on the 60 images:** the step passes the gate at 400 px (PSNR -0.007 dB) and fails it at 800 px (PSNR -0.031 dB against a limit of 0.02), the same pass/fail at both sizes as on sub20 (agree: yes). The step changes 61.68% of all output pixels; it does not move them closer to the ground truth on average (mean absolute error 1.601 before, 1.856 after), and 2.90% of the changed pixels had a real tint (spread above 4) in the ground truth (sub20: 54.49%, 3.48%).
 - **Where the 60 images differ from sub20:** the share of spread >= 3 in neutral backdrops is larger without the step (27.27% at 400 px against 16.32%; 24.01% at 800 px against 17.82%), and at 400 px T=4 leaves 2.06% instead of 0.22%, so it is **not** within 1 point of Lanczos on the 60 images (it is at 800 px). The gate result does not depend on which of the two sets is used.
 - **Limits:** `fast` only, T = 2, 3 and 4, JPEG q85, no visual judgement; the 60 images contain the 20, so the two sets are not independent.
