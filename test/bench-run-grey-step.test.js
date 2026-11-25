@@ -44,6 +44,8 @@ test('bad flags and a missing folder exit 1 with one stderr line before any mode
     [['--t', 'x'], '--t must be a non-negative integer'],
     [['--t', '-1'], '--t must be a non-negative integer'],
     [['--limit', '0'], '--limit must be a positive integer'],
+    [['--quality', 'bogus'], '--quality must be fast or high'],
+    [['--quality', 'auto'], '--quality must be fast or high'],
     [['--size', '799'], '--size must be 400 or 800'],
     [['--size', 'x'], '--size must be 400 or 800'],
     [['--size', '600'], '--size must be 400 or 800'],
@@ -88,6 +90,8 @@ test('a generated folder of two images prints the table and one gate line per T'
   assert.match(bigLines[0], /^images: 2; with a neutral region: \d+; blocks: \d+; input 800 px, output 1000 px$/);
   assert.deepStrictEqual(bigLines.map((l) => l.split('|')[1] && l.split('|')[1].trim()).slice(3, 8), ['Lanczos', '`fast` (no step)', '`fast` + step T=2', '`fast` + step T=3', '`fast` + step T=4']);
   assert.strictEqual(bigLines.filter((l) => l.startsWith('T=')).length, 3);
+  // --quality fast (BL54) prints exactly what no flag prints (the first run's stdout, same folder, deterministic model).
+  assert.strictEqual(run(['--dir', dir, '--quality', 'fast']).stdout, r.stdout);
   // --t picks one value.
   const one = run(['--dir', dir, '--t', '3']);
   assert.strictEqual(one.status, 0, one.stderr);
@@ -134,4 +138,21 @@ test('docs/COLOR.md BL53 section: same rows as the BL51 table and gate words tha
       assert.strictEqual(m[4] === 'passes', pass, `${name} T=${t}: "${m[4]}" disagrees with PSNR ${m[1]}, SSIM ${m[2]}, GMSD ${m[3]}`);
     }
   }
+});
+
+// Opt-in (PUSHUP_SLOW_TESTS=1): the real `high` model (about 30x slower than `fast`) on a one-image generated folder; rows and gate
+// lines carry the mode name (BL54).
+test('--quality high labels the rows with the mode (BL54)',
+  { skip: process.env.PUSHUP_SLOW_TESTS === '1' ? false : 'set PUSHUP_SLOW_TESTS=1', timeout: 300000 }, async () => {
+  const dir = path.join(tmp, 'high');
+  fs.mkdirSync(dir);
+  const w = 600, h = 450;
+  const grey = Buffer.alloc(w * h * 3);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const v = Math.round(140 + (x / w) * 20 + (((x * 31 + y * 17) % 5) - 2)); grey.fill(v, (y * w + x) * 3, (y * w + x) * 3 + 3); }
+  await sharp(grey, { raw: { width: w, height: h, channels: 3 } }).png().toFile(path.join(dir, 'a_grey.png'));
+  const r = spawnSync(process.execPath, [SCRIPT, '--dir', dir, '--quality', 'high', '--t', '4'], { encoding: 'utf8', timeout: 300000, env: { ...process.env, PUSHUP_DEVICE: 'cpu' } });
+  assert.strictEqual(r.status, 0, r.stderr);
+  const lines = r.stdout.split('\n').filter((l) => l !== '');
+  assert.deepStrictEqual(lines.slice(3, 6).map((l) => l.split('|')[1].trim()), ['Lanczos', '`high` (no step)', '`high` + step T=4']);
+  assert.match(lines[6], /^T=4: PSNR /);
 });

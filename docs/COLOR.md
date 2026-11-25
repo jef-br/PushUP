@@ -306,3 +306,27 @@ Differences to `fast` (no step), and the two questions per T:
 - **T=4:** PSNR -0.035, SSIM -0.00011, GMSD +0.00004: fails the gate at 800 px (PSNR; SSIM and GMSD are within their limits). 0.01 points above Lanczos: within 1 point.
 - **Result:** at 800 px no T passes the gate, because PSNR falls by 0.035 to 0.042 dB against a limit of 0.02 dB; at 400 px all three passed (BL51, drops of 0.012 to 0.014 dB). So T=4 does not pass at both sizes, and by the gate rule the step could not ship as a default. The share figures behave as at 400 px (T=4: 17.82% to 0.18%).
 - **Limits:** the `fast` row equals the BL48 and BL50 800 px figures (36.28 / 0.9543 / 0.0492, 17.82%); `fast` only, 20 images, JPEG q85, no visual judgement. A step limited to near-neutral regions of the input (instead of the whole image) was not tried.
+
+### Grey-preserving step on `high` (BL54, 2026-11-25)
+
+Question: BL49 found the colour noise is three times larger in `high` (50.4% of neutral-block pixels with spread >= 3). Does the step of BL51 fix it there, and at what quality cost? `PUSHUP_DEVICE=cpu node bench/grey-step.js --quality high` (new option `--quality fast|high`, default `fast`, output unchanged without it; 5 min 20 s for T = 2, 3, 4 on all 20 images), then `--t 5` and `--t 6` as one more run each (about 5 min each; the task allowed it because no T of 2 to 4 reached the target). 400 px input, `bench/out/sub20`, 12 images with a region, 317 blocks; the `high` (no step) and Lanczos rows are identical in the three runs, and the `high` row equals BL49 (50.43%).
+
+| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|---|
+| Lanczos | 28.97 | 0.8785 | 0.1271 | 0.64 | 0.17 |
+| `high` (no step) | 31.12 | 0.8994 | 0.1018 | 2.87 | 50.43 |
+| `high` + step T=2 | 31.12 | 0.8994 | 0.1018 | 2.48 | 50.43 |
+| `high` + step T=3 | 31.12 | 0.8994 | 0.1018 | 2.36 | 46.49 |
+| `high` + step T=4 | 31.12 | 0.8993 | 0.1018 | 1.91 | 35.16 |
+| `high` + step T=5 | 31.11 | 0.8992 | 0.1018 | 0.75 | 11.94 |
+| `high` + step T=6 | 31.10 | 0.8992 | 0.1018 | 0.22 | 3.11 |
+
+Differences to `high` (no step), and the two questions per T:
+
+- **T=2:** PSNR 0.000, SSIM -0.00000, GMSD -0.00001: passes the quality gate. Share 50.27 points above Lanczos: not within 1 point.
+- **T=3:** PSNR -0.001, SSIM -0.00002, GMSD +0.00001: passes the gate. 46.32 points above Lanczos: not within 1 point.
+- **T=4:** PSNR -0.005, SSIM -0.00007, GMSD +0.00001: passes the gate. 34.99 points above Lanczos: not within 1 point.
+- **T=5:** PSNR -0.012, SSIM -0.00015, GMSD +0.00001: passes the gate. 11.77 points above Lanczos: not within 1 point.
+- **T=6:** PSNR -0.019, SSIM -0.00013, GMSD +0.00003: passes the gate (PSNR 0.001 dB inside the 0.02 dB limit). 2.94 points above Lanczos: not within 1 point.
+- **Result:** no T from 2 to 6 brings the share of pixels with spread >= 3 within 1 point of Lanczos's in `high` output. The step needs a larger T than in `fast` (where T=4 was enough) because the model's noise is larger (mean spread 2.87, 99th percentile 7), and at T=6 the PSNR cost is already at the gate limit (-0.019 dB), so a larger T would very likely fail it (not run). The step costs more per point of noise removed in `high`.
+- **Limits:** CPU run of the GPU model, 400 px input only (800 px, where the `fast` step failed the gate, was not run for `high`), T = 2 to 6 only, 20 images, JPEG q85, no visual judgement.

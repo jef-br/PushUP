@@ -45,6 +45,11 @@ function figureProblems(row, doc) {
   const t4at800 = /\*\*T=4:\*\* PSNR (-?[\d.]+)/.exec(section(doc, '### Grey-preserving step at 800 px (BL53'));
   if (!t4at800) throw new Error('COLOR.md BL53 section has no "**T=4:** PSNR ..." line');
   if (!t4) throw new Error('COLOR.md BL51 section has no "**T=4:** PSNR ..., SSIM ..., GMSD ..." line');
+  const sec54 = section(doc, '### Grey-preserving step on `high` (BL54');
+  const s54 = rowsOf(sec54);
+  const h54 = (n) => find(s54, (r) => r[0].includes(`T=${n}`), `BL54 T=${n}`), h54none = find(s54, (r) => r[0].startsWith('`high` (no step)'), 'BL54 no step');
+  const t6 = /\*\*T=6:\*\* PSNR (-?[\d.]+)/.exec(sec54);
+  if (!t6) throw new Error('COLOR.md BL54 section has no "**T=6:** PSNR ..." line');
   const pct = (cell) => r1(Number(cell));
 
   const checks = [
@@ -57,6 +62,7 @@ function figureProblems(row, doc) {
     [/PSNR (-[\d.]+) and (-[\d.]+) dB against the shipped 20%, GMSD (\+[\d.]+) and (\+[\d.]+);/, (m) => [['BL50 400 px PSNR diff', m[1], d50('400')[5]], ['BL50 800 px PSNR diff', m[2], d50('800')[5]], ['BL50 400 px GMSD diff', m[3], d50('400')[7]], ['BL50 800 px GMSD diff', m[4], d50('800')[7]]]],
     [/passes the quality gate at 400 px \(PSNR (-[\d.]+) dB, SSIM (-[\d.]+), GMSD (-[\d.]+)\) but fails it at 800 px \(PSNR (-[\d.]+) dB against a limit of 0\.02/, (m) => [['BL51 T=4 PSNR diff', m[1], t4[1]], ['BL51 T=4 SSIM diff', m[2], t4[2]], ['BL51 T=4 GMSD diff', m[3], t4[3]], ['BL53 T=4 PSNR diff at 800 px', m[4], t4at800[1]]]],
     [/from (\d+\.\d)% to (\d+\.\d)% \(Lanczos (\d+\.\d)%\); T=3 gives (\d+\.\d)%/, (m) => [['BL51 no-step share', m[1], pct(none51[5])], ['BL51 T=4 share', m[2], pct(t51(4)[5])], ['BL51 Lanczos share', m[3], pct(lan51[5])], ['BL51 T=3 share', m[4], pct(t51(3)[5])]]],
+    [/for T=2 to 6 \(T=6: PSNR (-[\d.]+) dB\) but none brings the share of spread of 3 or more within 1 point of Lanczos's \(T=4 (\d+\.\d)%, T=6 (\d+\.\d)%, from (\d+\.\d)%\)/, (m) => [['BL54 T=6 PSNR diff', m[1], t6[1]], ['BL54 T=4 share', m[2], pct(h54(4)[5])], ['BL54 T=6 share', m[3], pct(h54(6)[5])], ['BL54 no-step share', m[4], pct(h54none[5])]]],
   ];
   const problems = [];
   for (const [re, get] of checks) {

@@ -1,6 +1,7 @@
 'use strict';
 // Would a grey-preserving post-step pass the quality gate? (BL51; docs/COLOR.md "Grey-preserving step, offline (BL51)")
-// Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4] [--size 400|800]
+// Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4] [--size 400|800] [--quality fast|high]
+//   --quality (BL54): model mode, sets PUSHUP_QUALITY for the run (default fast); rows are labelled with it. `high` takes about 3 min on CPU.
 //   --size (BL53): input size in px, 400 (default) or 800; the output is always 1000 px on its longest side.
 //   Offline only: nothing here is part of the shipped pipeline (src/ is untouched).
 //   Per image: ground truth and the degraded input (400 px unless --size) as bench/bench.js builds them (bench/groundtruth.js); the shipped `fast`
@@ -38,7 +39,7 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--t', '--size'], switches: [] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--t', '--size', '--quality'], switches: [] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), tArg = opt('--t', null);
@@ -47,6 +48,8 @@ async function main(argv) {
   const sizeArg = String(opt('--size', '400'));
   if (sizeArg !== '400' && sizeArg !== '800') fail('--size must be 400 or 800');
   const SIZE = Number(sizeArg);
+  const quality = String(opt('--quality', 'fast'));
+  if (quality !== 'fast' && quality !== 'high') fail('--quality must be fast or high');
   const ts = tArg === null ? [2, 3, 4] : [Number(tArg)];
   let stat = null;
   try { stat = fs.statSync(dir); } catch { /* reported below */ }
@@ -55,7 +58,7 @@ async function main(argv) {
   const files = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort().slice(0, Number(limitArg));
   if (files.length === 0) fail(`no images in ${dir}`);
 
-  process.env.PUSHUP_QUALITY = 'fast';
+  process.env.PUSHUP_QUALITY = quality;
   process.env.PUSHUP_DEVICE = 'cpu';
   const { upscale } = require('../src/index.js');
   const { loadGt, inputAt, crop } = require('./groundtruth');
@@ -90,7 +93,7 @@ async function main(argv) {
     const s = summary(neutral[n]);
     res[n] = { psnr: score[n].psnr / files.length, ssim: score[n].ssim / files.length, gmsd: score[n].gmsd / files.length, mean: s.mean, share3: s.share3 };
   }
-  const label = (n) => (n === 'lanczos' ? 'Lanczos' : n === 'fast' ? '`fast` (no step)' : `\`fast\` + step T=${n.slice(1)}`);
+  const label = (n) => (n === 'lanczos' ? 'Lanczos' : n === 'fast' ? `\`${quality}\` (no step)` : `\`${quality}\` + step T=${n.slice(1)}`);
   console.log(`images: ${files.length}; with a neutral region: ${used}; blocks: ${blocks}; input ${SIZE} px, output 1000 px`);
   console.log('| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |');
   console.log('|---|---|---|---|---|---|');
