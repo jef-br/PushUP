@@ -266,3 +266,23 @@ Question: BL47 found that a 40% Lanczos mix cuts the share of neutral-backdrop p
 - **Gate (PSNR down at most 0.02 dB, SSIM down at most 0.001, GMSD up at most 0.001):** a 40% mix passes at 400 px: no (PSNR -0.17, GMSD +0.0020; SSIM improves by 0.0013); at 800 px: no (PSNR -1.23, SSIM -0.0029, GMSD +0.0076). A 60% mix fails at both sizes too.
 - **Reading:** at 400 px a 40% mix gives slightly higher SSIM but lower PSNR and worse GMSD; at 800 px every figure is worse, and the loss grows with the mix. The BL47 neutral-region gain from a 40% mix (4.6 points of pixels) is therefore paid for with a measurable quality loss, most at 800 px.
 - **Limits:** CPU, `fast` only, JPEG q85 inputs, 20 images, PSNR/SSIM/GMSD are not texture judgements. `sr-full@0.2` is the shipped configuration by construction (whole image, mix 0.2, `src/index.js`); it was not compared byte for byte with `upscale`.
+
+### Grey-preserving step, offline (BL51, 2026-11-25)
+
+Question: option (b) of row 13 of `docs/OWNER_DECISIONS.md` is a post-step that pulls near-neutral output pixels to their channel mean. What would it do to quality and to the neutral-backdrop noise? `node bench/grey-step.js` (new, offline: nothing in `src/` changes) applies the step "every pixel whose channel spread (max - min of R, G, B) is at most T becomes its channel mean, rounded" to the shipped `fast` output for T = 2, 3 and 4. Inputs, blocks and boxes are as in BL46 (`bench/out/sub20`, 400 px, JPEG q85; 12 of 20 images, 317 blocks); PSNR, SSIM and GMSD are whole-image means over all 20 images, scored as `bench/bench.js` scores (`bench/groundtruth.js` is the construction `bench/bench.js` used inline, now shared; its output is unchanged, checked on 4 images at 400 and 800 px by a before/after comparison of `--json` rows without the time column).
+
+| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|---|
+| Lanczos | 28.97 | 0.8785 | 0.1271 | 0.64 | 0.17 |
+| `fast` (no step) | 31.51 | 0.8941 | 0.1076 | 1.60 | 16.32 |
+| `fast` + step T=2 | 31.50 | 0.8940 | 0.1076 | 0.53 | 16.32 |
+| `fast` + step T=3 | 31.50 | 0.8940 | 0.1076 | 0.15 | 3.73 |
+| `fast` + step T=4 | 31.50 | 0.8940 | 0.1076 | 0.01 | 0.22 |
+
+Differences to `fast` (no step), and the two questions per T:
+
+- **T=2:** PSNR -0.014, SSIM -0.00010, GMSD -0.00003: passes the quality gate (PSNR down at most 0.02 dB, SSIM down at most 0.001, GMSD up at most 0.001). Share of spread >= 3 is 16.15 points above Lanczos: not within 1 point. (The share cannot move at T=2: the step only touches pixels with spread of 2 or less, which are not in the spread >= 3 share.)
+- **T=3:** PSNR -0.012, SSIM -0.00013, GMSD -0.00004: passes the gate. 3.56 points above Lanczos: not within 1 point.
+- **T=4:** PSNR -0.012, SSIM -0.00015, GMSD -0.00006: passes the gate. 0.06 points above Lanczos: within 1 point.
+- **Result:** the smallest T that passes the gate and brings the share within 1 point of Lanczos's is T=4.
+- **Limits:** the step acts on the whole image, not only on neutral regions, so it also flattens genuine slight tints with a spread of 4 or less (the metric cost above is small, a visual cost is not judged); `fast` only, 400 px input only, 20 images, JPEG q85. Shipping it would change default output, so it is an owner decision (row 13, option (b)).
