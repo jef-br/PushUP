@@ -58,6 +58,7 @@ test('README names every runnable bench/*.js script by its full path', () => {
     ['degrade.js', 'library: degraded-input construction (degrade) shared by pad.js and edges-real.js, no command line'],
     ['flags.js', 'library: unknown-flag check (checkFlags) used by the bench scripts, no command line'],
     ['stats.js', 'library: p99 and crossing helpers used by colors-real.js and edges.js, no command line'],
+    ['groundtruth.js', 'library: reference and degraded-input construction (loadGt, inputAt, crop) shared by bench.js and grey-step.js, no command line'],
   ]);
   const files = fs.readdirSync(path.join(root, 'bench')).filter((f) => f.endsWith('.js'));
   const runnable = files.filter((f) => {

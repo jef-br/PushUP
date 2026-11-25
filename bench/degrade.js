@@ -3,7 +3,7 @@
 //   degrade(file) -> { gt, inp }, each { data, w, h } (packed 8-bit RGB):
 //   gt  = the source resized so its longest side is 800 px (lanczos3, fit 'fill');
 //   inp = gt downscaled by 2 with the cubic kernel, JPEG q85, decoded (as bench/bench.js degrades).
-// bench/bench.js keeps its own copy by decision (it has no exports).
+// bench/bench.js and bench/grey-step.js build their 1000 px reference and input with bench/groundtruth.js (BL51): a different construction (1000 px reference, several sizes).
 const sharp = require('sharp');
 
 const raw = async (img) => { const { data, info } = await img.removeAlpha().raw().toBuffer({ resolveWithObject: true }); return { data, w: info.width, h: info.height }; };

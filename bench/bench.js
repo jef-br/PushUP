@@ -11,6 +11,7 @@ const { psnr, ssim, gmsd } = require('./metrics');
 const { aspectGroup } = require('./aspect');
 const { parseMethod, validateMethod } = require('./method');
 const { checkFlags } = require('./flags');
+const { loadGt, inputAt, crop } = require('./groundtruth');
 
 const args = process.argv.slice(2);
 const dir = args[0];
@@ -43,19 +44,6 @@ const byAspect = args.includes('--by-aspect');
 const asJson = args.includes('--json');
 const methods = (opt('--methods', 'lanczos,sr-full,sr-500,sr-250')).split(',');
 
-async function rawOf(img) {
-  const { data, info } = await img.removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  return { data, w: info.width, h: info.height };
-}
-
-// Crop a packed RGB buffer to cw x ch (top-left).
-function crop(buf, w, cw, ch) {
-  if (cw === w && buf.length === cw * ch * 3) return buf;
-  const out = Buffer.allocUnsafe(cw * ch * 3);
-  for (let y = 0; y < ch; y++) buf.copy(out, y * cw * 3, y * w * 3, y * w * 3 + cw * 3);
-  return out;
-}
-
 async function method(name, inp, w, h) {
   const m = parseMethod(name);
   if (m.kind === 'lanczos') {
@@ -74,17 +62,11 @@ async function method(name, inp, w, h) {
   const agg = {};
   const rank = {}; // 0 overall, 1 per-source, 2 per-aspect: the output order
   for (const f of files) {
-    const hr = sharp(path.join(dir, f));
-    const meta = await hr.metadata();
-    const L = Math.max(meta.width, meta.height);
-    const gw = Math.round((meta.width * 1000) / L), gh = Math.round((meta.height * 1000) / L);
-    const gt = await rawOf(sharp(path.join(dir, f)).resize(gw, gh, { kernel: 'lanczos3', fit: 'fill' }));
+    const gt = await loadGt(path.join(dir, f));
+    const gw = gt.w, gh = gt.h;
     for (const s of sizes) {
-      const iw = Math.round((gw * s) / 1000), ih = Math.round((gh * s) / 1000);
       // Degrade like a typical marketplace upload: downscale, then JPEG q85.
-      const jpg = await sharp(gt.data, { raw: { width: gw, height: gh, channels: 3 } })
-        .resize(iw, ih, { kernel: 'cubic', fit: 'fill' }).jpeg({ quality: 85 }).toBuffer();
-      const inp = await rawOf(sharp(jpg));
+      const inp = await inputAt(gt, s);
       for (const m of methods) {
         const t = performance.now();
         const raw = await method(m, inp.data, inp.w, inp.h);
