@@ -1,6 +1,9 @@
 'use strict';
 // Would a grey-preserving post-step pass the quality gate? (BL51; docs/COLOR.md "Grey-preserving step, offline (BL51)")
-// Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4] [--size 400|800] [--quality fast|high]
+// Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4] [--size 400|800] [--quality fast|high] [--changed]
+//   --changed (BL55): after the lines above, a second table per T: the share of all output pixels the step changes; among them the share
+//   whose ground-truth pixel has a channel spread above T (a real tint removed) and the mean absolute error to the ground truth per channel
+//   (0-255) before and after the step. Without the flag the output is unchanged.
 //   --quality (BL54): model mode, sets PUSHUP_QUALITY for the run (default fast); rows are labelled with it. `high` takes about 5 min per run on CPU.
 //   --size (BL53): input size in px, 400 (default) or 800; the output is always 1000 px on its longest side.
 //   Offline only: nothing here is part of the shipped pipeline (src/ is untouched).
@@ -29,6 +32,20 @@ function greyStep(data, t) {
   return out;
 }
 
+// BL55: compare `before` (the model output) with `after` (greyStep(before, t)) against `ref`, all packed RGB of the same size.
+// Returns { pixels, changed, tinted, errBefore, errAfter }: pixel counts (changed = after differs from before; tinted = changed pixels
+// whose ref pixel has channel spread > t) and the summed absolute error over the three channels of the changed pixels, before and after.
+function changedStats(before, after, ref, t) {
+  const r = { pixels: Math.floor(before.length / 3), changed: 0, tinted: 0, errBefore: 0, errAfter: 0 };
+  for (let k = 0; k + 2 < before.length; k += 3) {
+    if (before[k] === after[k] && before[k + 1] === after[k + 1] && before[k + 2] === after[k + 2]) continue;
+    r.changed++;
+    if (Math.max(ref[k], ref[k + 1], ref[k + 2]) - Math.min(ref[k], ref[k + 1], ref[k + 2]) > t) r.tinted++;
+    for (let c = 0; c < 3; c++) { r.errBefore += Math.abs(before[k + c] - ref[k + c]); r.errAfter += Math.abs(after[k + c] - ref[k + c]); }
+  }
+  return r;
+}
+
 // Gate verdict of `row` against `base` ({psnr, ssim, gmsd}); `pass` is true when all three are within the limits.
 function gate(base, row) {
   const dPsnr = row.psnr - base.psnr, dSsim = row.ssim - base.ssim, dGmsd = row.gmsd - base.gmsd;
@@ -39,7 +56,7 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--t', '--size', '--quality'], switches: [] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--t', '--size', '--quality'], switches: ['--changed'] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), tArg = opt('--t', null);
@@ -66,6 +83,8 @@ async function main(argv) {
   const names = ['lanczos', 'fast', ...ts.map((t) => `t${t}`)];
   const score = Object.fromEntries(names.map((n) => [n, { psnr: 0, ssim: 0, gmsd: 0 }]));
   const neutral = Object.fromEntries(names.map((n) => [n, newAcc()]));
+  const showChanged = argv.includes('--changed');
+  const chg = Object.fromEntries(ts.map((t) => [t, { pixels: 0, changed: 0, tinted: 0, errBefore: 0, errAfter: 0 }]));
   let used = 0, blocks = 0;
   for (const f of files) {
     const gt = await loadGt(path.join(dir, f));
@@ -79,6 +98,10 @@ async function main(argv) {
     for (const n of names) {
       const o = crop(outs[n], ow, cw, ch);
       score[n].psnr += psnr(o, ref, cw, ch); score[n].ssim += ssim(o, ref, cw, ch); score[n].gmsd += gmsd(o, ref, cw, ch);
+    }
+    if (showChanged) {
+      const base = crop(fastOut, ow, cw, ch);
+      for (const t of ts) { const c = changedStats(base, crop(outs[`t${t}`], ow, cw, ch), ref, t); for (const k of Object.keys(c)) chg[t][k] += c[k]; }
     }
     const bl = findBlocks(inp.data, inp.w, inp.h);
     if (bl.length > 0) {
@@ -105,7 +128,16 @@ async function main(argv) {
     const r = res[`t${t}`], g = gate(res.fast, r), gap = r.share3 - res.lanczos.share3;
     console.log(`T=${t}: PSNR ${g.dPsnr.toFixed(3)}, SSIM ${g.dSsim.toFixed(5)}, GMSD ${g.dGmsd.toFixed(5)}; quality gate: ${g.pass ? 'pass' : 'fail'}; share ${gap.toFixed(2)} points above Lanczos: ${gap <= 1 ? 'within 1 point' : 'not within 1 point'}`);
   }
+  if (showChanged) {
+    console.log('');
+    console.log('| T | pixels changed (% of all) | of those: ground truth spread > T (%) | mean abs error before | mean abs error after |');
+    console.log('|---|---|---|---|---|');
+    for (const t of ts) {
+      const c = chg[t], n = c.changed * 3;
+      console.log(`| ${t} | ${((100 * c.changed) / c.pixels).toFixed(2)} | ${c.changed ? ((100 * c.tinted) / c.changed).toFixed(2) : '0.00'} | ${n ? (c.errBefore / n).toFixed(3) : '0.000'} | ${n ? (c.errAfter / n).toFixed(3) : '0.000'} |`);
+    }
+  }
 }
 
 if (require.main === module) main(process.argv.slice(2)).catch((e) => { console.error(e); process.exit(1); });
-module.exports = { greyStep, gate };
+module.exports = { greyStep, gate, changedStats };

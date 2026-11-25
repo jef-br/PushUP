@@ -50,6 +50,9 @@ function figureProblems(row, doc) {
   const h54 = (n) => find(s54, (r) => r[0].includes(`T=${n}`), `BL54 T=${n}`), h54none = find(s54, (r) => r[0].startsWith('`high` (no step)'), 'BL54 no step');
   const t6 = /\*\*T=6:\*\* PSNR (-?[\d.]+)/.exec(sec54);
   if (!t6) throw new Error('COLOR.md BL54 section has no "**T=6:** PSNR ..." line');
+  const sec55 = section(doc, '### What the grey-preserving step changes (BL55');
+  const s55 = rowsOf(sec55);
+  const t55 = find(s55, (r) => r[0] === '4', 'BL55 T=4');
   const pct = (cell) => r1(Number(cell));
 
   const checks = [
@@ -63,6 +66,7 @@ function figureProblems(row, doc) {
     [/passes the quality gate at 400 px \(PSNR (-[\d.]+) dB, SSIM (-[\d.]+), GMSD (-[\d.]+)\) but fails it at 800 px \(PSNR (-[\d.]+) dB against a limit of 0\.02/, (m) => [['BL51 T=4 PSNR diff', m[1], t4[1]], ['BL51 T=4 SSIM diff', m[2], t4[2]], ['BL51 T=4 GMSD diff', m[3], t4[3]], ['BL53 T=4 PSNR diff at 800 px', m[4], t4at800[1]]]],
     [/from (\d+\.\d)% to (\d+\.\d)% \(Lanczos (\d+\.\d)%\); T=3 gives (\d+\.\d)%/, (m) => [['BL51 no-step share', m[1], pct(none51[5])], ['BL51 T=4 share', m[2], pct(t51(4)[5])], ['BL51 Lanczos share', m[3], pct(lan51[5])], ['BL51 T=3 share', m[4], pct(t51(3)[5])]]],
     [/for T=2 to 6 \(T=6: PSNR (-[\d.]+) dB\) but none brings the share of spread of 3 or more within 1 point of Lanczos's \(T=4 (\d+\.\d)%, T=6 (\d+\.\d)%, from (\d+\.\d)%\)/, (m) => [['BL54 T=6 PSNR diff', m[1], t6[1]], ['BL54 T=4 share', m[2], pct(h54(4)[5])], ['BL54 T=6 share', m[3], pct(h54(6)[5])], ['BL54 no-step share', m[4], pct(h54none[5])]]],
+    [/The T=4 step changes (\d+\.\d)% of all `fast` output pixels at 400 px and does not move them closer to the ground truth on average \(mean absolute error (\d+\.\d+) before, (\d+\.\d+) after\); (\d+\.\d)% of the changed pixels had a real tint/, (m) => [['BL55 T=4 changed share', m[1], pct(t55[1])], ['BL55 T=4 error before', m[2], t55[3]], ['BL55 T=4 error after', m[3], t55[4]], ['BL55 T=4 real-tint share', m[4], pct(t55[2])]]],
   ];
   const problems = [];
   for (const [re, get] of checks) {
@@ -89,6 +93,7 @@ test('a changed figure in row 13 is reported with its name and the table value',
   assert.deepStrictEqual(figureProblems(swap('16.3% of `fast` output pixels', '16.9% of `fast` output pixels'), colorDoc), ['BL46 fast share: row 13 says 16.9, docs/COLOR.md table gives 16.3']);
   assert.deepStrictEqual(figureProblems(swap('(99th percentile 7)', '(99th percentile 8)'), colorDoc), ['BL49 high p99: row 13 says 8, docs/COLOR.md table gives 7']);
   assert.deepStrictEqual(figureProblems(swap('GMSD +0.0020 and +0.0076', 'GMSD +0.0020 and +0.0077'), colorDoc), ['BL50 800 px GMSD diff: row 13 says +0.0077, docs/COLOR.md table gives +0.0076']);
+  assert.deepStrictEqual(figureProblems(swap('(mean absolute error 1.493 before, 1.745 after)', '(mean absolute error 1.493 before, 1.745 after)'.replace('1.745', '1.645')), colorDoc), ['BL55 T=4 error after: row 13 says 1.645, docs/COLOR.md table gives 1.745']);
   // A reworded sentence is reported, not silently skipped.
   assert.match(figureProblems(row13.replace('The model alone gives', 'The model by itself gives'), colorDoc)[0], /^row 13 no longer contains the sentence matching/);
 });

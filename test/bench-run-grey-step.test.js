@@ -10,7 +10,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const sharp = require('sharp');
-const { greyStep, gate } = require('../bench/grey-step.js');
+const { greyStep, gate, changedStats } = require('../bench/grey-step.js');
 const { loadGt, inputAt, crop } = require('../bench/groundtruth.js');
 
 const SCRIPT = path.join(__dirname, '..', 'bench', 'grey-step.js');
@@ -30,6 +30,21 @@ test('greyStep sets pixels with spread <= T to their rounded channel mean and co
   assert.deepStrictEqual([...greyStep(Buffer.from([10, 10, 11, 10, 11, 11]), 2)], [10, 10, 10, 11, 11, 11]);
 });
 
+// BL55: per-pixel counting of --changed on a hand-made output and ground truth (T=4).
+test('changedStats counts changed pixels, removed tints and the error before and after', () => {
+  // Output pixels: spread 2 (changed), grey (unchanged), spread 4 (changed), spread 20 (unchanged).
+  const before = Buffer.from([10, 11, 12, 50, 50, 50, 20, 22, 24, 0, 10, 20]);
+  const after = greyStep(before, 4);
+  // Ground truth: grey 11 (no tint), grey 50, a real tint (20, 26, 32: spread 12 > 4), anything.
+  const ref = Buffer.from([11, 11, 11, 50, 50, 50, 20, 26, 32, 0, 10, 20]);
+  // Pixel 0: error 2 -> 0. Pixel 2: error 0 + 4 + 8 = 12 -> 2 + 4 + 10 = 16.
+  assert.deepStrictEqual(changedStats(before, after, ref, 4), { pixels: 4, changed: 2, tinted: 1, errBefore: 14, errAfter: 16 });
+  // A ground-truth spread of exactly T is not a real tint; with T=12 the same pixel is not tinted either.
+  assert.strictEqual(changedStats(before, after, ref, 12).tinted, 0);
+  // Nothing changed: all counts but `pixels` are zero.
+  assert.deepStrictEqual(changedStats(ref, ref, ref, 4), { pixels: 4, changed: 0, tinted: 0, errBefore: 0, errAfter: 0 });
+});
+
 test('gate: at the thresholds passes, beyond them fails, one limit is enough to fail', () => {
   const base = { psnr: 30, ssim: 0.9, gmsd: 0.1 };
   assert.strictEqual(gate(base, { psnr: 29.98, ssim: 0.899, gmsd: 0.101 }).pass, true);
@@ -46,6 +61,7 @@ test('bad flags and a missing folder exit 1 with one stderr line before any mode
     [['--limit', '0'], '--limit must be a positive integer'],
     [['--quality', 'bogus'], '--quality must be fast or high'],
     [['--quality', 'auto'], '--quality must be fast or high'],
+    [['--changed', '400'], 'unexpected argument 400 after the switch --changed'],
     [['--size', '799'], '--size must be 400 or 800'],
     [['--size', 'x'], '--size must be 400 or 800'],
     [['--size', '600'], '--size must be 400 or 800'],
@@ -92,6 +108,17 @@ test('a generated folder of two images prints the table and one gate line per T'
   assert.strictEqual(bigLines.filter((l) => l.startsWith('T=')).length, 3);
   // --quality fast (BL54) prints exactly what no flag prints (the first run's stdout, same folder, deterministic model).
   assert.strictEqual(run(['--dir', dir, '--quality', 'fast']).stdout, r.stdout);
+  // --changed (BL55): the first part is the same as without the flag; a second table follows after an empty line.
+  const chg = run(['--dir', dir, '--changed']);
+  assert.strictEqual(chg.status, 0, chg.stderr);
+  assert.ok(chg.stdout.startsWith(r.stdout), 'output without --changed is a prefix');
+  const extra = chg.stdout.slice(r.stdout.length).split('\n');
+  assert.strictEqual(extra[0], '');
+  assert.match(extra[1], /^\| T \| pixels changed \(% of all\) \|/);
+  assert.match(extra[2], /^\|---\|/);
+  const rows = extra.slice(3).filter((l) => l !== '');
+  assert.strictEqual(rows.length, 3);
+  rows.forEach((l, i) => assert.match(l, new RegExp(`^\\| ${i + 2} \\| \\d+\\.\\d\\d \\| \\d+\\.\\d\\d \\| \\d+\\.\\d{3} \\| \\d+\\.\\d{3} \\|$`)));
   // --t picks one value.
   const one = run(['--dir', dir, '--t', '3']);
   assert.strictEqual(one.status, 0, one.stderr);

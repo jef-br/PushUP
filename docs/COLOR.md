@@ -330,3 +330,17 @@ Differences to `high` (no step), and the two questions per T:
 - **T=6:** PSNR -0.019, SSIM -0.00013, GMSD +0.00003: passes the gate (PSNR 0.001 dB inside the 0.02 dB limit). 2.94 points above Lanczos: not within 1 point.
 - **Result:** no T from 2 to 6 brings the share of pixels with spread >= 3 within 1 point of Lanczos's in `high` output. The step needs a larger T than in `fast` (where T=4 was enough) because the model's noise is larger (mean spread 2.87, 99th percentile 7), and at T=6 the PSNR cost is already at the gate limit (-0.019 dB), so a larger T would very likely fail it (not run). The step is cheap per point of share removed in `high` (T=4: 0.005 dB for 15.3 points; `fast` T=4: 0.012 dB for 16.1 points), but `high` needs a larger T, and that is what brings the PSNR drop to the limit.
 - **Limits:** CPU run of the GPU model, 400 px input only (800 px, where the `fast` step failed the gate, was not run for `high`), T = 2 to 6 only, 20 images, JPEG q85, no visual judgement.
+
+### What the grey-preserving step changes (BL55, 2026-11-25)
+
+Question: the BL51 step acts on the whole image, so how many pixels does it change, and do those pixels end up closer to the ground truth, or did it flatten a real tint? `node bench/grey-step.js --changed` on `bench/out/sub20` (20 images, `fast`, 400 px input, 1000 px output, CPU) prints, after the BL51 table (unchanged), this table. "Changed" is any pixel whose output differs from the `fast` output after the step (this includes a change of one level by rounding the mean). "Real tint" is a ground-truth pixel with channel spread above T. Errors are mean absolute differences to the ground truth per channel (0-255), over the changed pixels only.
+
+| T | pixels changed (% of all) | of those: ground truth spread > T (%) | mean abs error before | mean abs error after |
+|---|---|---|---|---|
+| 2 | 48.60 | 2.28 | 1.069 | 1.338 |
+| 3 | 51.87 | 2.48 | 1.278 | 1.532 |
+| 4 | 54.49 | 3.48 | 1.493 | 1.745 |
+
+- **Result for T=4:** the step does not move the changed pixels closer to the ground truth on average (no: mean absolute error 1.493 before, 1.745 after), and 3.48% of the changed pixels had a real tint (spread above 4) in the ground truth.
+- **Reading:** the step changes about half of all pixels (it reaches every pixel with spread of 4 or less, in smooth areas of any colour, not only backdrops), and on those pixels the grey mean is on average further from the ground truth than the model output was, although whole-image PSNR barely moves (-0.012 dB) because the errors involved are small (about 1.5 levels per channel). The ground truth is mostly not neutral where the step acts: it has spread up to T there too, only 2-3% above T. This is a measurement of error, not a visual judgement.
+- **Limits:** `fast` only, 400 px input only, T = 2, 3 and 4, 20 images, JPEG q85; pixels the step leaves unchanged are not scored here.
