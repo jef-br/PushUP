@@ -60,6 +60,27 @@ test('missing folder: exit 1 with the fetch hint; bad usage: exit 1', () => {
   assert.strictEqual(run(['--size', '399']).status, 1);
 });
 
+test('--mix rejects bad values with exit 1 and --mix 0 on a generated folder prints the table (BL47)', async () => {
+  for (const bad of ['1.5', 'x', '-0.1']) {
+    const r = run(['--dir', tmp, '--mix', bad]);
+    assert.strictEqual(r.status, 1, bad);
+    assert.strictEqual(r.stderr.trim(), '--mix must be a number from 0 to 1');
+    assert.strictEqual(r.stdout, '');
+  }
+  const dir = path.join(tmp, 'mix');
+  fs.mkdirSync(dir);
+  const w = 600, h = 450;
+  const grey = img(w, h, (x, y) => { const v = Math.round(140 + (x / w) * 20 + (((x * 31 + y * 17) % 5) - 2)); return [v, v, v]; });
+  await sharp(grey, { raw: { width: w, height: h, channels: 3 } }).png().toFile(path.join(dir, 'a_grey.png'));
+  const r0 = run(['--dir', dir, '--mix', '0']);
+  assert.strictEqual(r0.status, 0, r0.stderr);
+  const lines = r0.stdout.split('\n').filter((l) => l !== '');
+  assert.match(lines[0], /^images: 1; with a region: 1;/);
+  assert.match(lines[4], /^\| `fast` \| \d+ \| \d+\.\d\d \| \d+ \| \d+\.\d\d \|$/);
+  // --mix 0.2 is the shipped mix: same output as no flag.
+  assert.strictEqual(run(['--dir', dir, '--mix', '0.2']).stdout, run(['--dir', dir]).stdout);
+});
+
 test('a generated folder of two images prints the table and lists the saturated one as "no region"', async () => {
   const dir = path.join(tmp, 'imgs');
   fs.mkdirSync(dir);

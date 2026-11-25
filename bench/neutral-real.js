@@ -1,6 +1,7 @@
 'use strict';
 // Do near-neutral backdrops of real photos keep R = G = B through `fast`? (BL46; docs/COLOR.md "Neutral backdrops on real photos")
-// Usage: node bench/neutral-real.js [--dir bench/out/sub20] [--limit 20] [--size 400]
+// Usage: node bench/neutral-real.js [--dir bench/out/sub20] [--limit 20] [--size 400] [--mix 0..1]
+//   --mix (BL47): Lanczos share of the `fast` output, via the internal `_run`; without it the shipped pipeline (`upscale`) runs.
 //   Inputs are built exactly as bench/colors-real.js builds them: source resized to 1000 px on its longest side
 //   (lanczos3), downscaled to --size px (cubic), JPEG q85, decoded. Near-neutral flat regions of the INPUT are found:
 //   16x16 blocks on a grid that starts at 16 px from the left/top edge, kept only when the block lies at least 16 px from
@@ -63,13 +64,15 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size'], switches: [] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size', '--mix'], switches: [] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), sizeArg = String(opt('--size', '400'));
   if (!/^\d+$/.test(limitArg) || Number(limitArg) < 1) fail('--limit must be a positive integer');
   if (!/^\d+$/.test(sizeArg) || Number(sizeArg) < 400 || Number(sizeArg) > 800) fail('--size must be an integer from 400 to 800');
   const size = Number(sizeArg);
+  const mixArg = opt('--mix', null);
+  if (mixArg !== null && !(/^(0|1|0?\.\d+|1\.0+)$/.test(String(mixArg)))) fail('--mix must be a number from 0 to 1');
   let stat = null;
   try { stat = fs.statSync(dir); } catch { /* reported below */ }
   if (!stat) fail(`${dir} does not exist; run bash bench/fetch_testset.sh`);
@@ -79,7 +82,8 @@ async function main(argv) {
 
   process.env.PUSHUP_QUALITY = 'fast';
   process.env.PUSHUP_DEVICE = 'cpu';
-  const { upscale } = require('../src/index.js');
+  const { upscale, _run } = require('../src/index.js');
+  const mix = mixArg === null ? null : Number(mixArg);
   const raw = async (img) => { const { data, info } = await img.removeAlpha().raw().toBuffer({ resolveWithObject: true }); return { data, w: info.width, h: info.height }; };
 
   const acc = { fast: newAcc(), lanczos: newAcc() };
@@ -97,7 +101,7 @@ async function main(argv) {
     const bl = findBlocks(inp.data, inp.w, inp.h);
     if (bl.length === 0) { none.push(f); process.stderr.write('.'); continue; }
     const IL = Math.max(inp.w, inp.h), ow = Math.round((inp.w * 1000) / IL), oh = Math.round((inp.h * 1000) / IL);
-    const [fastOut] = await upscale(inp.data, inp.w * 3, 1000 / IL);
+    const [fastOut] = mix === null ? await upscale(inp.data, inp.w * 3, 1000 / IL) : await _run(inp.data, inp.w * 3, 1000 / IL, { lanczosMix: mix });
     const lanOut = await sharp(inp.data, { raw: { width: inp.w, height: inp.h, channels: 3 } }).resize(ow, oh, { kernel: 'lanczos3', fit: 'fill' }).raw().toBuffer();
     for (const b of bl) {
       const box = scaleBox(b, 1000 / IL, ow, oh);

@@ -201,3 +201,18 @@ Question: the synthetic noisy grey of BL43 (row 13 of [OWNER_DECISIONS.md](OWNER
 
 - **Result:** yes. In near-neutral flat regions of real photos, 16.32% of `fast` output pixels have a channel spread of 3 or more against 0.17% for plain Lanczos (16.15 percentage points more, far above the 1 point of the task's rule); the mean spread is 1.60 against 0.64 and the 99th percentile 4 against 2. So the colour noise seen on synthetic grey noise is real on photos, but small in size (a spread of 3 to 4 levels at the 99th percentile); it is not measured whether it is visible.
 - **Limits:** one input size (400 px), JPEG q85 degradation, 12 of 20 images have a qualifying region, the blocks are chosen on the input (a region where the input is already neutral), `fast` only, no visual judgement. No change to `src/`.
+
+### Model alone against the Lanczos mix (BL47, 2026-11-24)
+
+Question: how much of this comes from the model, and how much does the shipped 20% Lanczos mix already hide? `node bench/neutral-real.js --mix <share>` runs the internal `_run` with that Lanczos share (the same 12 images, 317 blocks and 507 200 pixels as above). `--mix 0.2` prints exactly the table above (checked with `diff`); without the flag the shipped `upscale` runs, so nothing else changes.
+
+| Lanczos share in the output | mean spread | 99th percentile spread | share of pixels with spread >= 3 (%) |
+|---|---|---|---|
+| 0 (model only) | 1.64 | 4 | 17.19 |
+| 0.2 (shipped) | 1.60 | 4 | 16.32 |
+| 0.4 | 1.39 | 4 | 11.70 |
+| 0.6 | 0.86 | 3 | 3.86 |
+| 1 (plain Lanczos, from the table above) | 0.64 | 2 | 0.17 |
+
+- **Result:** the share of pixels with spread ≥ 3 falls steadily as the mix grows (17.19 → 16.32 → 11.70 → 3.86 %), but the shipped 20% takes away only 0.87 points of the 17.19 the model alone produces. The effect comes from the model, not from the mix. A larger mix would lower it further, but what that costs in texture or sharpness is not measured here, and a mix change is a default change that needs the quality gate and the owner.
+
