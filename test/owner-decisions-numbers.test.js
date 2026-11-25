@@ -53,6 +53,10 @@ function figureProblems(row, doc) {
   const sec55 = section(doc, '### What the grey-preserving step changes (BL55');
   const s55 = rowsOf(sec55);
   const t55 = find(s55, (r) => r[0] === '4', 'BL55 T=4');
+  const sec56 = section(doc, '### Grey-preserving step on the 60-image set (BL56');
+  const t56 = (re, what) => { const m = re.exec(sec56); if (!m) throw new Error(`COLOR.md BL56 section has no ${what}`); return m; };
+  const g400 = t56(/\*\*T=4 at 400 px:\*\* PSNR (-?[\d.]+)/, '"**T=4 at 400 px:** PSNR ..." line'), g800 = t56(/\*\*T=4 at 800 px:\*\* PSNR (-?[\d.]+)/, '"**T=4 at 800 px:** PSNR ..." line');
+  const c56 = t56(/^\| 4 \| (\d+\.\d\d) \| (\d+\.\d\d) \|/m, 'changed-pixels row for T=4'), n56 = t56(/^\| `fast` \+ step T=4 \| [\d.]+ \| [\d.]+ \| [\d.]+ \| [\d.]+ \| (\d+\.\d\d) \|$/m, 'T=4 row of the 400 px table');
   const pct = (cell) => r1(Number(cell));
 
   const checks = [
@@ -67,6 +71,7 @@ function figureProblems(row, doc) {
     [/from (\d+\.\d)% to (\d+\.\d)% \(Lanczos (\d+\.\d)%\); T=3 gives (\d+\.\d)%/, (m) => [['BL51 no-step share', m[1], pct(none51[5])], ['BL51 T=4 share', m[2], pct(t51(4)[5])], ['BL51 Lanczos share', m[3], pct(lan51[5])], ['BL51 T=3 share', m[4], pct(t51(3)[5])]]],
     [/for T=2 to 6 \(T=6: PSNR (-[\d.]+) dB\) but none brings the share of spread of 3 or more within 1 point of Lanczos's \(T=4 (\d+\.\d)%, T=6 (\d+\.\d)%, from (\d+\.\d)%\)/, (m) => [['BL54 T=6 PSNR diff', m[1], t6[1]], ['BL54 T=4 share', m[2], pct(h54(4)[5])], ['BL54 T=6 share', m[3], pct(h54(6)[5])], ['BL54 no-step share', m[4], pct(h54none[5])]]],
     [/The T=4 step changes (\d+\.\d)% of all `fast` output pixels at 400 px and does not move them closer to the ground truth on average \(mean absolute error (\d+\.\d+) before, (\d+\.\d+) after\); (\d+\.\d)% of the changed pixels had a real tint/, (m) => [['BL55 T=4 changed share', m[1], pct(t55[1])], ['BL55 T=4 error before', m[2], t55[3]], ['BL55 T=4 error after', m[3], t55[4]], ['BL55 T=4 real-tint share', m[4], pct(t55[2])]]],
+    [/On the 60-image set \(the 20 plus 40 more\) T=4 passes the gate at 400 px \(PSNR (-[\d.]+) dB\) and fails it at 800 px \(PSNR (-[\d.]+) dB\), the same pass\/fail as on the 20 images; there it changes (\d+\.\d)% of all pixels, (\d+\.\d)% of the changed pixels had a real tint, and at 400 px it leaves (\d+\.\d)% of spread/, (m) => [['BL56 T=4 PSNR diff at 400 px', m[1], g400[1]], ['BL56 T=4 PSNR diff at 800 px', m[2], g800[1]], ['BL56 T=4 changed share', m[3], pct(c56[1])], ['BL56 T=4 real-tint share', m[4], pct(c56[2])], ['BL56 T=4 remaining share at 400 px', m[5], pct(n56[1])]]],
   ];
   const problems = [];
   for (const [re, get] of checks) {

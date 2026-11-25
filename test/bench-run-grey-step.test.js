@@ -183,3 +183,20 @@ test('--quality high labels the rows with the mode (BL54)',
   assert.deepStrictEqual(lines.slice(3, 6).map((l) => l.split('|')[1].trim()), ['Lanczos', '`high` (no step)', '`high` + step T=4']);
   assert.match(lines[6], /^T=4: PSNR /);
 });
+
+// BL56: docs/COLOR.md "Grey-preserving step on the 60-image set (BL56...)" has a gate line per T and size; the gate words agree with the
+// printed differences. Reads the file only, no model run.
+test('docs/COLOR.md BL56 section: gate words agree with the printed differences, one line per T and size', () => {
+  const doc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'COLOR.md'), 'utf8');
+  const at = doc.indexOf('### Grey-preserving step on the 60-image set (BL56');
+  assert.ok(at >= 0, 'BL56 section missing');
+  const end = doc.indexOf('\n### ', at + 5), sec = doc.slice(at, end < 0 ? undefined : end);
+  for (const size of [400, 800]) {
+    for (const t of [2, 3, 4]) {
+      const m = new RegExp(`\\*\\*T=${t} at ${size} px:\\*\\* PSNR (-?[\\d.]+), SSIM (-?[\\d.]+), GMSD ([+-]?[\\d.]+): (passes|fails) the quality gate`).exec(sec);
+      assert.ok(m, `T=${t} at ${size} px line missing`);
+      const pass = Number(m[1]) >= -0.02 && Number(m[2]) >= -0.001 && Number(m[3]) <= 0.001;
+      assert.strictEqual(m[4] === 'passes', pass, `T=${t} at ${size} px: "${m[4]}" disagrees with PSNR ${m[1]}, SSIM ${m[2]}, GMSD ${m[3]}`);
+    }
+  }
+});
