@@ -400,6 +400,6 @@ Question: every neutral-backdrop figure above builds its input with JPEG q85 (`b
 | q85 | 12 | 317 | 16.32 | 0.17 | 1.60 |
 | q95 | 10 | 310 | 12.60 | 0.10 | 1.42 |
 
-- **Result:** between q60 and q95 the `fast` share changes by 4.24 points (8.36% and 12.60%): not more than 5 points (no). The share is above Lanczos's (0.26% and 0.10%) at every quality, so the effect does not depend on the quality; it is not monotonic either (q85, the quality used elsewhere, has the highest share, 16.32%, equal to the BL46 figure).
+- **Result:** between q60 and q95 the `fast` share changes by 4.24 points (8.36% and 12.60%): not more than 5 points (no). The share is above Lanczos's (0.26% and 0.10%) at every quality, so the effect is present at every quality tried; the share is not monotonic in the quality either (q85, the quality used elsewhere, has the highest share, 16.32%, equal to the BL46 figure).
 - **Reading:** the share moves by a factor of two with the quality, and the blocks differ between the runs (why the share is lowest at q60 and not highest was not investigated), so the figures say the effect exists at q60 to q95, not how large it is for a given photo.
 - **Limits:** `fast` only, 400 px input only, three qualities, 20 images, no visual judgement.
