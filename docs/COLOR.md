@@ -469,3 +469,18 @@ Question: the 20-image answer (previous subsection) rests on 7 images with a fla
 - **Result:** on the 60 images `fast` chroma noise is **not** at least twice Lanczos's (no): 0.94 against 0.49 in R-G (1.91x) and 1.11 against 0.70 in B-G (1.58x). The yes/no answer therefore differs from the 20-image one (yes, 2.25x and 2.20x); the excess over Lanczos in levels is about the same (0.45 and 0.41 on the 60 images, 0.47 and 0.45 on the 20), so the Lanczos noise is likely larger on the 40 extra images (their figures were not reported separately), and the ratio falls.
 - **Reading:** `fast` has more chroma noise than Lanczos on flat coloured backdrops in both sets, by about 0.4 to 0.5 levels of standard deviation; whether that is "twice" depends on which images are in the set, so the factor of two is not a stable figure and the excess in levels is the better summary. Visibility was not judged.
 - **Limits:** `fast` only, 400 px input only, 176 blocks in 15 images (the same backdrop contributes many blocks), JPEG q85; the 60 images contain the 20, so the two sets are not independent.
+
+### Flat coloured backdrops by size and JPEG quality (BL60, 2026-11-26)
+
+Question: BL58 measured flat coloured backdrops at 400 px input and JPEG q85 only, and BL57 showed that the neutral-backdrop effect depends on JPEG quality. `node bench/chroma-real.js` with the new `--jpeg 50..100` switch (default 85, output unchanged without it; the first output line ends with `; input JPEG q<N>` otherwise), same block rule and statistic as BL58, `bench/out/sub20`, `fast`, CPU.
+
+| input | images with a block | blocks | `fast` sd R-G | `fast` sd B-G | Lanczos sd R-G | Lanczos sd B-G | ratio R-G | ratio B-G |
+|---|---|---|---|---|---|---|---|---|
+| 400 px q60 | 8 | 110 | 0.92 | 0.92 | 0.36 | 0.34 | 2.54x | 2.70x |
+| 400 px q85 (BL58) | 7 | 59 | 0.85 | 0.83 | 0.38 | 0.38 | 2.25x | 2.20x |
+| 400 px q95 | 6 | 38 | 0.91 | 0.95 | 0.76 | 0.83 | 1.20x | 1.15x |
+| 800 px q85 | 13 | 537 | 0.91 | 0.89 | 0.60 | 0.61 | 1.51x | 1.45x |
+
+- **Result:** the `fast` chroma noise is not at least twice Lanczos's in all four rows (no): it is at 400 px q60 (2.54x and 2.70x) and q85 (2.25x and 2.20x), and it is not at 400 px q95 (1.20x and 1.15x) nor at 800 px q85 (1.51x and 1.45x).
+- **Reading:** `fast` noise is about 0.9 levels in every row (0.83 to 0.95); what changes is Lanczos's own noise (0.34 to 0.83), which is higher at q95 and at 800 px, so the ratio falls while the excess over Lanczos in levels shrinks too: 0.56 / 0.58 (q60), 0.47 / 0.45 (q85), 0.15 / 0.12 (q95), 0.31 / 0.28 (800 px). The factor of two is not a stable figure (see also the 60-image set above); the block sets differ between rows (6 to 13 images), so the rows are not paired. Visibility was not judged.
+- **Limits:** `fast` only, sub20 only, 400 px for the two JPEG rows and q85 for the size row (no 800 px with another quality), blocks from the same backdrop count separately, no visual judgement.

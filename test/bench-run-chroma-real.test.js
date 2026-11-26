@@ -57,6 +57,10 @@ test('bad flags and a missing folder exit 1 with one stderr line before any mode
     [['--size', '399'], '--size must be an integer from 400 to 800'],
     [['--size', '801'], '--size must be an integer from 400 to 800'],
     [['--size', 'x'], '--size must be an integer from 400 to 800'],
+    [['--jpeg', '49'], '--jpeg must be an integer from 50 to 100'],
+    [['--jpeg', '101'], '--jpeg must be an integer from 50 to 100'],
+    [['--jpeg', 'x'], '--jpeg must be an integer from 50 to 100'],
+    [['--jpeg', '85.5'], '--jpeg must be an integer from 50 to 100'],
     [['--dir', path.join(tmp, 'nope')], /does not exist; run bash bench\/fetch_testset\.sh$/],
   ];
   for (const [args, want] of cases) {
@@ -89,4 +93,19 @@ test('a generated folder of a blue and a grey image prints the table and lists t
   assert.match(lines[4], /^\| `fast` \| \d+ \| \d+\.\d\d \| \d+\.\d\d \|$/);
   assert.match(lines[5], /^\| Lanczos \| \d+ \| \d+\.\d\d \| \d+\.\d\d \|$/);
   assert.match(lines[6], /^chroma noise, fast \/ Lanczos: R-G \d+\.\d\dx, B-G \d+\.\d\dx; at least twice Lanczos in both: (yes|no)$/);
+});
+
+test('--jpeg 85 equals no flag; --jpeg 60 adds the suffix and keeps the table shape (BL60)', async () => {
+  const dir = path.join(tmp, 'imgs'); // written by the previous test
+  const base = run(['--dir', dir]), same = run(['--dir', dir, '--jpeg', '85']), q60 = run(['--dir', dir, '--jpeg', '60']);
+  assert.strictEqual(base.status, 0, base.stderr);
+  assert.strictEqual(same.status, 0, same.stderr);
+  assert.strictEqual(q60.status, 0, q60.stderr);
+  assert.strictEqual(same.stdout, base.stdout);
+  const a = base.stdout.split('\n'), b = q60.stdout.split('\n');
+  assert.ok(!a[0].includes('input JPEG'));
+  assert.match(b[0], /output 1000 px; input JPEG q60$/);
+  assert.strictEqual(b.length, a.length);
+  assert.match(b[2], /^\| method \|/);
+  assert.match(b[4], /^\| `fast` \| \d+ \| \d+\.\d\d \| \d+\.\d\d \|$/);
 });
