@@ -417,7 +417,7 @@ Question: BL46 to BL57 only look at near-neutral backdrops (flat saturated colou
 
 - **Result:** `fast` chroma noise on flat coloured backdrops is at least twice Lanczos's (yes): 0.85 against 0.38 in R-G and 0.83 against 0.38 in B-G (2.25x and 2.20x); 7 of the 20 images have such a block.
 - **Reading:** the model adds chroma noise on coloured backdrops too, with a standard deviation 0.4 to 0.5 levels above Lanczos's, so the effect is not limited to grey. The figure is a standard deviation of colour differences, not the channel spread used for the neutral backdrops, so the two are not comparable in size; whether 0.4 to 0.5 levels is visible was not judged. Option (b) of row 13, as tried in BL51 to BL56, acts only on pixels with a channel spread of 4 or less and does not touch these backdrops (by its rule, not measured here: their mean channel spread is at least 20).
-- **Limits:** `fast` only, 400 px input only, 59 blocks in 7 images (the same backdrop contributes many blocks), JPEG q85, no visual judgement. The block rule is one choice among several; a coloured backdrop with a gradient or texture is not covered.
+- **Limits:** `fast` only, 400 px input only, 59 blocks in 7 images (the same backdrop contributes many blocks; the 60-image set gives a different yes/no answer, see "Flat coloured backdrops on the 60-image set"), JPEG q85, no visual judgement. The block rule is one choice among several; a coloured backdrop with a gradient or texture is not covered.
 
 ### Region-limited grey-preserving step (BL59, 2026-11-26)
 
@@ -454,3 +454,18 @@ Differences to `fast` (no step), as printed by the script:
 - **Result for T=4:** the region-limited step passes the gate at 400 px (PSNR -0.013 dB) and fails it at 800 px (PSNR -0.042 dB against a limit of 0.02), so it does not pass at both sizes (as the whole-image step, -0.035 dB at 800 px, BL53). The share of spread >= 3 in neutral backdrops is not within 1 point of Lanczos's at either size (2.74% at 400 px, 2.50% at 800 px, against 0.17%), where the whole-image T=4 step reached 0.22% and 0.18%.
 - **Reading:** limiting the step to flat regions did not buy the gate at 800 px (the PSNR drop is slightly larger than for the whole-image step: -0.042 against -0.035 dB) and it removes less of the noise: isolated pixels with a spread of 6 to 8 put their whole 5x5 window outside the limit, so the pixels around them stay noisy. A smaller or larger window, or a luma range other than 12, was not tried.
 - **Limits:** `fast` only, T = 2, 3 and 4, one window and one luma range, 20 images, JPEG q85, no visual judgement. The 60-image set was not run.
+
+### Flat coloured backdrops on the 60-image set (BL61, 2026-11-26)
+
+Question: the 20-image answer (previous subsection) rests on 7 images with a flat coloured block. `bench/out/set` has 60 images and contains the 20. `node bench/chroma-real.js --dir bench/out/set` (about 1 min, no `--limit`): same script, block rule and statistic, 400 px input, JPEG q85, `fast`, CPU.
+
+15 of 60 images have such a block (176 blocks; sub20: 7 of 20, 59 blocks).
+
+| method | blocks | mean sd of R-G | mean sd of B-G |
+|---|---|---|---|
+| `fast` | 176 | 0.94 | 1.11 |
+| Lanczos | 176 | 0.49 | 0.70 |
+
+- **Result:** on the 60 images `fast` chroma noise is **not** at least twice Lanczos's (no): 0.94 against 0.49 in R-G (1.91x) and 1.11 against 0.70 in B-G (1.58x). The yes/no answer therefore differs from the 20-image one (yes, 2.25x and 2.20x); the excess over Lanczos in levels is about the same (0.45 and 0.41 on the 60 images, 0.47 and 0.45 on the 20), so the Lanczos noise is likely larger on the 40 extra images (their figures were not reported separately), and the ratio falls.
+- **Reading:** `fast` has more chroma noise than Lanczos on flat coloured backdrops in both sets, by about 0.4 to 0.5 levels of standard deviation; whether that is "twice" depends on which images are in the set, so the factor of two is not a stable figure and the excess in levels is the better summary. Visibility was not judged.
+- **Limits:** `fast` only, 400 px input only, 176 blocks in 15 images (the same backdrop contributes many blocks), JPEG q85; the 60 images contain the 20, so the two sets are not independent.
