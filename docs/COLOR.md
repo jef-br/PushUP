@@ -512,4 +512,18 @@ Question: BL58 to BL62 measured `fast` only. `high` (Remacri, used on a GPU) may
 
 - **Result:** the `high` chroma noise is lower than `fast`'s in both channel pairs (yes): 0.71 against 0.85 in R-G and 0.61 against 0.83 in B-G; and it is not at least twice Lanczos's (no): 1.87x in R-G and 1.62x in B-G (`fast`: 2.25x and 2.20x).
 - **Reading:** `high` adds less chroma noise than `fast` on coloured backdrops but still more than Lanczos: the excess over Lanczos is 0.33 and 0.23 levels (`fast`: 0.47 and 0.45). Whether that is visible was not judged; `high` is used on a GPU by default, and on a CPU only when `PUSHUP_QUALITY=high` is set, and this run is the CPU path of that mode.
-- **Limits:** `high` on CPU only (a GPU provider may give slightly different numbers), 400 px input only, sub20 only, 59 blocks in 7 images (the same backdrop contributes many blocks), JPEG q85, no visual judgement.
+- **Limits:** `high` on CPU only (a GPU provider may give slightly different numbers), 400 px input only, sub20 only (the 60-image set is in the section "Flat coloured backdrops in `high` mode on the 60-image set (BL65)" below), 59 blocks in 7 images (the same backdrop contributes many blocks), JPEG q85, no visual judgement.
+
+### Flat coloured backdrops in `high` mode on the 60-image set (BL65, 2026-11-26)
+
+Question: BL64 measured `high` on 7 images of sub20 (59 blocks). BL61 showed that the 60-image answer can differ from the 20-image one, so do BL64's answers hold on the 60 images? `PUSHUP_DEVICE=cpu node bench/chroma-real.js --dir bench/out/set --quality high` (no `--limit`, about 3.5 min on this CPU), same block rule and statistic as BL58, 400 px input, JPEG q85. The `fast` and Lanczos rows are the BL61 run (the same 15 images and 176 blocks).
+
+| method | images with a block | blocks | mean sd of R-G | mean sd of B-G |
+|---|---|---|---|---|
+| `fast` | 15 | 176 | 0.94 | 1.11 |
+| `high` | 15 | 176 | 0.74 | 0.85 |
+| Lanczos | 15 | 176 | 0.49 | 0.70 |
+
+- **Result:** the `high` chroma noise is lower than `fast`'s in both channel pairs (yes): 0.74 against 0.94 in R-G and 0.85 against 1.11 in B-G; and it is not at least twice Lanczos's (no): 1.51x in R-G and 1.21x in B-G (`fast`: 1.91x and 1.58x). Both answers agree with BL64's (yes: lower than `fast`, yes in BL64 too; not twice Lanczos's, no in BL64 too).
+- **Reading:** the excess over Lanczos is 0.25 and 0.15 levels (`fast`: 0.45 and 0.41); on sub20 it was 0.33 and 0.23 (`fast`: 0.47 and 0.45).
+- **Limits:** `high` on CPU only, 400 px input only, JPEG q85, no visual judgement.
