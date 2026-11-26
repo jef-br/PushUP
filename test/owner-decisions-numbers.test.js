@@ -134,3 +134,59 @@ test('a changed table cell in docs/COLOR.md is reported against row 13', () => {
   assert.notStrictEqual(bad, colorDoc, 'fixture: BL47 0.4 row not found');
   assert.deepStrictEqual(figureProblems(row13, bad), ['BL47 40% share: row 13 says 11.7, docs/COLOR.md table gives 12.7']);
 });
+
+// BL63: the figures derived by hand in the Reading line of the BL60 section and in the Result line of the BL61 section of docs/COLOR.md
+// equal what the tables give (`fast` minus Lanczos, min and max of columns). Returns the list of problems (empty when they agree).
+function readingProblems(doc) {
+  const problems = [];
+  const d2 = (a, b) => (Number(a) - Number(b)).toFixed(2);
+  const check = (label, said, want) => { if (said !== want) problems.push(`${label}: text says ${said}, table gives ${want}`); };
+  const line = (sec, key, what) => { const l = sec.split('\n').find((x) => x.startsWith(key)); if (!l) throw new Error(`COLOR.md ${what} has no line starting "${key}"`); return l; };
+
+  const sec60 = section(doc, '### Flat coloured backdrops by size and JPEG quality (BL60');
+  const rows60 = rowsOf(sec60), reading = line(sec60, '- **Reading:**', 'BL60 section');
+  const rowOf = { q60: '400 px q60', q85: '400 px q85', q95: '400 px q95', '800 px': '800 px' };
+  const pairs = [...reading.matchAll(/(\d+\.\d\d) \/ (\d+\.\d\d) \(([^)]+)\)/g)];
+  if (pairs.length !== 4) problems.push(`BL60 Reading line: expected 4 "a / b (label)" pairs, found ${pairs.length}`);
+  for (const [, a, b, label] of pairs) {
+    const r = rows60.find((x) => x[0].startsWith(rowOf[label] || '?'));
+    if (!r) { problems.push(`BL60 Reading line: label (${label}) matches no table row`); continue; }
+    check(`BL60 excess R-G (${label})`, a, d2(r[3], r[5]));
+    check(`BL60 excess B-G (${label})`, b, d2(r[4], r[6]));
+  }
+  const range = (re, cols, what) => {
+    const m = re.exec(reading);
+    if (!m) { problems.push(`BL60 Reading line no longer contains the ${what} range`); return; }
+    const v = rows60.flatMap((r) => cols.map((c) => Number(r[c])));
+    check(`BL60 ${what} min`, m[1], Math.min(...v).toFixed(2));
+    check(`BL60 ${what} max`, m[2], Math.max(...v).toFixed(2));
+  };
+  range(/in every row \((\d+\.\d\d) to (\d+\.\d\d)\)/, [3, 4], '`fast` noise');
+  range(/Lanczos's own noise \((\d+\.\d\d) to (\d+\.\d\d)\)/, [5, 6], 'Lanczos noise');
+
+  const res61 = line(section(doc, '### Flat coloured backdrops on the 60-image set (BL61'), '- **Result:**', 'BL61 section');
+  const m61 = /excess over Lanczos in levels is about the same \((\d+\.\d\d) and (\d+\.\d\d) on the 60 images, (\d+\.\d\d) and (\d+\.\d\d) on the 20\)/.exec(res61);
+  if (!m61) { problems.push('BL61 Result line no longer contains the excess sentence'); return problems; }
+  const pick = (head, label) => { const t = rowsOf(section(doc, head)); return [find(t, (r) => r[0] === '`fast`', `${label} fast`), find(t, (r) => r[0] === 'Lanczos', `${label} Lanczos`)]; };
+  const [f61, l61] = pick('### Flat coloured backdrops on the 60-image set (BL61', 'BL61'), [f58, l58] = pick('### Flat coloured backdrops (BL58', 'BL58');
+  check('BL61 excess R-G (60 images)', m61[1], d2(f61[2], l61[2])); check('BL61 excess B-G (60 images)', m61[2], d2(f61[3], l61[3]));
+  check('BL61 excess R-G (20 images)', m61[3], d2(f58[2], l58[2])); check('BL61 excess B-G (20 images)', m61[4], d2(f58[3], l58[3]));
+  return problems;
+}
+
+test('the derived figures in the BL60 Reading line and the BL61 Result line match their tables (BL63)', () => {
+  assert.deepStrictEqual(readingProblems(colorDoc), []);
+});
+
+test('a changed derived figure or table cell in the BL60 and BL61 sections is reported with its label (BL63)', () => {
+  const swap = (from, to) => { assert.ok(colorDoc.includes(from), `fixture: COLOR.md lacks "${from}"`); return colorDoc.replace(from, to); };
+  assert.deepStrictEqual(readingProblems(swap('0.56 / 0.58 (q60)', '0.57 / 0.58 (q60)')), ['BL60 excess R-G (q60): text says 0.57, table gives 0.56']);
+  assert.deepStrictEqual(readingProblems(swap('0.31 / 0.28 (800 px)', '0.31 / 0.29 (800 px)')), ['BL60 excess B-G (800 px): text says 0.29, table gives 0.28']);
+  assert.deepStrictEqual(readingProblems(swap('in every row (0.83 to 0.95)', 'in every row (0.83 to 0.96)')), ['BL60 `fast` noise max: text says 0.96, table gives 0.95']);
+  assert.deepStrictEqual(readingProblems(swap("Lanczos's own noise (0.34 to 0.83)", "Lanczos's own noise (0.35 to 0.83)")), ['BL60 Lanczos noise min: text says 0.35, table gives 0.34']);
+  assert.deepStrictEqual(readingProblems(swap('(0.45 and 0.41 on the 60 images, 0.47', '(0.45 and 0.42 on the 60 images, 0.47')), ['BL61 excess B-G (60 images): text says 0.42, table gives 0.41']);
+  // A table cell that changes without the text is reported too (BL60 q95 `fast` R-G 0.91 -> 0.92 moves the q95 excess).
+  assert.deepStrictEqual(readingProblems(swap('| 400 px q95 | 6 | 38 | 0.91 | 0.95 |', '| 400 px q95 | 6 | 38 | 0.92 | 0.95 |')), ['BL60 excess R-G (q95): text says 0.15, table gives 0.16']);
+  // A reworded line is reported, not skipped.
+  assert.deepStrictEqual(readingProblems(swap("Lanczos's own noise (0.34 to 0.83)", 'Lanczos noise varies')), ['BL60 Reading line no longer contains the Lanczos noise range']);
+});
