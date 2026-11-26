@@ -1,6 +1,7 @@
 'use strict';
 // Does `fast` add chroma noise to flat COLOURED backdrops of real photos, as it does to grey ones? (BL58; docs/COLOR.md "Flat coloured backdrops (BL58)")
-// Usage: node bench/chroma-real.js [--dir bench/out/sub20] [--limit 20] [--size 400]
+// Usage: node bench/chroma-real.js [--dir bench/out/sub20] [--limit 20] [--size 400] [--jpeg 50..100]
+//   --jpeg (BL60): JPEG quality of the degraded input (integer, default 85); the first output line ends with `; input JPEG q<N>` when it is not 85.
 //   Inputs are built as bench/neutral-real.js builds them (source resized to 1000 px on its longest side (lanczos3), downscaled to --size px
 //   (cubic), JPEG q85, decoded). Flat coloured blocks of the INPUT: 16x16 blocks on the grid and edge rule of bench/neutral-real.js (grid
 //   starts 16 px from the left/top edge, block at least 16 px from every edge), kept when (1) the mean channel spread (max(R,G,B) - min(R,G,B))
@@ -67,12 +68,15 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size'], switches: [] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size', '--jpeg'], switches: [] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), sizeArg = String(opt('--size', '400'));
   if (!/^\d+$/.test(limitArg) || Number(limitArg) < 1) fail('--limit must be a positive integer');
   if (!/^\d+$/.test(sizeArg) || Number(sizeArg) < 400 || Number(sizeArg) > 800) fail('--size must be an integer from 400 to 800');
+  const jpegArg = String(opt('--jpeg', '85'));
+  if (!/^\d+$/.test(jpegArg) || Number(jpegArg) < 50 || Number(jpegArg) > 100) fail('--jpeg must be an integer from 50 to 100');
+  const jpegQuality = Number(jpegArg);
   const size = Number(sizeArg);
   let stat = null;
   try { stat = fs.statSync(dir); } catch { /* reported below */ }
@@ -91,7 +95,7 @@ async function main(argv) {
   const none = [];
   for (const f of files) {
     const gt = await loadGt(path.join(dir, f));
-    const inp = await inputAt(gt, size);
+    const inp = await inputAt(gt, size, jpegQuality);
     const bl = findColourBlocks(inp.data, inp.w, inp.h);
     if (bl.length === 0) { none.push(f); process.stderr.write('.'); continue; }
     const IL = Math.max(inp.w, inp.h), ow = Math.round((inp.w * 1000) / IL), oh = Math.round((inp.h * 1000) / IL);
@@ -105,7 +109,7 @@ async function main(argv) {
     process.stderr.write('.');
   }
   process.stderr.write('\n');
-  console.log(`images: ${files.length}; with a region: ${used}; blocks: ${blocks}; input ${size} px, output 1000 px`);
+  console.log(`images: ${files.length}; with a region: ${used}; blocks: ${blocks}; input ${size} px, output 1000 px${jpegQuality === 85 ? '' : `; input JPEG q${jpegQuality}`}`);
   console.log(`no region: ${none.length ? none.join(', ') : 'none'}`);
   console.log('| method | blocks | mean sd of R-G | mean sd of B-G |');
   console.log('|---|---|---|---|');
