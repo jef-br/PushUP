@@ -8,6 +8,34 @@ the 20 % mix only reduces the model's shift to about 0.8 of its size). **The lar
 image border (more than 16 px from every edge) the shift is much smaller (blue 24 → 4, magenta 36 → 6), except for
 saturated green, which also shifts by 10 to 14 bytes in the interior.
 
+**Contents** (one line per section, in file order; the question and answer above come first)
+
+- [Method](#method): how the 27 flat test colours were built
+- [Results](#results): measured shift per colour, border and interior
+- [Reading](#reading): what the flat-colour numbers mean
+- [Real photos (BL13)](#real-photos-bl13): colour bias of `fast` against Lanczos on 20 real photos
+- [800 px and 600 px input (BL17)](#800-px-and-600-px-input-bl17): the same colour-bias check at larger input sizes
+- [Neutral greys (BL43, 2026-11-24)](#neutral-greys-bl43-2026-11-24): synthetic greys: does R = G = B survive `fast`?
+- [Neutral backdrops on real photos (BL46, 2026-11-24)](#neutral-backdrops-on-real-photos-bl46-2026-11-24): colour noise in grey backdrops of real photos
+- [Model alone against the Lanczos mix (BL47, 2026-11-24)](#model-alone-against-the-lanczos-mix-bl47-2026-11-24): how much of that noise the 20% Lanczos mix removes
+- [800 px and 600 px input (BL48, 2026-11-25)](#800-px-and-600-px-input-bl48-2026-11-25): neutral-backdrop noise at 600 and 800 px input
+- [`high` mode on CPU (BL49, 2026-11-25)](#high-mode-on-cpu-bl49-2026-11-25): neutral-backdrop noise in `high` mode
+- [Cost of a larger Lanczos mix (BL50, 2026-11-25)](#cost-of-a-larger-lanczos-mix-bl50-2026-11-25): PSNR, SSIM and GMSD cost of a 40% or 60% mix
+- [Grey-preserving step, offline (BL51, 2026-11-25)](#grey-preserving-step-offline-bl51-2026-11-25): a post-step that flattens near-grey pixels, at 400 px
+- [Grey-preserving step at 800 px (BL53, 2026-11-25)](#grey-preserving-step-at-800-px-bl53-2026-11-25): the same step at 800 px: fails the PSNR gate
+- [Grey-preserving step on `high` (BL54, 2026-11-25)](#grey-preserving-step-on-high-bl54-2026-11-25): the step on `high` output, T = 2 to 6
+- [What the grey-preserving step changes (BL55, 2026-11-25)](#what-the-grey-preserving-step-changes-bl55-2026-11-25): share of pixels changed and of real tints flattened
+- [Grey-preserving step on the 60-image set (BL56, 2026-11-26)](#grey-preserving-step-on-the-60-image-set-bl56-2026-11-26): step results on 60 images instead of 20
+- [Neutral backdrops by JPEG quality (BL57, 2026-11-26)](#neutral-backdrops-by-jpeg-quality-bl57-2026-11-26): neutral-backdrop noise at input JPEG q60, q85, q95
+- [Flat coloured backdrops (BL58, 2026-11-26)](#flat-coloured-backdrops-bl58-2026-11-26): chroma noise on flat coloured backdrops, 20 images
+- [Region-limited grey-preserving step (BL59, 2026-11-26)](#region-limited-grey-preserving-step-bl59-2026-11-26): step limited to flat neutral regions, at 400 and 800 px
+- [Flat coloured backdrops on the 60-image set (BL61, 2026-11-26)](#flat-coloured-backdrops-on-the-60-image-set-bl61-2026-11-26): coloured-backdrop chroma noise on 60 images
+- [Flat coloured backdrops by size and JPEG quality (BL60, 2026-11-26)](#flat-coloured-backdrops-by-size-and-jpeg-quality-bl60-2026-11-26): coloured backdrops by input size and JPEG quality, 20 images
+- [Flat coloured backdrops by size and JPEG quality on the 60-image set (BL62, 2026-11-26)](#flat-coloured-backdrops-by-size-and-jpeg-quality-on-the-60-image-set-bl62-2026-11-26): the same by size and quality on 60 images
+- [Flat coloured backdrops in `high` mode (BL64, 2026-11-26)](#flat-coloured-backdrops-in-high-mode-bl64-2026-11-26): coloured-backdrop chroma noise in `high` mode, 20 images
+- [Flat coloured backdrops in `high` mode on the 60-image set (BL65, 2026-11-26)](#flat-coloured-backdrops-in-high-mode-on-the-60-image-set-bl65-2026-11-26): `high` mode coloured backdrops on 60 images
+- [Summary: flat coloured backdrops (BL66, 2026-11-26)](#summary-flat-coloured-backdrops-bl66-2026-11-26): one table of every coloured-backdrop condition; start here for coloured backdrops
+
 ## Method
 
 `node bench/colors.js` (27 colours × 2 model runs at 400×300, factor 1; about 23 s on 4 vCPU; two runs gave identical output).
