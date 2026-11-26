@@ -65,6 +65,10 @@ function figureProblems(row, doc) {
   const sec59 = section(doc, '### Region-limited grey-preserving step (BL59');
   const g59 = (px) => { const m = new RegExp(`\\*\\*T=4 at ${px} px:\\*\\* PSNR (-?[\\d.]+)`).exec(sec59); if (!m) throw new Error(`COLOR.md BL59 section has no "**T=4 at ${px} px:** PSNR ..." line`); return m; };
   const r59 = (px) => { const m = new RegExp(`^\\| \`fast\` \\+ region step T=4 \\| [\\d.]+ \\| [\\d.]+ \\| [\\d.]+ \\| [\\d.]+ \\| (\\d+\\.\\d\\d) \\|$`, 'gm'); const all = [...sec59.matchAll(m)]; if (all.length !== 2) throw new Error('COLOR.md BL59 section needs one T=4 row in each table'); return all[px === 400 ? 0 : 1]; };
+  const s61 = rowsOf(section(doc, '### Flat coloured backdrops on the 60-image set (BL61'));
+  const f61 = find(s61, (r) => r[0] === '`fast`', 'BL61 fast'), l61 = find(s61, (r) => r[0] === 'Lanczos', 'BL61 Lanczos');
+  const twice61 = Number(f61[2]) >= 2 * Number(l61[2]) && Number(f61[3]) >= 2 * Number(l61[3]);
+  const x2 = (a, b) => (Number(a) / Number(b)).toFixed(1), d2 = (a, b) => (Number(a) - Number(b)).toFixed(2);
   const pct = (cell) => r1(Number(cell));
 
   const checks = [
@@ -83,6 +87,7 @@ function figureProblems(row, doc) {
     [/at q60 and q95 the `fast` share of spread of 3 or more in neutral backdrops is (\d+\.\d)% and (\d+\.\d)% \(q85: (\d+\.\d)%\), a difference of (\d+\.\d) points, so not more than 5 points/, (m) => [['BL57 q60 share', m[1], pct(q57('q60')[3])], ['BL57 q95 share', m[2], pct(q57('q95')[3])], ['BL57 q85 share', m[3], pct(q57('q85')[3])], ['BL57 q60-q95 difference', m[4], r1(Math.abs(Number(q57('q60')[3]) - Number(q57('q95')[3])))], ['BL57 not more than 5 points', String(Math.abs(Number(q57('q60')[3]) - Number(q57('q95')[3])) <= 5), 'true']]],
     [/on flat coloured backdrops \((\d+) of 20 images, (\d+) blocks\) `fast` chroma noise \(standard deviation of R-G and B-G\) is (\d+\.\d\d) and (\d+\.\d\d) levels against (\d+\.\d\d) and (\d+\.\d\d) for Lanczos, at least twice as much \((yes|no)\)/, (m) => [['BL58 blocks', m[2], f58[1]], ['BL58 fast R-G', m[3], f58[2]], ['BL58 fast B-G', m[4], f58[3]], ['BL58 Lanczos R-G', m[5], l58[2]], ['BL58 Lanczos B-G', m[6], l58[3]], ['BL58 at least twice', m[7], twice58 ? 'yes' : 'no']]],
     [/\(5x5 window of the output, luma range 12\) does not help: T=4 passes the gate at 400 px \(PSNR (-[\d.]+) dB\) and fails it at 800 px \(PSNR (-[\d.]+) dB\), and leaves (\d+\.\d)% and (\d+\.\d)% of spread/, (m) => [['BL59 T=4 PSNR diff at 400 px', m[1], g59(400)[1]], ['BL59 T=4 PSNR diff at 800 px', m[2], g59(800)[1]], ['BL59 T=4 share at 400 px', m[3], pct(r59(400)[1])], ['BL59 T=4 share at 800 px', m[4], pct(r59(800)[1])]]],
+    [/\(15 images with a flat coloured block, (\d+) blocks\) the `fast` chroma noise is (\d+\.\d\d) and (\d+\.\d\d) levels against (\d+\.\d\d) and (\d+\.\d\d) for Lanczos, (\d+\.\d)x and (\d+\.\d)x, so not at least twice as much \((yes|no)\).*?excess over Lanczos is about the same \((\d+\.\d\d) and (\d+\.\d\d) levels/, (m) => [['BL61 blocks', m[1], f61[1]], ['BL61 fast R-G', m[2], f61[2]], ['BL61 fast B-G', m[3], f61[3]], ['BL61 Lanczos R-G', m[4], l61[2]], ['BL61 Lanczos B-G', m[5], l61[3]], ['BL61 R-G ratio', m[6], x2(f61[2], l61[2])], ['BL61 B-G ratio', m[7], x2(f61[3], l61[3])], ['BL61 at least twice', m[8], twice61 ? 'yes' : 'no'], ['BL61 R-G excess', m[9], d2(f61[2], l61[2])], ['BL61 B-G excess', m[10], d2(f61[3], l61[3])]]],
   ];
   const problems = [];
   for (const [re, get] of checks) {
