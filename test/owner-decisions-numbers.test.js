@@ -200,3 +200,67 @@ test('a changed derived figure or table cell in the BL60 and BL61 sections is re
   // A reworded line is reported, not skipped.
   assert.deepStrictEqual(readingProblems(swap("Lanczos's own noise (0.34 to 0.83)", 'Lanczos noise varies')), ['BL60 Reading line no longer contains the Lanczos noise range']);
 });
+
+// BL66: the summary table "Summary: flat coloured backdrops (BL66" of docs/COLOR.md. Every images, blocks and sd cell equals the cell of
+// the source section named in its last column; the ratio and excess cells are computed from the sd cells (two decimals); the two
+// sentences below the table equal the computed range of the excess over the `fast` rows and the number of `fast` rows with both ratios >= 2.00.
+function summaryProblems(doc) {
+  const problems = [];
+  const sum = section(doc, '### Summary: flat coloured backdrops (BL66');
+  const rows = rowsOf(sum);
+  const fx = (v) => Number(v).toFixed(2);
+  const heads = { BL60: '### Flat coloured backdrops by size and JPEG quality (BL60', BL62: '### Flat coloured backdrops by size and JPEG quality on the 60-image set (BL62', BL64: '### Flat coloured backdrops in `high` mode (BL64', BL65: '### Flat coloured backdrops in `high` mode on the 60-image set (BL65' };
+  const excess = []; let both = 0, nFast = 0;
+  for (const r of rows) {
+    const label = `${r[0]} ${r[1]}`;
+    const cond = r[0].replace(/^(sub20|60 images), /, '');
+    const secText = section(doc, heads[r[12]]);
+    const src = rowsOf(secText);
+    let want; // [images, blocks, m1, m2, l1, l2]
+    if (r[12] === 'BL60' || r[12] === 'BL62') {
+      const s = src.find((x) => x[0].startsWith(cond));
+      if (!s) { problems.push(`${label}: no row "${cond}" in ${r[12]} table`); continue; }
+      want = [s[1], s[2], s[3], s[4], s[5], s[6]];
+    } else if (r[12] === 'BL64') {
+      const h = src.find((x) => x[0] === '`high`'), l = src.find((x) => x[0] === 'Lanczos'), im = /\((\d+) images with a block/.exec(secText);
+      if (!h || !l || !im) { problems.push(`${label}: BL64 table or images text missing`); continue; }
+      want = [im[1], h[1], h[2], h[3], l[2], l[3]];
+    } else {
+      const h = src.find((x) => x[0] === '`high`'), l = src.find((x) => x[0] === 'Lanczos');
+      if (!h || !l) { problems.push(`${label}: BL65 table row missing`); continue; }
+      want = [h[1], h[2], h[3], h[4], l[3], l[4]];
+    }
+    ['images', 'blocks', 'model sd R-G', 'model sd B-G', 'Lanczos sd R-G', 'Lanczos sd B-G'].forEach((n, i) => {
+      if (r[2 + i] !== want[i]) problems.push(`${label}: ${n} says ${r[2 + i]}, ${r[12]} table gives ${want[i]}`);
+    });
+    const x1 = fx(Number(r[4]) / Number(r[6])), x2 = fx(Number(r[5]) / Number(r[7])), e1 = fx(Number(r[4]) - Number(r[6])), e2 = fx(Number(r[5]) - Number(r[7]));
+    [['ratio R-G', r[8], `${x1}x`], ['ratio B-G', r[9], `${x2}x`], ['excess R-G', r[10], e1], ['excess B-G', r[11], e2]].forEach(([n, got, exp]) => {
+      if (got !== exp) problems.push(`${label}: ${n} says ${got}, computed ${exp}`);
+    });
+    if (r[1] === '`fast`') { nFast++; excess.push(Number(e1), Number(e2)); if (Number(x1) >= 2 && Number(x2) >= 2) both++; }
+  }
+  if (rows.length !== 10) problems.push(`summary table has ${rows.length} rows, expected 10`);
+  const m1 = /from (-?[\d.]+) to (-?[\d.]+) levels of standard deviation/.exec(sum);
+  if (!m1) problems.push('summary has no "from A to B levels of standard deviation" sentence');
+  else {
+    if (m1[1] !== fx(Math.min(...excess))) problems.push(`excess min says ${m1[1]}, computed ${fx(Math.min(...excess))}`);
+    if (m1[2] !== fx(Math.max(...excess))) problems.push(`excess max says ${m1[2]}, computed ${fx(Math.max(...excess))}`);
+  }
+  const m2 = /(\d+) of (\d+) `fast` rows have both ratios at least 2\.00/.exec(sum);
+  if (!m2) problems.push('summary has no "N of M `fast` rows have both ratios at least 2.00" sentence');
+  else if (Number(m2[1]) !== both || Number(m2[2]) !== nFast) problems.push(`ratio count says ${m2[1]} of ${m2[2]}, computed ${both} of ${nFast}`);
+  return problems;
+}
+
+test('the BL66 summary table of docs/COLOR.md matches its source tables and its computed columns', () => {
+  assert.deepStrictEqual(summaryProblems(colorDoc), []);
+});
+
+test('a changed cell or sentence in the BL66 summary is reported with its row label', () => {
+  const swap = (from, to) => { assert.ok(colorDoc.includes(from), `fixture: COLOR.md lacks "${from}"`); return colorDoc.replace(from, to); };
+  assert.deepStrictEqual(summaryProblems(swap('| 60 images, 400 px q95 | `fast` | 13 | 124 |', '| 60 images, 400 px q95 | `fast` | 13 | 125 |')), ['60 images, 400 px q95 `fast`: blocks says 125, BL62 table gives 124']);
+  assert.deepStrictEqual(summaryProblems(swap('| 1.51x | 1.21x | 0.25 | 0.15 | BL65 |', '| 1.51x | 1.21x | 0.25 | 0.16 | BL65 |')), ['60 images, 400 px q85 `high`: excess B-G says 0.16, computed 0.15']);
+  assert.deepStrictEqual(summaryProblems(swap('from 0.12 to 0.58 levels', 'from 0.12 to 0.59 levels')), ['excess max says 0.59, computed 0.58']);
+  assert.deepStrictEqual(summaryProblems(swap('3 of 8 `fast` rows have both', '4 of 8 `fast` rows have both')), ['ratio count says 4 of 8, computed 3 of 8']);
+  assert.deepStrictEqual(summaryProblems(swap('| sub20, 400 px q85 | `high` | 7 | 59 |', '| sub20, 400 px q85 | `high` | 8 | 59 |')), ['sub20, 400 px q85 `high`: images says 8, BL64 table gives 7']);
+});
