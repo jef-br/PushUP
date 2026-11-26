@@ -122,3 +122,26 @@ test('--quality fast equals no flag (BL64); high is not run here, it takes about
   assert.ok(!base.stdout.split('\n')[0].includes('quality high'));
   assert.match(base.stdout, /\| `fast` \|/);
 });
+
+// BL67: the README line for the script names every flag it accepts. Reads the `values:` list of the checkFlags call from the source (no model load).
+const flagsOf = (source) => { const m = /checkFlags\(argv, \{ values: \[([^\]]*)\]/.exec(source); if (!m) throw new Error('bench/chroma-real.js: no checkFlags(argv, { values: [...] }) call found'); return [...m[1].matchAll(/'(--[a-z0-9-]+)'/g)].map((x) => x[1]); };
+const missingFlags = (source, readme) => {
+  const line = readme.split('\n').find((l) => l.startsWith('node bench/chroma-real.js'));
+  if (!line) throw new Error('README has no line starting "node bench/chroma-real.js"');
+  return flagsOf(source).filter((f) => !new RegExp(`${f}(?![a-z0-9-])`).test(line));
+};
+
+test('the README line for bench/chroma-real.js names every flag the script accepts (BL67)', () => {
+  const source = fs.readFileSync(SCRIPT, 'utf8'), readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+  assert.deepStrictEqual(flagsOf(source), ['--dir', '--limit', '--size', '--jpeg', '--quality']);
+  assert.deepStrictEqual(missingFlags(source, readme), []);
+});
+
+test('a flag missing from the README line is reported by name (BL67)', () => {
+  const source = "const e = checkFlags(argv, { values: ['--dir', '--size', '--newflag'], switches: [] });";
+  assert.deepStrictEqual(missingFlags(source, 'x\nnode bench/chroma-real.js   # options --dir, --size\n'), ['--newflag']);
+  // A flag that only appears as the prefix of another one does not count.
+  assert.deepStrictEqual(missingFlags(source, 'node bench/chroma-real.js # --dir --size --newflag-x'), ['--newflag']);
+  assert.throws(() => missingFlags(source, 'no such line'), /no line starting/);
+  assert.throws(() => flagsOf('nothing'), /no checkFlags/);
+});
