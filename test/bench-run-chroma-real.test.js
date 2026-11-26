@@ -145,3 +145,39 @@ test('a flag missing from the README line is reported by name (BL67)', () => {
   assert.throws(() => missingFlags(source, 'no such line'), /no line starting/);
   assert.throws(() => flagsOf('nothing'), /no checkFlags/);
 });
+
+// BL68: the same check for every bench script that has a README line, with `switches:` counted too. Reads the source of the script
+// (no model load); `flagsOf` above (values only) keeps its own assertion for chroma-real.js.
+const namesOf = (source, script) => {
+  const m = /checkFlags\(argv, \{ values: \[([^\]]*)\], switches: \[([^\]]*)\]/.exec(source);
+  if (!m) throw new Error(`bench/${script}: no checkFlags(argv, { values: [...], switches: [...] }) call found`);
+  return [...(m[1] + ',' + m[2]).matchAll(/'(--[a-z0-9-]+)'/g)].map((x) => x[1]);
+};
+const missingNames = (source, readme, script) => {
+  const line = readme.split('\n').find((l) => l.startsWith(`node bench/${script}`));
+  if (!line) throw new Error(`README has no line starting "node bench/${script}"`);
+  return namesOf(source, script).filter((f) => !new RegExp(`${f}(?![a-z0-9-])`).test(line));
+};
+
+test('the README lines for neutral-real.js, grey-step.js and chroma-real.js name every flag and switch of the script (BL68)', () => {
+  const readme = fs.readFileSync(path.join(__dirname, '..', 'README.md'), 'utf8');
+  const expected = {
+    'neutral-real.js': ['--dir', '--limit', '--size', '--mix', '--quality', '--jpeg'],
+    'grey-step.js': ['--dir', '--limit', '--t', '--size', '--quality', '--changed', '--region'],
+    'chroma-real.js': ['--dir', '--limit', '--size', '--jpeg', '--quality'],
+  };
+  for (const [script, names] of Object.entries(expected)) {
+    const source = fs.readFileSync(path.join(__dirname, '..', 'bench', script), 'utf8');
+    assert.deepStrictEqual(namesOf(source, script), names, `${script}: checkFlags names changed; update this list`);
+    assert.deepStrictEqual(missingNames(source, readme, script), [], `README line for ${script} lacks a flag`);
+  }
+});
+
+test('a missing flag or switch is reported by name for any script (BL68)', () => {
+  const source = "const e = checkFlags(argv, { values: ['--dir', '--size'], switches: ['--changed', '--newswitch'] });";
+  assert.deepStrictEqual(missingNames(source, 'node bench/x.js # --dir --size --changed', 'x.js'), ['--newswitch']);
+  assert.deepStrictEqual(missingNames(source, 'node bench/x.js # --dir --size --changed --newswitch-y', 'x.js'), ['--newswitch']);
+  assert.deepStrictEqual(missingNames(source, 'node bench/x.js # --dir --changed --newswitch', 'x.js'), ['--size']);
+  assert.throws(() => missingNames(source, 'no such line', 'x.js'), /no line starting "node bench\/x\.js"/);
+  assert.throws(() => namesOf('nothing', 'x.js'), /no checkFlags/);
+});
