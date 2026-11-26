@@ -1,6 +1,7 @@
 'use strict';
 // Does `fast` add chroma noise to flat COLOURED backdrops of real photos, as it does to grey ones? (BL58; docs/COLOR.md "Flat coloured backdrops (BL58)")
-// Usage: node bench/chroma-real.js [--dir bench/out/sub20] [--limit 20] [--size 400] [--jpeg 50..100]
+// Usage: node bench/chroma-real.js [--dir bench/out/sub20] [--limit 20] [--size 400] [--jpeg 50..100] [--quality fast|high]
+//   --quality (BL64): `fast` (default) or `high` (Remacri, CPU); the first output line gets `; quality high` appended last when it is `high`; the table row is labelled `high` then.
 //   --jpeg (BL60): JPEG quality of the degraded input (integer, default 85); the first output line ends with `; input JPEG q<N>` when it is not 85.
 //   Inputs are built as bench/neutral-real.js builds them (source resized to 1000 px on its longest side (lanczos3), downscaled to --size px
 //   (cubic), JPEG q85, decoded). Flat coloured blocks of the INPUT: 16x16 blocks on the grid and edge rule of bench/neutral-real.js (grid
@@ -68,12 +69,14 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size', '--jpeg'], switches: [] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--size', '--jpeg', '--quality'], switches: [] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), sizeArg = String(opt('--size', '400'));
   if (!/^\d+$/.test(limitArg) || Number(limitArg) < 1) fail('--limit must be a positive integer');
   if (!/^\d+$/.test(sizeArg) || Number(sizeArg) < 400 || Number(sizeArg) > 800) fail('--size must be an integer from 400 to 800');
+  const quality = String(opt('--quality', 'fast'));
+  if (quality !== 'fast' && quality !== 'high') fail('--quality must be fast or high');
   const jpegArg = String(opt('--jpeg', '85'));
   if (!/^\d+$/.test(jpegArg) || Number(jpegArg) < 50 || Number(jpegArg) > 100) fail('--jpeg must be an integer from 50 to 100');
   const jpegQuality = Number(jpegArg);
@@ -85,7 +88,7 @@ async function main(argv) {
   const files = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort().slice(0, Number(limitArg));
   if (files.length === 0) fail(`no images in ${dir}`);
 
-  process.env.PUSHUP_QUALITY = 'fast';
+  process.env.PUSHUP_QUALITY = quality;
   process.env.PUSHUP_DEVICE = 'cpu';
   const { upscale } = require('../src/index.js');
   const { loadGt, inputAt } = require('./groundtruth');
@@ -109,15 +112,15 @@ async function main(argv) {
     process.stderr.write('.');
   }
   process.stderr.write('\n');
-  console.log(`images: ${files.length}; with a region: ${used}; blocks: ${blocks}; input ${size} px, output 1000 px${jpegQuality === 85 ? '' : `; input JPEG q${jpegQuality}`}`);
+  console.log(`images: ${files.length}; with a region: ${used}; blocks: ${blocks}; input ${size} px, output 1000 px${jpegQuality === 85 ? '' : `; input JPEG q${jpegQuality}`}${quality === 'high' ? '; quality high' : ''}`);
   console.log(`no region: ${none.length ? none.join(', ') : 'none'}`);
   console.log('| method | blocks | mean sd of R-G | mean sd of B-G |');
   console.log('|---|---|---|---|');
   const mean = (v) => (blocks ? v / blocks : 0);
-  for (const m of ['fast', 'lanczos']) console.log(`| ${m === 'fast' ? '`fast`' : 'Lanczos'} | ${blocks} | ${mean(acc[m].rg).toFixed(2)} | ${mean(acc[m].bg).toFixed(2)} |`);
+  for (const m of ['fast', 'lanczos']) console.log(`| ${m === 'fast' ? `\`${quality}\`` : 'Lanczos'} | ${blocks} | ${mean(acc[m].rg).toFixed(2)} | ${mean(acc[m].bg).toFixed(2)} |`);
   const ratio = (m) => (acc.lanczos[m] > 0 ? acc.fast[m] / acc.lanczos[m] : Infinity);
   const twice = ratio('rg') >= 2 && ratio('bg') >= 2;
-  console.log(`chroma noise, fast / Lanczos: R-G ${ratio('rg').toFixed(2)}x, B-G ${ratio('bg').toFixed(2)}x; at least twice Lanczos in both: ${twice ? 'yes' : 'no'}`);
+  console.log(`chroma noise, ${quality} / Lanczos: R-G ${ratio('rg').toFixed(2)}x, B-G ${ratio('bg').toFixed(2)}x; at least twice Lanczos in both: ${twice ? 'yes' : 'no'}`);
 }
 
 if (require.main === module) main(process.argv.slice(2)).catch((e) => { console.error(e); process.exit(1); });

@@ -499,3 +499,17 @@ Question: the four rows of the BL60 section rest on 6 to 13 images of sub20. Doe
 - **Result:** the `fast` chroma noise is at least twice Lanczos's in the 400 px q60 row only (yes) and not in the q85, q95 and 800 px rows (no for each; 1.91x / 1.58x, 1.40x / 1.24x, 1.59x / 1.45x). On sub20 (BL60) the q60 and q85 rows reached twice; here q85 does not (the BL61 result). The order of the rows by ratio, highest first, is q60, q85, 800 px, q95 in both R-G and B-G, the same as in BL60 (yes).
 - **Reading:** the pattern holds: the ratio is highest at q60 and lowest at q95, with 800 px between q85 and q95. `fast` noise is again about 1 level in every row (0.93 to 1.15) while Lanczos's own noise varies (0.43 to 0.93), so the excess over Lanczos in levels is the more stable figure: 0.54 / 0.58 (q60), 0.45 / 0.41 (q85), 0.29 / 0.22 (q95), 0.35 / 0.30 (800 px), all positive. Visibility was not judged.
 - **Limits:** `fast` only; 400 px for the two JPEG rows and q85 for the size row; the 60 images contain the 20, so this set and sub20 are not independent; blocks from the same backdrop count separately; the images with a block differ between rows (13 to 29), so the rows are not paired; no visual judgement.
+
+### Flat coloured backdrops in `high` mode (BL64, 2026-11-26)
+
+Question: BL58 to BL62 measured `fast` only. `high` (Remacri, used on a GPU) may add less or more chroma noise on flat coloured backdrops; BL49 did this check for neutral backdrops. `PUSHUP_DEVICE=cpu node bench/chroma-real.js --quality high` (new switch, default `fast`, output unchanged without it; the first output line ends with `; quality high`), same block rule and statistic as BL58, `bench/out/sub20`, 400 px input, JPEG q85, no `--limit` (7 images with a block, 59 blocks, about 2 min on this CPU). The `fast` and Lanczos rows are the BL58 run (the same blocks).
+
+| method | blocks | mean sd of R-G | mean sd of B-G |
+|---|---|---|---|
+| `fast` | 59 | 0.85 | 0.83 |
+| `high` | 59 | 0.71 | 0.61 |
+| Lanczos | 59 | 0.38 | 0.38 |
+
+- **Result:** the `high` chroma noise is lower than `fast`'s in both channel pairs (yes): 0.71 against 0.85 in R-G and 0.61 against 0.83 in B-G; and it is not at least twice Lanczos's (no): 1.87x in R-G and 1.62x in B-G (`fast`: 2.25x and 2.20x).
+- **Reading:** `high` adds less chroma noise than `fast` on coloured backdrops but still more than Lanczos: the excess over Lanczos is 0.33 and 0.23 levels (`fast`: 0.47 and 0.45). Whether that is visible was not judged; `high` is used on a GPU by default, and on a CPU only when `PUSHUP_QUALITY=high` is set, and this run is the CPU path of that mode.
+- **Limits:** `high` on CPU only (a GPU provider may give slightly different numbers), 400 px input only, sub20 only, 59 blocks in 7 images (the same backdrop contributes many blocks), JPEG q85, no visual judgement.

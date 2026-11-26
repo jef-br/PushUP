@@ -61,6 +61,9 @@ test('bad flags and a missing folder exit 1 with one stderr line before any mode
     [['--jpeg', '101'], '--jpeg must be an integer from 50 to 100'],
     [['--jpeg', 'x'], '--jpeg must be an integer from 50 to 100'],
     [['--jpeg', '85.5'], '--jpeg must be an integer from 50 to 100'],
+    [['--quality', 'medium'], '--quality must be fast or high'],
+    [['--quality', 'HIGH'], '--quality must be fast or high'],
+    [['--quality', ''], '--quality must be fast or high'],
     [['--dir', path.join(tmp, 'nope')], /does not exist; run bash bench\/fetch_testset\.sh$/],
   ];
   for (const [args, want] of cases) {
@@ -108,4 +111,14 @@ test('--jpeg 85 equals no flag; --jpeg 60 adds the suffix and keeps the table sh
   assert.strictEqual(b.length, a.length);
   assert.match(b[2], /^\| method \|/);
   assert.match(b[4], /^\| `fast` \| \d+ \| \d+\.\d\d \| \d+\.\d\d \|$/);
+});
+
+test('--quality fast equals no flag (BL64); high is not run here, it takes about 15 s per image', () => {
+  const dir = path.join(tmp, 'imgs'); // written by the generated-folder test above
+  const base = run(['--dir', dir]), fast = run(['--dir', dir, '--quality', 'fast']);
+  assert.strictEqual(base.status, 0, base.stderr);
+  assert.strictEqual(fast.status, 0, fast.stderr);
+  assert.strictEqual(fast.stdout, base.stdout);
+  assert.ok(!base.stdout.split('\n')[0].includes('quality high'));
+  assert.match(base.stdout, /\| `fast` \|/);
 });
