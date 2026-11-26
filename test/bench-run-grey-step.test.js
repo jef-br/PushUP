@@ -10,7 +10,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 const sharp = require('sharp');
-const { greyStep, gate, changedStats } = require('../bench/grey-step.js');
+const { greyStep, regionStep, gate, changedStats } = require('../bench/grey-step.js');
 const { loadGt, inputAt, crop } = require('../bench/groundtruth.js');
 
 const SCRIPT = path.join(__dirname, '..', 'bench', 'grey-step.js');
@@ -43,6 +43,34 @@ test('changedStats counts changed pixels, removed tints and the error before and
   assert.strictEqual(changedStats(before, after, ref, 12).tinted, 0);
   // Nothing changed: all counts but `pixels` are zero.
   assert.deepStrictEqual(changedStats(ref, ref, ref, 4), { pixels: 4, changed: 0, tinted: 0, errBefore: 0, errAfter: 0 });
+});
+
+// BL59: regionStep changes a pixel only inside flat neutral regions of the unmodified data (5x5 window, spread <= T, luma range <= 12).
+test('regionStep changes flat neutral pixels only: not near an edge, not near a coloured pixel; borders are clamped', () => {
+  const w = 12, h = 12, px = (x, y) => (y * w + x) * 3;
+  const get = (b, x, y) => [...b.subarray(px(x, y), px(x, y) + 3)];
+  const field = (f) => { const d = Buffer.alloc(w * h * 3); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) d.set(f(x, y), px(x, y)); return d; };
+  // A noisy-grey field (spread 1): every pixel is flat and neutral, so every pixel becomes its mean, 100.33 -> 100; the corner is handled by clamping.
+  const flat = field(() => [100, 101, 100]);
+  const flatOrig = Buffer.from(flat);
+  const f = regionStep(flat, w, h, 4);
+  assert.deepStrictEqual([get(f, 0, 0), get(f, 11, 11), get(f, 5, 5)], [[100, 100, 100], [100, 100, 100], [100, 100, 100]]);
+  assert.ok(flat.equals(flatOrig), 'the input buffer is not changed');
+  // T below the spread: nothing changes.
+  assert.ok(regionStep(flat, w, h, 0).equals(flat));
+  // A strong edge (luma 100 against 200) at x = 6: pixels whose 5x5 window reaches x >= 6 are kept, the others change.
+  const edge = field((x) => (x < 6 ? [100, 101, 100] : [200, 201, 200]));
+  const e = regionStep(edge, w, h, 4);
+  assert.deepStrictEqual([get(e, 3, 5), get(e, 4, 5), get(e, 5, 5), get(e, 7, 5), get(e, 8, 5)], [[100, 100, 100], [100, 101, 100], [100, 101, 100], [200, 201, 200], [200, 200, 200]]);
+  // One coloured pixel (spread 150) at (6, 6): pixels within 2 of it (and itself) keep their values, pixels farther away change.
+  const spot = field((x, y) => (x === 6 && y === 6 ? [200, 50, 50] : [100, 101, 100]));
+  const sp = regionStep(spot, w, h, 4);
+  assert.deepStrictEqual([get(sp, 6, 6), get(sp, 4, 6), get(sp, 8, 8), get(sp, 3, 6), get(sp, 9, 9)], [[200, 50, 50], [100, 101, 100], [100, 101, 100], [100, 100, 100], [100, 100, 100]]);
+  // Luma range limit: a smooth ramp of 3 levels per pixel (spread 0) has a 5x5 luma range of 12 in the interior (kept as grey, nothing to change), so use
+  // spread-1 pixels on a ramp: range 12 changes, range 15 does not.
+  const ramp = (step) => field((x) => { const v = 100 + step * x; return [v, v + 1, v]; });
+  assert.deepStrictEqual(get(regionStep(ramp(3), w, h, 4), 5, 5), [115, 115, 115]); // window x 3..7: range 12 -> changed to the mean (115.33 -> 115)
+  assert.deepStrictEqual(get(regionStep(ramp(4), w, h, 4), 5, 5), [120, 121, 120]); // window x 3..7: range 16 -> kept
 });
 
 test('gate: at the thresholds passes, beyond them fails, one limit is enough to fail', () => {
@@ -108,6 +136,16 @@ test('a generated folder of two images prints the table and one gate line per T'
   assert.strictEqual(bigLines.filter((l) => l.startsWith('T=')).length, 3);
   // --quality fast (BL54) prints exactly what no flag prints (the first run's stdout, same folder, deterministic model).
   assert.strictEqual(run(['--dir', dir, '--quality', 'fast']).stdout, r.stdout);
+  // --region (BL59): same layout, the first line and the row labels name the variant; the share lines stay.
+  const reg = run(['--dir', dir, '--region']);
+  assert.strictEqual(reg.status, 0, reg.stderr);
+  const regLines = reg.stdout.split('\n').filter((l) => l !== '');
+  assert.match(regLines[0], /^images: 2; with a neutral region: 1; blocks: \d+; input 400 px, output 1000 px; region-limited step$/);
+  assert.deepStrictEqual(regLines.slice(3, 8).map((l) => l.split('|')[1].trim()), ['Lanczos', '`fast` (no step)', '`fast` + region step T=2', '`fast` + region step T=3', '`fast` + region step T=4']);
+  assert.strictEqual(regLines.filter((l) => l.startsWith('T=')).length, 3);
+  const regChg = run(['--dir', dir, '--region', '--changed']);
+  assert.strictEqual(regChg.status, 0, regChg.stderr);
+  assert.ok(regChg.stdout.startsWith(reg.stdout), 'with --changed the output starts with the --region output');
   // --changed (BL55): the first part is the same as without the flag; a second table follows after an empty line.
   const chg = run(['--dir', dir, '--changed']);
   assert.strictEqual(chg.status, 0, chg.stderr);
@@ -217,3 +255,21 @@ test('inputAt: the default quality is 85 and a lower quality moves the decoded i
   assert.ok(mae(lo.data) > mae(hi.data), `q60 ${mae(lo.data)} should be above q95 ${mae(hi.data)}`);
   assert.ok(!lo.data.equals(q85.data));
 });
+
+// BL59: docs/COLOR.md "Region-limited grey-preserving step (BL59...)" has a gate line per T and size; the gate words agree with the printed
+// differences. Reads the file only, no model run.
+test('docs/COLOR.md BL59 section: gate words agree with the printed differences, one line per T and size', () => {
+  const doc = fs.readFileSync(path.join(__dirname, '..', 'docs', 'COLOR.md'), 'utf8');
+  const at = doc.indexOf('### Region-limited grey-preserving step (BL59');
+  assert.ok(at >= 0, 'BL59 section missing');
+  const end = doc.indexOf('\n### ', at + 5), sec = doc.slice(at, end < 0 ? undefined : end);
+  for (const size of [400, 800]) {
+    for (const t of [2, 3, 4]) {
+      const m = new RegExp(`\\*\\*T=${t} at ${size} px:\\*\\* PSNR (-?[\\d.]+), SSIM (-?[\\d.]+), GMSD ([+-]?[\\d.]+): (passes|fails) the quality gate`).exec(sec);
+      assert.ok(m, `T=${t} at ${size} px line missing`);
+      const pass = Number(m[1]) >= -0.02 && Number(m[2]) >= -0.001 && Number(m[3]) <= 0.001;
+      assert.strictEqual(m[4] === 'passes', pass, `T=${t} at ${size} px: "${m[4]}" disagrees with PSNR ${m[1]}, SSIM ${m[2]}, GMSD ${m[3]}`);
+    }
+  }
+});
+

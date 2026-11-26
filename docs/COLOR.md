@@ -418,3 +418,39 @@ Question: BL46 to BL57 only look at near-neutral backdrops (flat saturated colou
 - **Result:** `fast` chroma noise on flat coloured backdrops is at least twice Lanczos's (yes): 0.85 against 0.38 in R-G and 0.83 against 0.38 in B-G (2.25x and 2.20x); 7 of the 20 images have such a block.
 - **Reading:** the model adds chroma noise on coloured backdrops too, with a standard deviation 0.4 to 0.5 levels above Lanczos's, so the effect is not limited to grey. The figure is a standard deviation of colour differences, not the channel spread used for the neutral backdrops, so the two are not comparable in size; whether 0.4 to 0.5 levels is visible was not judged. Option (b) of row 13, as tried in BL51 to BL56, acts only on pixels with a channel spread of 4 or less and does not touch these backdrops (by its rule, not measured here: their mean channel spread is at least 20).
 - **Limits:** `fast` only, 400 px input only, 59 blocks in 7 images (the same backdrop contributes many blocks), JPEG q85, no visual judgement. The block rule is one choice among several; a coloured backdrop with a gradient or texture is not covered.
+
+### Region-limited grey-preserving step (BL59, 2026-11-26)
+
+Question: the whole-image step of BL51 to BL56 fails the PSNR gate at 800 px and flattens pixels everywhere. Does a step limited to flat neutral regions pass the gate at both sizes? `node bench/grey-step.js --region` (new switch, output unchanged without it) changes a pixel to its channel mean only when the 5x5 window around it in the unmodified `fast` output (clamped at the border) has a largest channel spread of at most T and a luma range (Rec. 601, max - min) of at most 12 levels. The window size and the luma range were chosen once and not tuned on these images. `bench/out/sub20`, `fast`, CPU, JPEG q85; about 25 s at 400 px and 30 s at 800 px.
+
+400 px input, output 1000 px (12 of 20 images with a neutral region, 317 blocks):
+
+| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|---|
+| Lanczos | 28.97 | 0.8785 | 0.1271 | 0.64 | 0.17 |
+| `fast` (no step) | 31.51 | 0.8941 | 0.1076 | 1.60 | 16.32 |
+| `fast` + region step T=2 | 31.49 | 0.8941 | 0.1076 | 1.02 | 16.32 |
+| `fast` + region step T=3 | 31.50 | 0.8940 | 0.1076 | 0.43 | 10.66 |
+| `fast` + region step T=4 | 31.50 | 0.8940 | 0.1076 | 0.11 | 2.74 |
+
+800 px input, output 1000 px (18 of 20 images, 1661 blocks):
+
+| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |
+|---|---|---|---|---|---|
+| Lanczos | 30.44 | 0.9226 | 0.0875 | 0.71 | 0.17 |
+| `fast` (no step) | 36.28 | 0.9543 | 0.0492 | 1.65 | 17.82 |
+| `fast` + region step T=2 | 36.24 | 0.9543 | 0.0492 | 0.97 | 17.82 |
+| `fast` + region step T=3 | 36.24 | 0.9543 | 0.0492 | 0.49 | 12.80 |
+| `fast` + region step T=4 | 36.24 | 0.9542 | 0.0492 | 0.11 | 2.50 |
+
+Differences to `fast` (no step), as printed by the script:
+
+- **T=2 at 400 px:** PSNR -0.016, SSIM -0.00004, GMSD -0.00001: passes the quality gate. 16.15 points above Lanczos: not within 1 point.
+- **T=3 at 400 px:** PSNR -0.015, SSIM -0.00008, GMSD -0.00001: passes the quality gate. 10.49 points above Lanczos: not within 1 point.
+- **T=4 at 400 px:** PSNR -0.013, SSIM -0.00010, GMSD -0.00002: passes the quality gate. 2.57 points above Lanczos: not within 1 point.
+- **T=2 at 800 px:** PSNR -0.046, SSIM -0.00002, GMSD 0.00000: fails the quality gate. 17.64 points above Lanczos: not within 1 point.
+- **T=3 at 800 px:** PSNR -0.044, SSIM -0.00004, GMSD -0.00001: fails the quality gate. 12.63 points above Lanczos: not within 1 point.
+- **T=4 at 800 px:** PSNR -0.042, SSIM -0.00006, GMSD -0.00000: fails the quality gate. 2.33 points above Lanczos: not within 1 point.
+- **Result for T=4:** the region-limited step passes the gate at 400 px (PSNR -0.013 dB) and fails it at 800 px (PSNR -0.042 dB against a limit of 0.02), so it does not pass at both sizes (as the whole-image step, -0.035 dB at 800 px, BL53). The share of spread >= 3 in neutral backdrops is not within 1 point of Lanczos's at either size (2.74% at 400 px, 2.50% at 800 px, against 0.17%), where the whole-image T=4 step reached 0.22% and 0.18%.
+- **Reading:** limiting the step to flat regions did not buy the gate at 800 px (the PSNR drop is slightly larger than for the whole-image step: -0.042 against -0.035 dB) and it removes less of the noise: isolated pixels with a spread of 6 to 8 put their whole 5x5 window outside the limit, so the pixels around them stay noisy. A smaller or larger window, or a luma range other than 12, was not tried.
+- **Limits:** `fast` only, T = 2, 3 and 4, one window and one luma range, 20 images, JPEG q85, no visual judgement. The 60-image set was not run.

@@ -62,6 +62,9 @@ function figureProblems(row, doc) {
   const s58 = rowsOf(section(doc, '### Flat coloured backdrops (BL58'));
   const f58 = find(s58, (r) => r[0] === '`fast`', 'BL58 fast'), l58 = find(s58, (r) => r[0] === 'Lanczos', 'BL58 Lanczos');
   const twice58 = Number(f58[2]) >= 2 * Number(l58[2]) && Number(f58[3]) >= 2 * Number(l58[3]);
+  const sec59 = section(doc, '### Region-limited grey-preserving step (BL59');
+  const g59 = (px) => { const m = new RegExp(`\\*\\*T=4 at ${px} px:\\*\\* PSNR (-?[\\d.]+)`).exec(sec59); if (!m) throw new Error(`COLOR.md BL59 section has no "**T=4 at ${px} px:** PSNR ..." line`); return m; };
+  const r59 = (px) => { const m = new RegExp(`^\\| \`fast\` \\+ region step T=4 \\| [\\d.]+ \\| [\\d.]+ \\| [\\d.]+ \\| [\\d.]+ \\| (\\d+\\.\\d\\d) \\|$`, 'gm'); const all = [...sec59.matchAll(m)]; if (all.length !== 2) throw new Error('COLOR.md BL59 section needs one T=4 row in each table'); return all[px === 400 ? 0 : 1]; };
   const pct = (cell) => r1(Number(cell));
 
   const checks = [
@@ -79,6 +82,7 @@ function figureProblems(row, doc) {
     [/On the 60-image set \(the 20 plus 40 more\) T=4 passes the gate at 400 px \(PSNR (-[\d.]+) dB\) and fails it at 800 px \(PSNR (-[\d.]+) dB\), the same pass\/fail as on the 20 images; there it changes (\d+\.\d)% of all pixels, (\d+\.\d)% of the changed pixels had a real tint, and at 400 px it leaves (\d+\.\d)% of spread/, (m) => [['BL56 T=4 PSNR diff at 400 px', m[1], g400[1]], ['BL56 T=4 PSNR diff at 800 px', m[2], g800[1]], ['BL56 T=4 changed share', m[3], pct(c56[1])], ['BL56 T=4 real-tint share', m[4], pct(c56[2])], ['BL56 T=4 remaining share at 400 px', m[5], pct(n56[1])]]],
     [/at q60 and q95 the `fast` share of spread of 3 or more in neutral backdrops is (\d+\.\d)% and (\d+\.\d)% \(q85: (\d+\.\d)%\), a difference of (\d+\.\d) points, so not more than 5 points/, (m) => [['BL57 q60 share', m[1], pct(q57('q60')[3])], ['BL57 q95 share', m[2], pct(q57('q95')[3])], ['BL57 q85 share', m[3], pct(q57('q85')[3])], ['BL57 q60-q95 difference', m[4], r1(Math.abs(Number(q57('q60')[3]) - Number(q57('q95')[3])))], ['BL57 not more than 5 points', String(Math.abs(Number(q57('q60')[3]) - Number(q57('q95')[3])) <= 5), 'true']]],
     [/on flat coloured backdrops \((\d+) of 20 images, (\d+) blocks\) `fast` chroma noise \(standard deviation of R-G and B-G\) is (\d+\.\d\d) and (\d+\.\d\d) levels against (\d+\.\d\d) and (\d+\.\d\d) for Lanczos, at least twice as much \((yes|no)\)/, (m) => [['BL58 blocks', m[2], f58[1]], ['BL58 fast R-G', m[3], f58[2]], ['BL58 fast B-G', m[4], f58[3]], ['BL58 Lanczos R-G', m[5], l58[2]], ['BL58 Lanczos B-G', m[6], l58[3]], ['BL58 at least twice', m[7], twice58 ? 'yes' : 'no']]],
+    [/\(5x5 window of the output, luma range 12\) does not help: T=4 passes the gate at 400 px \(PSNR (-[\d.]+) dB\) and fails it at 800 px \(PSNR (-[\d.]+) dB\), and leaves (\d+\.\d)% and (\d+\.\d)% of spread/, (m) => [['BL59 T=4 PSNR diff at 400 px', m[1], g59(400)[1]], ['BL59 T=4 PSNR diff at 800 px', m[2], g59(800)[1]], ['BL59 T=4 share at 400 px', m[3], pct(r59(400)[1])], ['BL59 T=4 share at 800 px', m[4], pct(r59(800)[1])]]],
   ];
   const problems = [];
   for (const [re, get] of checks) {
