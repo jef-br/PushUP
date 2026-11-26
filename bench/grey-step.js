@@ -1,6 +1,9 @@
 'use strict';
 // Would a grey-preserving post-step pass the quality gate? (BL51; docs/COLOR.md "Grey-preserving step, offline (BL51)")
-// Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4] [--size 400|800] [--quality fast|high] [--changed]
+// Usage: node bench/grey-step.js [--dir bench/out/sub20] [--limit 20] [--t 2|3|4] [--size 400|800] [--quality fast|high] [--changed] [--region]
+//   --region (BL59): the step changes a pixel only inside flat neutral regions of the model output: the 5x5 window around it (clamped at the border)
+//   must have a largest channel spread of at most T and a luma range (max - min, Rec. 601) of at most 12 levels, both measured on the unmodified output.
+//   Rows are labelled `+ region step T=<t>` and the first output line ends with `; region-limited step`. Without the flag the output is unchanged.
 //   --changed (BL55): after the lines above, a second table per T: the share of all output pixels the step changes; among them the share
 //   whose ground-truth pixel has a channel spread above T (a real tint removed) and the mean absolute error to the ground truth per channel
 //   (0-255) before and after the step. Without the flag the output is unchanged.
@@ -32,6 +35,42 @@ function greyStep(data, t) {
   return out;
 }
 
+// BL59: like greyStep, but a pixel is changed only when its 5x5 window (clamped at the border) in the UNMODIFIED `data` (packed RGB, w x h) has
+// a largest channel spread <= t and a luma range (Rec. 601, max - min) <= REGION_LUMA_RANGE. Returns a new buffer; `data` is not changed.
+const REGION_RADIUS = 2, REGION_LUMA_RANGE = 12;
+function regionStep(data, w, h, t) {
+  const n = w * h;
+  const sp = new Uint8Array(n), lu = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const r = data[i * 3], g = data[i * 3 + 1], b = data[i * 3 + 2];
+    sp[i] = Math.max(r, g, b) - Math.min(r, g, b);
+    lu[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+  // Window max of spread, max and min of luma: a horizontal pass, then a vertical pass (clamped windows).
+  const pass = (src, dst, len, stride, outer, outerStride, fn, init) => {
+    for (let o = 0; o < outer; o++) {
+      for (let i = 0; i < len; i++) {
+        let v = init;
+        for (let d = -REGION_RADIUS; d <= REGION_RADIUS; d++) { const j = Math.min(len - 1, Math.max(0, i + d)); v = fn(v, src[o * outerStride + j * stride]); }
+        dst[o * outerStride + i * stride] = v;
+      }
+    }
+  };
+  const mx = (a, b) => (a > b ? a : b), mn = (a, b) => (a < b ? a : b);
+  const spH = new Uint8Array(n), spV = new Uint8Array(n);
+  const luMaxH = new Float32Array(n), luMaxV = new Float32Array(n), luMinH = new Float32Array(n), luMinV = new Float32Array(n);
+  pass(sp, spH, w, 1, h, w, mx, 0); pass(spH, spV, h, w, w, 1, mx, 0);
+  pass(lu, luMaxH, w, 1, h, w, mx, -Infinity); pass(luMaxH, luMaxV, h, w, w, 1, mx, -Infinity);
+  pass(lu, luMinH, w, 1, h, w, mn, Infinity); pass(luMinH, luMinV, h, w, w, 1, mn, Infinity);
+  const out = Buffer.from(data);
+  for (let i = 0; i < n; i++) {
+    if (spV[i] <= t && luMaxV[i] - luMinV[i] <= REGION_LUMA_RANGE) {
+      out.fill(Math.floor((data[i * 3] + data[i * 3 + 1] + data[i * 3 + 2]) / 3 + 0.5), i * 3, i * 3 + 3);
+    }
+  }
+  return out;
+}
+
 // BL55: compare `before` (the model output) with `after` (greyStep(before, t)) against `ref`, all packed RGB of the same size.
 // Returns { pixels, changed, tinted, errBefore, errAfter }: pixel counts (changed = after differs from before; tinted = changed pixels
 // whose ref pixel has channel spread > t) and the summed absolute error over the three channels of the changed pixels, before and after.
@@ -56,7 +95,7 @@ async function main(argv) {
   const sharp = require('sharp');
   const opt = (k, d) => { const i = argv.indexOf(k); return i < 0 ? d : argv[i + 1]; };
   const fail = (msg) => { console.error(msg); process.exit(1); };
-  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--t', '--size', '--quality'], switches: ['--changed'] });
+  const flagError = checkFlags(argv, { values: ['--dir', '--limit', '--t', '--size', '--quality'], switches: ['--changed', '--region'] });
   if (flagError) fail(flagError);
   const dir = path.resolve(String(opt('--dir', path.join(__dirname, 'out', 'sub20'))));
   const limitArg = String(opt('--limit', '1000000000')), tArg = opt('--t', null);
@@ -83,7 +122,7 @@ async function main(argv) {
   const names = ['lanczos', 'fast', ...ts.map((t) => `t${t}`)];
   const score = Object.fromEntries(names.map((n) => [n, { psnr: 0, ssim: 0, gmsd: 0 }]));
   const neutral = Object.fromEntries(names.map((n) => [n, newAcc()]));
-  const showChanged = argv.includes('--changed');
+  const showChanged = argv.includes('--changed'), useRegion = argv.includes('--region');
   const chg = Object.fromEntries(ts.map((t) => [t, { pixels: 0, changed: 0, tinted: 0, errBefore: 0, errAfter: 0 }]));
   let used = 0, blocks = 0;
   for (const f of files) {
@@ -93,7 +132,7 @@ async function main(argv) {
     const [fastOut] = await upscale(inp.data, inp.w * 3, 1000 / IL);
     const lanOut = await sharp(inp.data, { raw: { width: inp.w, height: inp.h, channels: 3 } }).resize(ow, oh, { kernel: 'lanczos3', fit: 'fill' }).raw().toBuffer();
     const outs = { lanczos: lanOut, fast: fastOut };
-    for (const t of ts) outs[`t${t}`] = greyStep(fastOut, t);
+    for (const t of ts) outs[`t${t}`] = useRegion ? regionStep(fastOut, ow, oh, t) : greyStep(fastOut, t);
     const cw = Math.min(ow, gt.w), ch = Math.min(oh, gt.h), ref = crop(gt.data, gt.w, cw, ch);
     for (const n of names) {
       const o = crop(outs[n], ow, cw, ch);
@@ -116,8 +155,8 @@ async function main(argv) {
     const s = summary(neutral[n]);
     res[n] = { psnr: score[n].psnr / files.length, ssim: score[n].ssim / files.length, gmsd: score[n].gmsd / files.length, mean: s.mean, share3: s.share3 };
   }
-  const label = (n) => (n === 'lanczos' ? 'Lanczos' : n === 'fast' ? `\`${quality}\` (no step)` : `\`${quality}\` + step T=${n.slice(1)}`);
-  console.log(`images: ${files.length}; with a neutral region: ${used}; blocks: ${blocks}; input ${SIZE} px, output 1000 px`);
+  const label = (n) => (n === 'lanczos' ? 'Lanczos' : n === 'fast' ? `\`${quality}\` (no step)` : `\`${quality}\` + ${useRegion ? 'region step' : 'step'} T=${n.slice(1)}`);
+  console.log(`images: ${files.length}; with a neutral region: ${used}; blocks: ${blocks}; input ${SIZE} px, output 1000 px${useRegion ? '; region-limited step' : ''}`);
   console.log('| method | PSNR | SSIM | GMSD | mean spread (neutral blocks) | share of pixels with spread >= 3 (%) |');
   console.log('|---|---|---|---|---|---|');
   for (const n of names) {
@@ -140,4 +179,4 @@ async function main(argv) {
 }
 
 if (require.main === module) main(process.argv.slice(2)).catch((e) => { console.error(e); process.exit(1); });
-module.exports = { greyStep, gate, changedStats };
+module.exports = { greyStep, regionStep, gate, changedStats };
