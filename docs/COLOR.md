@@ -527,3 +527,24 @@ Question: BL64 measured `high` on 7 images of sub20 (59 blocks). BL61 showed tha
 - **Result:** the `high` chroma noise is lower than `fast`'s in both channel pairs (yes): 0.74 against 0.94 in R-G and 0.85 against 1.11 in B-G; and it is not at least twice Lanczos's (no): 1.51x in R-G and 1.21x in B-G (`fast`: 1.91x and 1.58x). Both answers agree with BL64's (yes: lower than `fast`, yes in BL64 too; not twice Lanczos's, no in BL64 too).
 - **Reading:** the excess over Lanczos is 0.25 and 0.15 levels (`fast`: 0.45 and 0.41); on sub20 it was 0.33 and 0.23 (`fast`: 0.47 and 0.45).
 - **Limits:** `high` on CPU only, 400 px input only, JPEG q85, no visual judgement.
+
+### Summary: flat coloured backdrops (BL66, 2026-11-26)
+
+One table of every condition measured on flat coloured backdrops (BL58 to BL65). Images, blocks and sd cells are copied from the table of the section named in the last column (the q85 rows of BL60 and BL62 carry the same figures as BL58 and BL61; the `high` rows come from BL64 and BL65; BL64's images cell is the "7 images with a block" of its text). The ratio and excess columns are computed from the rounded sd cells (ratio to two decimals, excess = model sd minus Lanczos sd to two decimals), so a ratio may differ by up to 0.02 from the one printed in its own section.
+
+| set, input | model | images with a block | blocks | model sd R-G | model sd B-G | Lanczos sd R-G | Lanczos sd B-G | ratio R-G | ratio B-G | excess R-G | excess B-G | source |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| sub20, 400 px q60 | `fast` | 8 | 110 | 0.92 | 0.92 | 0.36 | 0.34 | 2.56x | 2.71x | 0.56 | 0.58 | BL60 |
+| sub20, 400 px q85 | `fast` | 7 | 59 | 0.85 | 0.83 | 0.38 | 0.38 | 2.24x | 2.18x | 0.47 | 0.45 | BL60 |
+| sub20, 400 px q95 | `fast` | 6 | 38 | 0.91 | 0.95 | 0.76 | 0.83 | 1.20x | 1.14x | 0.15 | 0.12 | BL60 |
+| sub20, 800 px q85 | `fast` | 13 | 537 | 0.91 | 0.89 | 0.60 | 0.61 | 1.52x | 1.46x | 0.31 | 0.28 | BL60 |
+| 60 images, 400 px q60 | `fast` | 16 | 255 | 0.97 | 1.05 | 0.43 | 0.47 | 2.26x | 2.23x | 0.54 | 0.58 | BL62 |
+| 60 images, 400 px q85 | `fast` | 15 | 176 | 0.94 | 1.11 | 0.49 | 0.70 | 1.92x | 1.59x | 0.45 | 0.41 | BL62 |
+| 60 images, 400 px q95 | `fast` | 13 | 124 | 1.02 | 1.15 | 0.73 | 0.93 | 1.40x | 1.24x | 0.29 | 0.22 | BL62 |
+| 60 images, 800 px q85 | `fast` | 29 | 1280 | 0.93 | 0.98 | 0.58 | 0.68 | 1.60x | 1.44x | 0.35 | 0.30 | BL62 |
+| sub20, 400 px q85 | `high` | 7 | 59 | 0.71 | 0.61 | 0.38 | 0.38 | 1.87x | 1.61x | 0.33 | 0.23 | BL64 |
+| 60 images, 400 px q85 | `high` | 15 | 176 | 0.74 | 0.85 | 0.49 | 0.70 | 1.51x | 1.21x | 0.25 | 0.15 | BL65 |
+
+- **Excess over Lanczos (`fast` rows):** from 0.12 to 0.58 levels of standard deviation (R-G and B-G together), positive in every row.
+- **Ratio of at least 2.00:** 3 of 8 `fast` rows have both ratios at least 2.00 (the `high` rows are not counted).
+- **Reading:** the factor of two is not stable across sets, input sizes and JPEG qualities, but the model adds chroma noise in every measured condition; `high` adds less than `fast` (BL64, BL65). Visibility was not judged.
