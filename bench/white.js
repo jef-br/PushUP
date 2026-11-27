@@ -8,7 +8,8 @@
 //   (`upscale`, CPU) at factor 1000 / longest side, and plain sharp lanczos3 of the input to the same size. The region is eroded by
 //   4 input pixels (square) so product edges are excluded; an output pixel counts when the input pixel it maps to
 //   (floor((x + 0.5) * input width / output width)) is inside the eroded region. Per method: pixels counted, share exactly 255
-//   (all channels), share with all channels >= 252, lowest channel value seen, mean luma deficit 255 - luma (Rec. 601).
+//   (all channels), the share of 255 in each channel (R, G, B), share with all channels >= 252, lowest channel value seen, mean luma deficit
+//   255 - luma (Rec. 601).
 const fs = require('node:fs');
 const path = require('node:path');
 const { checkFlags } = require('./flags');
@@ -49,7 +50,7 @@ function erode(mask, w, h, r) {
   return pass(pass(mask, true), false);
 }
 
-const newAcc = () => ({ n: 0, is255: 0, ge252: 0, min: 255, deficit: 0 });
+const newAcc = () => ({ n: 0, is255: 0, ch255: [0, 0, 0], ge252: 0, min: 255, deficit: 0 });
 
 // Add every output pixel (w x h) whose source input pixel (iw x ih) lies inside the mask.
 function addMasked(acc, out, w, h, mask, iw, ih) {
@@ -61,13 +62,16 @@ function addMasked(acc, out, w, h, mask, iw, ih) {
       const k = (y * w + x) * 3, r = out[k], g = out[k + 1], b = out[k + 2], lo = Math.min(r, g, b);
       acc.n++;
       if (lo === 255) acc.is255++;
+      if (r === 255) acc.ch255[0]++;
+      if (g === 255) acc.ch255[1]++;
+      if (b === 255) acc.ch255[2]++;
       if (lo >= 252) acc.ge252++;
       if (lo < acc.min) acc.min = lo;
       acc.deficit += 255 - (0.299 * r + 0.587 * g + 0.114 * b);
     }
   }
 }
-const summary = (a) => ({ pixels: a.n, share255: a.n ? (100 * a.is255) / a.n : 0, share252: a.n ? (100 * a.ge252) / a.n : 0, min: a.n ? a.min : 0, deficit: a.n ? a.deficit / a.n : 0 });
+const summary = (a) => ({ pixels: a.n, share255: a.n ? (100 * a.is255) / a.n : 0, ch255: a.ch255.map((c) => (a.n ? (100 * c) / a.n : 0)), share252: a.n ? (100 * a.ge252) / a.n : 0, min: a.n ? a.min : 0, deficit: a.n ? a.deficit / a.n : 0 });
 
 async function main(argv) {
   const sharp = require('sharp');
@@ -113,12 +117,12 @@ async function main(argv) {
   }
   process.stderr.write('\n');
   console.log(`images: ${files.length}; used: ${used}; skipped (white region under 20% of the frame): ${skipped}; input ${size} px, output 1000 px`);
-  console.log('| method | pixels | share exactly 255 (%) | share >= 252 (%) | lowest channel value | mean luma deficit |');
-  console.log('|---|---|---|---|---|---|');
+  console.log('| method | pixels | share exactly 255 (%) | share 255 in R / G / B (%) | share >= 252 (%) | lowest channel value | mean luma deficit |');
+  console.log('|---|---|---|---|---|---|---|');
   const res = {};
   for (const m of ['fast', 'lanczos']) {
     const s = res[m] = summary(acc[m]);
-    console.log(`| ${m === 'fast' ? '`fast`' : 'Lanczos'} | ${s.pixels} | ${s.share255.toFixed(2)} | ${s.share252.toFixed(2)} | ${s.min} | ${s.deficit.toFixed(3)} |`);
+    console.log(`| ${m === 'fast' ? '`fast`' : 'Lanczos'} | ${s.pixels} | ${s.share255.toFixed(2)} | ${s.ch255.map((c) => c.toFixed(2)).join(' / ')} | ${s.share252.toFixed(2)} | ${s.min} | ${s.deficit.toFixed(3)} |`);
   }
   const diff = res.lanczos.share255 - res.fast.share255;
   console.log(`share exactly 255, Lanczos minus fast: ${diff.toFixed(2)} percentage points; fast more than 1 point below Lanczos: ${diff > 1 ? 'yes' : 'no'}`);

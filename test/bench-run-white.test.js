@@ -69,9 +69,10 @@ test('addMasked counts only output pixels whose source pixel is in the mask, and
   const s = summary(a);
   assert.strictEqual(s.share255, (100 * 6) / 8);
   assert.strictEqual(s.share252, (100 * 7) / 8);
+  assert.deepStrictEqual(s.ch255, [(100 * 6) / 8, (100 * 7) / 8, (100 * 7) / 8]); // R is 250 in one pixel and 253 in another; G and B are 255 except in the 253 pixel
   assert.strictEqual(s.min, 250);
   assert.ok(Math.abs(s.deficit - ((255 - (0.299 * 250 + 0.587 * 255 + 0.114 * 255)) + 2) / 8) < 1e-9);
-  assert.deepStrictEqual(summary(newAcc()), { pixels: 0, share255: 0, share252: 0, min: 0, deficit: 0 });
+  assert.deepStrictEqual(summary(newAcc()), { pixels: 0, share255: 0, ch255: [0, 0, 0], share252: 0, min: 0, deficit: 0 });
 });
 
 test('bad flags exit 1 with one stderr line before any model loads', () => {
@@ -100,8 +101,8 @@ test('a run on generated images prints the table shape; an image without a white
   assert.strictEqual(r.status, 0, r.stderr);
   const lines = r.stdout.trim().split('\n');
   assert.match(lines[0], /^images: 2; used: 1; skipped \(white region under 20% of the frame\): 1; input 400 px, output 1000 px$/);
-  assert.match(lines[1], /^\| method \| pixels \| share exactly 255 \(%\) \| share >= 252 \(%\) \| lowest channel value \| mean luma deficit \|$/);
-  assert.match(lines[3], /^\| `fast` \| \d+ \| \d+\.\d\d \| \d+\.\d\d \| \d+ \| \d+\.\d\d\d \|$/);
-  assert.match(lines[4], /^\| Lanczos \| \d+ \| \d+\.\d\d \| \d+\.\d\d \| \d+ \| \d+\.\d\d\d \|$/);
+  assert.match(lines[1], /^\| method \| pixels \| share exactly 255 \(%\) \| share 255 in R \/ G \/ B \(%\) \| share >= 252 \(%\) \| lowest channel value \| mean luma deficit \|$/);
+  assert.match(lines[3], /^\| `fast` \| \d+ \| \d+\.\d\d \| \d+\.\d\d \/ \d+\.\d\d \/ \d+\.\d\d \| \d+\.\d\d \| \d+ \| \d+\.\d\d\d \|$/);
+  assert.match(lines[4], /^\| Lanczos \| \d+ \| \d+\.\d\d \| \d+\.\d\d \/ \d+\.\d\d \/ \d+\.\d\d \| \d+\.\d\d \| \d+ \| \d+\.\d\d\d \|$/);
   assert.match(lines[5], /^share exactly 255, Lanczos minus fast: -?\d+\.\d\d percentage points; fast more than 1 point below Lanczos: (yes|no)$/);
 });
