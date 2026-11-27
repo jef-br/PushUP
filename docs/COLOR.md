@@ -35,6 +35,7 @@ saturated green, which also shifts by 10 to 14 bytes in the interior.
 - [Flat coloured backdrops in `high` mode (BL64, 2026-11-26)](#flat-coloured-backdrops-in-high-mode-bl64-2026-11-26): coloured-backdrop chroma noise in `high` mode, 20 images
 - [Flat coloured backdrops in `high` mode on the 60-image set (BL65, 2026-11-26)](#flat-coloured-backdrops-in-high-mode-on-the-60-image-set-bl65-2026-11-26): `high` mode coloured backdrops on 60 images
 - [Flat coloured backdrops at 600 px (BL70, 2026-11-27)](#flat-coloured-backdrops-at-600-px-bl70-2026-11-27): coloured-backdrop chroma noise at 600 px input
+- [Greyscale photos (BL72, 2026-11-27)](#greyscale-photos-bl72-2026-11-27): real photos turned grey: does `fast` keep R = G = B?
 - [Summary: flat coloured backdrops (BL66, 2026-11-26)](#summary-flat-coloured-backdrops-bl66-2026-11-26): one table of every coloured-backdrop condition; start here for coloured backdrops
 
 ## Method
@@ -569,6 +570,21 @@ Question: BL60 and BL62 measured `fast` at 400 px (q60, q85, q95) and at 800 px 
 - **Result:** compared with the ratios printed in the BL60 table (sub20: 2.25x and 2.20x at 400 px q85, 1.51x and 1.45x at 800 px) and the BL62 table (60 images: 1.91x and 1.58x at 400 px, 1.59x and 1.45x at 800 px), the 600 px ratio is between the two in both channel pairs on sub20 (yes: 1.67x and 1.88x) and in R-G but not in B-G on the 60 images (R-G yes, 1.74x; B-G no, 1.64x, above the 400 px value 1.58x). It is not at least twice Lanczos's in any of the four figures.
 - **Reading:** the excess over Lanczos in levels at 600 px is 0.37 and 0.40 (sub20) and 0.40 and 0.39 (60 images), which lies in the range of the other `fast` rows (0.12 to 0.58): the dependence on input size is weak next to the dependence on JPEG quality, and the 60-image B-G ratio shows that it is not monotonic. Visibility was not judged.
 - **Limits:** `fast` only, JPEG q85 only, blocks from the same backdrop count separately, the 60 images contain the 20, the images with a block differ between rows (12 to 29), no visual judgement.
+
+### Greyscale photos (BL72, 2026-11-27)
+
+Question: BL43 (synthetic greys) and BL46 (grey backdrops inside colour photos) measure neutrality, but a black-and-white product photo, where R = G = B holds for every pixel and any colour is visible, is a separate case. Does `fast` keep it neutral? `node bench/greyscale-real.js` (CPU, about 13 s) and `node bench/greyscale-real.js --size 800` (about 42 s) on the 20 images of `bench/out/sub20`: each image becomes its Rec. 601 luma in all three channels (the 1000 px reference), is cubic-downscaled to 400 or 800 px, JPEG q85 round-tripped, and made exactly neutral again by taking the luma of the decoded image (so R = G = B in every input pixel); the shipped `fast` pipeline and plain Lanczos then upscale it to 1000 px. Spread = max(R,G,B) - min(R,G,B) per output pixel, over all pixels more than 16 px from every edge.
+
+| input | method | pixels | mean spread | 99th percentile spread | share of pixels with spread >= 3 (%) | largest spread |
+|---|---|---|---|---|---|---|
+| 400 px | `fast` | 15138552 | 1.35 | 5 | 8.60 | 62 |
+| 400 px | Lanczos | 15138552 | 0.00 | 0 | 0.00 | 0 |
+| 800 px | `fast` | 15135648 | 1.27 | 4 | 6.11 | 61 |
+| 800 px | Lanczos | 15135648 | 0.00 | 0 | 0.00 | 0 |
+
+- **Result:** the share of pixels with spread >= 3 in the `fast` output is 8.60% at 400 px and 6.11% at 800 px against 0.00% for Lanczos (which keeps R = G = B exactly), so more than 1 point above Lanczos: yes at both sizes. The mean spread is 1.35 and 1.27 levels, the 99th percentile 5 and 4, and the largest spread seen is 62 and 61 levels.
+- **Reading:** the model adds colour to a photo that has none: about one output pixel in twelve at 400 px and one in sixteen at 800 px, a smaller share than in the grey backdrops of colour photos (16.3% at 400 px, 17.8% at 800 px: BL46 and BL48; a different population, flat blocks of colour photos, so only loosely comparable). Because the input is exactly neutral, a grey-preserving step restricted to such inputs (output made neutral when the input is exactly R = G = B) would remove it, and would not flatten genuine slight tints as the whole-image step of BL51 to BL56 does, but its effect on the quality metrics was not measured; this is a note for the owner (row 13), not a change. The largest spreads (above 60 levels) were not located; they are single pixels among 15 million.
+- **Limits:** `fast` only, JPEG q85 only, sub20 only (20 images, converted to grey by luma, not photographed in black and white), 400 and 800 px, no visual judgement, spreads away from the 16 px border only.
 
 ### Summary: flat coloured backdrops (BL66, 2026-11-26)
 
