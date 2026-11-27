@@ -37,6 +37,7 @@ saturated green, which also shifts by 10 to 14 bytes in the interior.
 - [Flat coloured backdrops at 600 px (BL70, 2026-11-27)](#flat-coloured-backdrops-at-600-px-bl70-2026-11-27): coloured-backdrop chroma noise at 600 px input
 - [Greyscale photos (BL72, 2026-11-27)](#greyscale-photos-bl72-2026-11-27): real photos turned grey: does `fast` keep R = G = B?
 - [White backdrops (BL74, 2026-11-27)](#white-backdrops-bl74-2026-11-27): does `fast` keep a pure white (255) backdrop at 255?
+- [Sizes between 400 and 800 (BL75, 2026-11-27)](#sizes-between-400-and-800-bl75-2026-11-27): `fast` against Lanczos at 500, 600 and 700 px input
 - [Summary: flat coloured backdrops (BL66, 2026-11-26)](#summary-flat-coloured-backdrops-bl66-2026-11-26): one table of every coloured-backdrop condition; start here for coloured backdrops
 
 ## Method
@@ -601,6 +602,23 @@ Question: white-background packshots are the most common e-commerce upload; do f
 - **Result:** the share of exactly 255 (all three channels) in the `fast` output is 0.00% at both sizes against 100.00% for Lanczos, so more than 1 point below Lanczos: yes at both sizes (100 points). Per channel the picture is not a grey 254: R and G are never 255 (0.00%), while B stays 255 in 99.92% (400 px) and 99.98% (800 px) of the counted pixels. The output is about (254, 254, 255): the mean luma deficit of 0.886 equals the R and G weights of Rec. 601 (0.299 + 0.587) times one level; no channel is below 253 and every counted pixel is within 3 levels of 255 (share >= 252: 100.00%).
 - **Reading:** the model lowers R and G of a flat area by one level and leaves B alone, a one-level shift toward yellow, not a neutral grey. A one-off check (not part of the script; `upscale` at `fast`, CPU, a uniform 400 x 300 image at factor 2.5, every byte counted per channel): input 255 gives R = 254 in 749153 of 750000 pixels (255 in 4), G = 254 in 748803 (255 in 300) and B = 255 in 749862 (254 in 125); input 240 gives R = 239 in 747506, G = 239 in 747357 and B = 240 in 747759. So this is a property of the model for flat input, not an effect of JPEG or of the mask. Whether a viewer can see a (254, 254, 255) backdrop on a page whose background is exactly (255, 255, 255) was not judged. A white-snap step (pixels >= 252 in all channels whose 5 x 5 neighbourhood is also >= 252 become 255) would remove it; it was not built and not measured against the quality gate. This is a note for the owner (row 13), not a change.
 - **Limits:** `fast` only, JPEG q85 only, sub20 only (16 images with a white border region; the backdrop is made exactly 255 by the script, real uploads may carry 250 to 254 whites), 400 and 800 px, no visual judgement.
+
+### Sizes between 400 and 800 (BL75, 2026-11-27)
+
+Question: the benchmark tables and the quality gate use input sizes 400 and 800 px (output 1000 px, factors 2.5 and 1.25); callers send anything from 400 to 800 px. Does the shipped `fast` pipeline (whole image, 20 % Lanczos mix) still beat plain Lanczos in between? Command: `PUSHUP_QUALITY=fast PUSHUP_DEVICE=cpu node bench/bench.js bench/out/sub20 --sizes 500,600,700 --methods lanczos,sr-full` (20 images, input = the 1000 px reference downscaled and JPEG q85 as in every `bench.js` run; about 2 minutes on 4 vCPU). `sr-full` is the shipped `fast` pipeline of `bench/method.js` (default mix 0.2).
+
+| input | method | PSNR | SSIM | GMSD | ms |
+|---|---|---|---|---|---|
+| 500 px | lanczos | 29.77 | 0.8939 | 0.1112 | 30 |
+| 500 px | sr-full | 33.13 | 0.9124 | 0.0911 | 981 |
+| 600 px | lanczos | 30.53 | 0.9115 | 0.0951 | 33 |
+| 600 px | sr-full | 34.05 | 0.9298 | 0.0750 | 1354 |
+| 700 px | lanczos | 30.53 | 0.9171 | 0.0906 | 30 |
+| 700 px | sr-full | 35.12 | 0.9436 | 0.0608 | 1784 |
+
+- **Result:** `fast` beats Lanczos on PSNR, SSIM and GMSD at each of the three sizes: yes. The differences (`sr-full` minus lanczos) are PSNR +3.36, +3.52, +4.59 dB, SSIM +0.0185, +0.0183, +0.0265 and GMSD -0.0201, -0.0201, -0.0298 (lower GMSD is better) at 500, 600 and 700 px. This is a comparison with Lanczos, not the main-versus-change gate of `docs/OVERNIGHT_RUN.md` section 2.
+- **Reading:** the margin over Lanczos does not shrink towards the middle of the range; no size needs an owner-decision row (no size-dependent mix is proposed). The `ms` column is the mean time of the method call on this machine, indicative only.
+- **Limits:** `fast` only, JPEG q85 only, sub20 only (20 images), one run, three sizes, no visual judgement; 400 and 800 px are in the other tables of the project.
 
 ### Summary: flat coloured backdrops (BL66, 2026-11-26)
 
