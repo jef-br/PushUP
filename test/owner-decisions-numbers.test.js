@@ -80,6 +80,11 @@ function figureProblems(row, doc) {
   const h64 = find(s64, (r) => r[0] === '`high`', 'BL64 high'), f64 = find(s64, (r) => r[0] === '`fast`', 'BL64 fast'), l64 = find(s64, (r) => r[0] === 'Lanczos', 'BL64 Lanczos');
   const s65 = rowsOf(section(doc, '### Flat coloured backdrops in `high` mode on the 60-image set (BL65'));
   const h65 = find(s65, (r) => r[0] === '`high`', 'BL65 high'), f65 = find(s65, (r) => r[0] === '`fast`', 'BL65 fast'), l65 = find(s65, (r) => r[0] === 'Lanczos', 'BL65 Lanczos');
+  const s70 = rowsOf(section(doc, '### Flat coloured backdrops at 600 px (BL70'));
+  const a70 = find(s70, (r) => r[0] === 'sub20, 600 px q85', 'BL70 sub20'), b70 = find(s70, (r) => r[0] === '60 images, 600 px q85', 'BL70 60 images');
+  const between = (v, lo, hi) => Number(v) >= Math.min(lo, hi) && Number(v) <= Math.max(lo, hi);
+  const rt = (rows, k, i) => Number(find(rows, (r) => r[0].startsWith(k), `ratio ${k}`)[i].replace('x', ''));
+  const n70 = [[a70, s60, 7], [a70, s60, 8], [b70, s62, 7], [b70, s62, 8]].filter(([row, src, i]) => between(row[i].replace('x', ''), rt(src, '400 px q85', i), rt(src, '800 px q85', i))).length;
   const lower65 = Number(h65[3]) < Number(f65[3]) && Number(h65[4]) < Number(f65[4]);
   const twice65 = Number(h65[3]) >= 2 * Number(l65[3]) && Number(h65[4]) >= 2 * Number(l65[4]);
   const lower64 = Number(h64[2]) < Number(f64[2]) && Number(h64[3]) < Number(f64[3]);
@@ -108,6 +113,7 @@ function figureProblems(row, doc) {
     [/On the 60 images the `fast` chroma ratios to Lanczos \(R-G and B-G\) are (\d+\.\d\dx) and (\d+\.\d\dx) at 400 px q60, (\d+\.\d\dx) and (\d+\.\d\dx) at q85, (\d+\.\d\dx) and (\d+\.\d\dx) at q95 and (\d+\.\d\dx) and (\d+\.\d\dx) at 800 px, so at least twice only at (q60|q85|q95|800 px) \(yes for that row, no for the other three\), and the order of the rows by ratio agrees with sub20's \((yes|no)\)/, (m) => [['BL62 q60 R-G', m[1], r62('400 px q60')[7]], ['BL62 q60 B-G', m[2], r62('400 px q60')[8]], ['BL62 q85 R-G', m[3], r62('400 px q85')[7]], ['BL62 q85 B-G', m[4], r62('400 px q85')[8]], ['BL62 q95 R-G', m[5], r62('400 px q95')[7]], ['BL62 q95 B-G', m[6], r62('400 px q95')[8]], ['BL62 800 R-G', m[7], r62('800 px')[7]], ['BL62 800 B-G', m[8], r62('800 px')[8]], ['BL62 only row at twice', m[9], only62.length === 1 ? only62[0].split(' ').slice(only62[0].startsWith('800') ? 0 : 2, only62[0].startsWith('800') ? 2 : 3).join(' ') : 'none or several'], ['BL62 same order', m[10], sameOrder62 ? 'yes' : 'no']]],
     [/In `high` mode on CPU \(sub20, 400 px, q85\) the chroma noise on flat coloured backdrops is (\d+\.\d\d) and (\d+\.\d\d) levels against (\d+\.\d\d) and (\d+\.\d\d) for `fast`, lower than `fast` in both \((yes|no)\), and not at least twice Lanczos's (\d+\.\d\d) and (\d+\.\d\d) \((yes|no); (\d+\.\d)x and (\d+\.\d)x\)/, (m) => [['BL64 high R-G', m[1], h64[2]], ['BL64 high B-G', m[2], h64[3]], ['BL64 fast R-G', m[3], f64[2]], ['BL64 fast B-G', m[4], f64[3]], ['BL64 lower than fast', m[5], lower64 ? 'yes' : 'no'], ['BL64 Lanczos R-G', m[6], l64[2]], ['BL64 Lanczos B-G', m[7], l64[3]], ['BL64 at least twice', m[8], twice64 ? 'yes' : 'no'], ['BL64 R-G ratio', m[9], x2(h64[2], l64[2])], ['BL64 B-G ratio', m[10], x2(h64[3], l64[3])]]],
     [/On the 60 images \((\d+) with a block, (\d+) blocks\) `high` chroma noise is (\d+\.\d\d) and (\d+\.\d\d) levels against (\d+\.\d\d) and (\d+\.\d\d) for `fast`, lower than `fast` in both \((yes|no)\), and not at least twice Lanczos's (\d+\.\d\d) and (\d+\.\d\d) \((yes|no); (\d+\.\d)x and (\d+\.\d)x\)/, (m) => [['BL65 images', m[1], Number(h65[1])], ['BL65 blocks', m[2], Number(h65[2])], ['BL65 high R-G', m[3], h65[3]], ['BL65 high B-G', m[4], h65[4]], ['BL65 fast R-G', m[5], f65[3]], ['BL65 fast B-G', m[6], f65[4]], ['BL65 lower than fast', m[7], lower65 ? 'yes' : 'no'], ['BL65 Lanczos R-G', m[8], l65[3]], ['BL65 Lanczos B-G', m[9], l65[4]], ['BL65 at least twice', m[10], twice65 ? 'yes' : 'no'], ['BL65 R-G ratio', m[11], x2(h65[3], l65[3])], ['BL65 B-G ratio', m[12], x2(h65[4], l65[4])]]],
+    [/At 600 px input \(BL70\) the `fast` chroma ratios to Lanczos \(R-G and B-G\) are (\d+\.\d\dx) and (\d+\.\d\dx) on sub20 and (\d+\.\d\dx) and (\d+\.\d\dx) on the 60 images, between the 400 px and 800 px ratios in (\d) of the 4 figures/, (m) => [['BL70 sub20 R-G ratio', m[1], a70[7]], ['BL70 sub20 B-G ratio', m[2], a70[8]], ['BL70 60-image R-G ratio', m[3], b70[7]], ['BL70 60-image B-G ratio', m[4], b70[8]], ['BL70 between count', Number(m[5]), n70]]],
   ];
   const problems = [];
   for (const [re, get] of checks) {
@@ -209,7 +215,7 @@ function summaryProblems(doc) {
   const sum = section(doc, '### Summary: flat coloured backdrops (BL66');
   const rows = rowsOf(sum);
   const fx = (v) => Number(v).toFixed(2);
-  const heads = { BL60: '### Flat coloured backdrops by size and JPEG quality (BL60', BL62: '### Flat coloured backdrops by size and JPEG quality on the 60-image set (BL62', BL64: '### Flat coloured backdrops in `high` mode (BL64', BL65: '### Flat coloured backdrops in `high` mode on the 60-image set (BL65' };
+  const heads = { BL60: '### Flat coloured backdrops by size and JPEG quality (BL60', BL62: '### Flat coloured backdrops by size and JPEG quality on the 60-image set (BL62', BL64: '### Flat coloured backdrops in `high` mode (BL64', BL65: '### Flat coloured backdrops in `high` mode on the 60-image set (BL65', BL70: '### Flat coloured backdrops at 600 px (BL70' };
   const excess = []; let both = 0, nFast = 0;
   for (const r of rows) {
     const label = `${r[0]} ${r[1]}`;
@@ -217,7 +223,11 @@ function summaryProblems(doc) {
     const secText = section(doc, heads[r[12]]);
     const src = rowsOf(secText);
     let want; // [images, blocks, m1, m2, l1, l2]
-    if (r[12] === 'BL60' || r[12] === 'BL62') {
+    if (r[12] === 'BL70') {
+      const s = src.find((x) => x[0] === r[0]);
+      if (!s) { problems.push(`${label}: no row "${r[0]}" in BL70 table`); continue; }
+      want = [s[1], s[2], s[3], s[4], s[5], s[6]];
+    } else if (r[12] === 'BL60' || r[12] === 'BL62') {
       const s = src.find((x) => x[0].startsWith(cond));
       if (!s) { problems.push(`${label}: no row "${cond}" in ${r[12]} table`); continue; }
       want = [s[1], s[2], s[3], s[4], s[5], s[6]];
@@ -239,7 +249,7 @@ function summaryProblems(doc) {
     });
     if (r[1] === '`fast`') { nFast++; excess.push(Number(e1), Number(e2)); if (Number(x1) >= 2 && Number(x2) >= 2) both++; }
   }
-  if (rows.length !== 10) problems.push(`summary table has ${rows.length} rows, expected 10`);
+  if (rows.length !== 12) problems.push(`summary table has ${rows.length} rows, expected 12`);
   const m1 = /from (-?[\d.]+) to (-?[\d.]+) levels of standard deviation/.exec(sum);
   if (!m1) problems.push('summary has no "from A to B levels of standard deviation" sentence');
   else {
@@ -261,6 +271,6 @@ test('a changed cell or sentence in the BL66 summary is reported with its row la
   assert.deepStrictEqual(summaryProblems(swap('| 60 images, 400 px q95 | `fast` | 13 | 124 |', '| 60 images, 400 px q95 | `fast` | 13 | 125 |')), ['60 images, 400 px q95 `fast`: blocks says 125, BL62 table gives 124']);
   assert.deepStrictEqual(summaryProblems(swap('| 1.51x | 1.21x | 0.25 | 0.15 | BL65 |', '| 1.51x | 1.21x | 0.25 | 0.16 | BL65 |')), ['60 images, 400 px q85 `high`: excess B-G says 0.16, computed 0.15']);
   assert.deepStrictEqual(summaryProblems(swap('from 0.12 to 0.58 levels', 'from 0.12 to 0.59 levels')), ['excess max says 0.59, computed 0.58']);
-  assert.deepStrictEqual(summaryProblems(swap('3 of 8 `fast` rows have both', '4 of 8 `fast` rows have both')), ['ratio count says 4 of 8, computed 3 of 8']);
+  assert.deepStrictEqual(summaryProblems(swap('3 of 10 `fast` rows have both', '4 of 10 `fast` rows have both')), ['ratio count says 4 of 10, computed 3 of 10']);
   assert.deepStrictEqual(summaryProblems(swap('| sub20, 400 px q85 | `high` | 7 | 59 |', '| sub20, 400 px q85 | `high` | 8 | 59 |')), ['sub20, 400 px q85 `high`: images says 8, BL64 table gives 7']);
 });
