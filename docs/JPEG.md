@@ -35,3 +35,17 @@ took blockiness from 1.514 to 1.200 with sigma 0.8, but PSNR from 34.86 to 31.33
 
 Limits: one JPEG encoder and two qualities; synthetic re-compression of the set's own 600 px images, not photos that
 were JPEG-compressed by a shop; luma only.
+
+## Clean input at factor 1.0 (BL73, 2026-11-27)
+
+Question: the sections above cover JPEG-damaged input. Many uploads are clean (PNG or high-quality sources), where the right output of a factor-1 call is "almost unchanged". How far does `fast` move a clean image?
+
+`node bench/clean.js` (about 29 s on 4 vCPU; `fast`, CPU): the 20 images of `bench/out/sub20`, each as the 1000 px reference (lanczos3, `fit: 'fill'`, as `loadGt` in `bench/groundtruth.js`) resized to 600 px on its longest side (lanczos3), **no JPEG step**: that is the input. `upscale(input, stride, 1)` gives the output, compared with the input: PSNR, SSIM and GMSD (luma, `bench/metrics.js`) and the mean absolute difference per channel byte.
+
+| input | images | PSNR (dB) | SSIM | GMSD | mean abs diff per channel | lowest PSNR (dB) | lowest-PSNR image |
+|---|---|---|---|---|---|---|---|
+| 600 px | 20 | 43.96 | 0.9950 | 0.0104 | 1.30 | 36.18 | abo_1df379d8.png |
+
+- **Result:** the mean PSNR between the output and the clean input is 43.96 dB (SSIM 0.9950, mean absolute difference 1.30 of 255 per channel byte); no image falls below 30 dB (the lowest is `abo_1df379d8.png` at 36.18 dB). A factor-1 call on a clean 600 px photo therefore leaves it close to unchanged: a change of about one level per byte on average. Where the change comes from was not measured here (the sharper edges of `fast` in [EDGES.md](EDGES.md) are the likely part).
+- **Reading:** at factor 1 the output is 80% model output and 20% the input itself (the Lanczos mix of a same-size image is the image), so the figure is about what the model moves times 0.8. It does not say the change is an improvement: against a clean input there is no better reference, and PSNR against the input only measures distance from it.
+- **Limits:** 600 px only, `fast` only, sub20 only (20 images, lanczos3 downscales of the set's own 1000 px references, not photographs delivered clean by a shop), luma metrics, no visual judgement.

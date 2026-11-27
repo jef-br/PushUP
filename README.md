@@ -34,7 +34,7 @@ Examples: 800 px at 1.5 gives 1000 px (1200, capped); 400 px at 2.5 gives
 1000 px; 400 px at 1.5 gives 600 px. With 1.0 the size stays the same, but the
 model still runs: it makes JPEG block borders less visible (about two thirds of the excess
 block contrast is gone at JPEG quality 50 and 75; PSNR rises 0.7 dB at quality 50 and falls 0.4 dB
-at quality 75, [docs/JPEG.md](docs/JPEG.md)) and edges get sharper.
+at quality 75, [docs/JPEG.md](docs/JPEG.md)) and edges get sharper. On a clean (never compressed) 600 px input the output stays close to the input (mean PSNR 44.0 dB against it, [docs/JPEG.md](docs/JPEG.md#clean-input-at-factor-10-bl73-2026-11-27)).
 
 Calls are async (`upscale` returns a promise) and run one at a time, because each one
 already uses every CPU core. They do **not** leave the Node.js event loop free: while the model
@@ -330,6 +330,7 @@ node bench/grey-step.js                # would a grey-preserving post-step (offl
 node bench/chroma-real.js              # does `fast` add chroma noise to flat coloured backdrops of real photos? (needs bench/out/sub20; options --dir, --limit, --size, --jpeg 50..100 (input JPEG quality, default 85) and --quality fast|high (default fast; high takes about 2 min on sub20); results: docs/COLOR.md "Flat coloured backdrops (BL58)", "Flat coloured backdrops by size and JPEG quality (BL60)" and "Flat coloured backdrops in `high` mode (BL64)")
 node bench/seams.js                  # do the 192 px tiles of `high` leave seams on real photos? (needs bench/out/sub20; options --dir, --limit, --size; about 45 s per image; results: docs/SEAMS.md)
 node bench/greyscale-real.js          # do real photos turned greyscale (R = G = B in the input) stay neutral through `fast`? (needs bench/out/sub20; options --dir, --limit, --size, --jpeg 50..100 (input JPEG quality, default 85); results: docs/COLOR.md "Greyscale photos (BL72)")
+node bench/clean.js                  # how far does a factor-1 call move a clean (never JPEG-compressed) input? (needs bench/out/sub20; options --dir, --limit, --size 400..800 (default 600); results: docs/JPEG.md "Clean input at factor 1.0 (BL73)")
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
