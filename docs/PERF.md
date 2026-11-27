@@ -569,6 +569,7 @@ changed; the opt-in `high` case of `bench/arena.js` (50.6 s, own 120 s timeout, 
 | `bench-run-memory` | `memory-creep.js` | 30 s | 2.54 s | 11x |
 | `bench-run-greyscale-real` | `greyscale-real.js` (two generated images, BL72) | 60 s | 1.40 s | 43x |
 | `bench-run-neutral-real` | `neutral-real.js` (two generated images, BL46) | 60 s | 0.75 s | 80x |
+| `bench-run-white` | `white.js` (two generated images, BL74) | 60 s | 1.21 s | 50x |
 | `bench-run-seams` | `seams.js` (bad flags, missing folder; the real run is not in the suite, BL71) | 60 s | 0.40 s | 150x |
 | `bench-run-pad` | `pad.js` (two-image run) | 300 s | 6.34 s | 47x |
 | `bench-run-pad` | `pad.js --limit 1` | 300 s | 5.55 s | 54x |
@@ -584,7 +585,7 @@ runner can be much slower than this table; the 5x rule is a minimum, not a promi
 
 ## Test suite time (BL6)
 
-Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVICE` / `PUSHUP_QUALITY` set (see below), each file run alone with `node --test test/<file>` (one run per file; the five slowest were run once more and agreed within 0.4 s: `device` 18.2 s, `upscale` 16.4 s, `bench-run-pad` 15.0 s, `aspect` 14.2 s, `device-fallback` 8.2 s). A file's time includes starting Node and loading the model session. The shares are of the sum of the files, 217.6 s (164 s on 2026-11-19, plus the files added since, measured later); `npm test` on `main` took 172 s the same day, so running the files together costs about what running them one by one does (each model call already uses all cores).
+Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVICE` / `PUSHUP_QUALITY` set (see below), each file run alone with `node --test test/<file>` (one run per file; the five slowest were run once more and agreed within 0.4 s: `device` 18.2 s, `upscale` 16.4 s, `bench-run-pad` 15.0 s, `aspect` 14.2 s, `device-fallback` 8.2 s). A file's time includes starting Node and loading the model session. The shares are of the sum of the files, 218.8 s (164 s on 2026-11-19, plus the files added since, measured later); `npm test` on `main` took 172 s the same day, so running the files together costs about what running them one by one does (each model call already uses all cores).
 
 | Test file | Seconds | Share |
 | --- | ---: | ---: |
@@ -623,6 +624,7 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 | `bench-run-clean.test.js` | 1.5 | 0.7% |
 | `bench-run-chroma-real.test.js` | 1.3 | 0.6% |
 | `batch-reject.test.js` | 1.2 | 0.6% |
+| `bench-run-white.test.js` | 1.2 | 0.5% |
 | `arena-cold-args.test.js` | 1.2 | 0.6% |
 | `throughput-stop.test.js` | 1.1 | 0.5% |
 | `bench-run-neutral-real.test.js` | 1.0 | 0.5% |
@@ -680,7 +682,7 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 | `readme-jpeg.test.js` | 0.1 | 0.0% |
 | `bench-run-doc-tables.test.js` | 0.1 | 0.0% |
 | `owner-decisions-numbers.test.js` | 0.1 | 0.0% |
-| **Total** | **217.6** | |
+| **Total** | **218.8** | |
 
 The three costliest files are `device.test.js`, `upscale.test.js` and `bench-run-pad.test.js` (together about 30% of the time). Two of them call the real model many times (`device.test.js` runs `_run` on a real image in most of its cases, `upscale.test.js` makes 14 `upscale` calls), and `bench-run-pad.test.js` starts `bench/pad.js` as child processes that each load the model. Most other files take under 2 s.
 

@@ -36,6 +36,7 @@ saturated green, which also shifts by 10 to 14 bytes in the interior.
 - [Flat coloured backdrops in `high` mode on the 60-image set (BL65, 2026-11-26)](#flat-coloured-backdrops-in-high-mode-on-the-60-image-set-bl65-2026-11-26): `high` mode coloured backdrops on 60 images
 - [Flat coloured backdrops at 600 px (BL70, 2026-11-27)](#flat-coloured-backdrops-at-600-px-bl70-2026-11-27): coloured-backdrop chroma noise at 600 px input
 - [Greyscale photos (BL72, 2026-11-27)](#greyscale-photos-bl72-2026-11-27): real photos turned grey: does `fast` keep R = G = B?
+- [White backdrops (BL74, 2026-11-27)](#white-backdrops-bl74-2026-11-27): does `fast` keep a pure white (255) backdrop at 255?
 - [Summary: flat coloured backdrops (BL66, 2026-11-26)](#summary-flat-coloured-backdrops-bl66-2026-11-26): one table of every coloured-backdrop condition; start here for coloured backdrops
 
 ## Method
@@ -585,6 +586,21 @@ Question: BL43 (synthetic greys) and BL46 (grey backdrops inside colour photos) 
 - **Result:** the share of pixels with spread >= 3 in the `fast` output is 8.60% at 400 px and 6.11% at 800 px against 0.00% for Lanczos (which keeps R = G = B exactly), so more than 1 point above Lanczos: yes at both sizes. The mean spread is 1.35 and 1.27 levels, the 99th percentile 5 and 4, and the largest spread seen is 62 and 61 levels.
 - **Reading:** the model adds colour to a photo that has none: about one output pixel in twelve at 400 px and one in sixteen at 800 px, a smaller share than in the grey backdrops of colour photos (16.3% at 400 px, 17.8% at 800 px: BL46 and BL48; a different population, flat blocks of colour photos, so only loosely comparable). Because the input is exactly neutral, a grey-preserving step restricted to such inputs (output made neutral when the input is exactly R = G = B) would remove it, and would not flatten genuine slight tints as the whole-image step of BL51 to BL56 does, but its effect on the quality metrics was not measured; this is a note for the owner (row 13), not a change. The largest spreads (above 60 levels) were not located; they are single pixels among 15 million.
 - **Limits:** `fast` only, JPEG q85 only, sub20 only (20 images, converted to grey by luma, not photographed in black and white), 400 and 800 px, no visual judgement, spreads away from the 16 px border only.
+
+### White backdrops (BL74, 2026-11-27)
+
+Question: white-background packshots are the most common e-commerce upload; do flat 255 areas stay exactly 255 through `fast`? `node bench/white.js` (CPU, about 30 s) and `node bench/white.js --size 800` on the 20 images of `bench/out/sub20`: each 1000 px reference is cubic-downscaled to 400 or 800 px and JPEG q85 round-tripped, then the near-white region connected to the image border (4-connected flood fill from the border over pixels with R, G and B all >= 245, on the decoded input) is set to exactly 255, as on a packshot with a pure white page background. Images whose region covers under 20% of the frame are skipped (4 of 20 at both sizes). The shipped `fast` pipeline and plain Lanczos then upscale to 1000 px. Counted are the output pixels whose source input pixel lies inside the region eroded by 4 input pixels (so product edges are excluded). The flood fill runs on the decoded input, not on the 1000 px reference, so that the mask and the erosion are at input resolution.
+
+| input | method | images used | pixels | share exactly 255 (%) | share 255 in R / G / B (%) | share >= 252 (%) | lowest channel value | mean luma deficit (255 - luma) |
+|---|---|---|---|---|---|---|---|---|
+| 400 px | `fast` | 16 | 6202585 | 0.00 | 0.00 / 0.00 / 99.92 | 100.00 | 253 | 0.886 |
+| 400 px | Lanczos | 16 | 6202585 | 100.00 | 100.00 / 100.00 / 100.00 | 100.00 | 255 | 0.000 |
+| 800 px | `fast` | 16 | 6785611 | 0.00 | 0.00 / 0.00 / 99.98 | 100.00 | 253 | 0.886 |
+| 800 px | Lanczos | 16 | 6785611 | 100.00 | 100.00 / 100.00 / 100.00 | 100.00 | 255 | 0.000 |
+
+- **Result:** the share of exactly 255 (all three channels) in the `fast` output is 0.00% at both sizes against 100.00% for Lanczos, so more than 1 point below Lanczos: yes at both sizes (100 points). Per channel the picture is not a grey 254: R and G are never 255 (0.00%), while B stays 255 in 99.92% (400 px) and 99.98% (800 px) of the counted pixels. The output is about (254, 254, 255): the mean luma deficit of 0.886 equals the R and G weights of Rec. 601 (0.299 + 0.587) times one level; no channel is below 253 and every counted pixel is within 3 levels of 255 (share >= 252: 100.00%).
+- **Reading:** the model lowers R and G of a flat area by one level and leaves B alone, a one-level shift toward yellow, not a neutral grey. A one-off check (not part of the script; `upscale` at `fast`, CPU, a uniform 400 x 300 image at factor 2.5, every byte counted per channel): input 255 gives R = 254 in 749153 of 750000 pixels (255 in 4), G = 254 in 748803 (255 in 300) and B = 255 in 749862 (254 in 125); input 240 gives R = 239 in 747506, G = 239 in 747357 and B = 240 in 747759. So this is a property of the model for flat input, not an effect of JPEG or of the mask. Whether a viewer can see a (254, 254, 255) backdrop on a page whose background is exactly (255, 255, 255) was not judged. A white-snap step (pixels >= 252 in all channels whose 5 x 5 neighbourhood is also >= 252 become 255) would remove it; it was not built and not measured against the quality gate. This is a note for the owner (row 13), not a change.
+- **Limits:** `fast` only, JPEG q85 only, sub20 only (16 images with a white border region; the backdrop is made exactly 255 by the script, real uploads may carry 250 to 254 whites), 400 and 800 px, no visual judgement.
 
 ### Summary: flat coloured backdrops (BL66, 2026-11-26)
 
