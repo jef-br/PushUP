@@ -62,7 +62,7 @@ test('CPU-only: default output is the fast model, byte-identical', withEnv({ PUS
   assert.ok(out.equals(await fastRef()));
 }));
 
-test('a GPU that fails to load falls back to CPU (auto)', withEnv({ PUSHUP_QUALITY: 'auto' }, async () => {
+test('a GPU that fails to load falls back to CPU (auto)', withEnv({ PUSHUP_QUALITY: 'auto', PUSHUP_DEVICE: 'auto' }, async () => {
   const realCreate = ort.InferenceSession.create;
   ort.InferenceSession.create = (p, o) =>
     o.executionProviders[0] === 'cpu' ? realCreate.call(ort.InferenceSession, p, o) : Promise.reject(new Error('no GPU'));
@@ -92,7 +92,7 @@ test('PUSHUP_DEVICE=gpu without a GPU warns and still runs on CPU', withEnv({ PU
   }
 }));
 
-test('a GPU that fails while running falls back to CPU and retries', withEnv({ PUSHUP_QUALITY: 'auto' }, async () => {
+test('a GPU that fails while running falls back to CPU and retries', withEnv({ PUSHUP_QUALITY: 'auto', PUSHUP_DEVICE: 'auto' }, async () => {
   const realCreate = ort.InferenceSession.create;
   let gpuRuns = 0;
   ort.InferenceSession.create = (p, o) => {
