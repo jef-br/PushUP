@@ -8,6 +8,11 @@ new block on Monday).
 
 ---
 
+## 2026-W48 (Nov 23–29)
+
+- **CI on Windows and macOS:** a `test-os` job runs the suite on both; Windows on `auto`, macOS pinned to `cpu` because
+  CoreML (the `auto` default on Apple silicon) gave different output in two tests, which is now an owner question. — D17, `docs/OWNER_DECISIONS.md` row 15
+
 ## 2026-W46 (Nov 9–15)
 
 - **Devices:** every path runs on CPU; a GPU is used when present (DirectML / CUDA / CoreML,
