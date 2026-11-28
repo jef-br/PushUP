@@ -151,3 +151,22 @@ Numbers: `docs/TEXTURE.md`.
 - **Would reopen it:** a report that a warning hidden by this was needed, or an owner wish for a PushUP-specific
   setting (new option, owner decision).
 
+## D17 — CI also runs the tests on Windows and macOS; the macOS job is pinned to `PUSHUP_DEVICE=cpu` (2026-11-28, BL77)
+
+- **Context:** CI ran on Ubuntu only, while the README names Windows (DirectML) and macOS arm64 (CoreML). BL77 added a
+  `test-os` job (`windows-latest`, `macos-latest`, Node 22, `npm ci`, `npm test`).
+- **Findings (first runs):** (a) Windows checks files out with CRLF, and nine tests that read repo files expect LF; the job
+  runs `git config --global core.autocrlf false` before checkout, and `test/python-syntax.test.js` now splits the Python
+  message on `\r` as well (Windows Python prints it). (b) On macOS arm64 with the default `PUSHUP_DEVICE=auto`, two
+  tests failed: "tiled inference places every tile correctly (byte-identical to whole-frame)" and "output colours stay
+  close to input (no shift)". With `PUSHUP_DEVICE=cpu` both pass. In `auto` the default call tries CoreML with the
+  `high` model (Remacri) first, so these tests then run a different model, on a different device, from the CPU `fast`
+  path they were written for. Not measured further: the runner has no GPU of its own and the log does not say what
+  CoreML ran on. (c) Two device tests set only `PUSHUP_QUALITY` and inherited the device setting; they now set
+  `PUSHUP_DEVICE: 'auto'` themselves (no assertion changed).
+- **Decision:** keep the Windows job on `auto` (it passes, and it exercises the DirectML attempt and its fallback); pin
+  the macOS job to `cpu` so it checks install and the CPU path. The CoreML behaviour is not hidden: it is an open
+  question for the owner (`docs/OWNER_DECISIONS.md` row 15), because answering it means a change in `src/` or in the
+  mode choice on Apple silicon, which a scheduled run may not make.
+- **Would reopen it:** a runner with a working CoreML that lets the whole suite pass with `auto`; or an owner answer to
+  row 15.

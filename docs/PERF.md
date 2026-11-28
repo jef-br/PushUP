@@ -683,6 +683,7 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 | `bench-run-doc-tables.test.js` | 0.1 | 0.0% |
 | `owner-decisions-numbers.test.js` | 0.1 | 0.0% |
 | `bench-sizes-doc.test.js` | 0.1 | 0.0% |
+| `ci-os.test.js` | 0.0 | 0.0% |
 | **Total** | **218.9** | |
 
 The three costliest files are `device.test.js`, `upscale.test.js` and `bench-run-pad.test.js` (together about 30% of the time). Two of them call the real model many times (`device.test.js` runs `_run` on a real image in most of its cases, `upscale.test.js` makes 14 `upscale` calls), and `bench-run-pad.test.js` starts `bench/pad.js` as child processes that each load the model. Most other files take under 2 s.
