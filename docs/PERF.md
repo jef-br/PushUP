@@ -669,6 +669,7 @@ Where the time of `npm test` goes. Measured 2026-11-19, 4 vCPU, no `PUSHUP_DEVIC
 | `suite-time.test.js` | 0.1 | 0.0% |
 | `readme-env.test.js` | 0.1 | 0.0% |
 | `readme-bench.test.js` | 0.1 | 0.0% |
+| `readme-gpu.test.js` | 0.1 | 0.0% |
 | `owner-decisions.test.js` | 0.1 | 0.0% |
 | `bench-method.test.js` | 0.1 | 0.0% |
 | `slow-workflow.test.js` | 0.1 | 0.0% |
