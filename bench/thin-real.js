@@ -1,9 +1,11 @@
 'use strict';
 // Does `fast` undershoot thin dark features of real photos? (BL78, docs/EDGES.md "Thin real features (BL78)")
-// Usage: node bench/thin-real.js [--dir bench/out/sub20] [--limit 20] [--size 400|600|800]
+// Usage: node bench/thin-real.js [--dir bench/out/sub20] [--limit 20] [--size 400|600|800] [--mix 0,0.2,0.4]
 //   Per image: reference = bench/groundtruth.js loadGt (1000 px longest side), input = inputAt(gt, size) (cubic, JPEG q85).
 //   Two factors: 1.0 (reference = gt lanczos3-resized to the input size) and 1000/size (2.5 at 400 px; reference = gt).
 //   Methods: the shipped `fast` pipeline (CPU) and plain sharp lanczos3 of the input to the same size.
+//   --mix a,b,c (BL80): instead of the shipped `fast`, one `fast (mix N)` row per Lanczos share N (0 to 1) through the
+//   `lanczosMix` option of `_run`; the control verdict then uses the 0.2 row (the shipped share) if listed, else the first.
 //   Thin feature pixel (rule, on the luma of the reference): along the horizontal or the vertical axis, a run of k = 1..3
 //   consecutive pixels that are all at least 40 levels darker than BOTH pixels 2 px beyond the run's ends (the pixel
 //   between a run and each of those two is not compared with the side, so the edge's own blur does not count, but it must be at least 10 levels
@@ -82,35 +84,47 @@ function pasteLine(inp) {
 
 function main() {
   const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
-  const flagError = checkFlags(process.argv.slice(2), { values: ['--dir', '--limit', '--size'] });
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--dir', '--limit', '--size', '--mix'] });
   if (flagError) { console.error(flagError); process.exit(1); }
-  for (const f of ['--dir', '--limit', '--size']) { const i = process.argv.indexOf(f); if (i > 0 && i === process.argv.length - 1) { console.error(`${f} needs a value`); process.exit(1); } }
+  for (const f of ['--dir', '--limit', '--size', '--mix']) { const i = process.argv.indexOf(f); if (i > 0 && i === process.argv.length - 1) { console.error(`${f} needs a value`); process.exit(1); } }
   const limit = Number(arg('limit', '20'));
   if (!Number.isInteger(limit) || limit < 1) { console.error('--limit must be a positive integer'); process.exit(1); }
   const size = Number(arg('size', '400'));
   if (![400, 600, 800].includes(size)) { console.error('--size must be 400, 600 or 800'); process.exit(1); }
+  const mixArg = arg('mix', null);
+  const mixes = mixArg === null ? null : String(mixArg).split(',').map((v) => (/^\d*\.?\d+$/.test(v.trim()) ? Number(v) : NaN));
+  if (mixes && (mixes.some((m) => !(m >= 0 && m <= 1)) || new Set(mixes).size !== mixes.length)) { console.error('--mix must be a comma list of different numbers from 0 to 1'); process.exit(1); }
   const dir = path.resolve(arg('dir', path.join(__dirname, 'out', 'sub20')));
   if (!fs.existsSync(dir)) { console.error(`${dir} does not exist; run bash bench/fetch_testset.sh`); process.exit(1); }
   if (!fs.statSync(dir).isDirectory()) { console.error(`${dir} is not a directory`); process.exit(1); }
   const files = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort().slice(0, limit);
   if (!files.length) { console.error(`no images in ${dir}`); process.exit(1); }
-  return run(dir, files, size).catch((e) => { console.error(e); process.exit(1); });
+  return run(dir, files, size, mixes).catch((e) => { console.error(e); process.exit(1); });
 }
 
-async function run(dir, files, size) {
+async function run(dir, files, size, mixes) {
   process.env.PUSHUP_QUALITY = 'fast';
   process.env.PUSHUP_DEVICE = 'cpu';
   const { _run } = require('../src/index.js');
   const big = 1000 / size;
   const factors = [1.0, big];
-  const METHODS = ['fast', 'lanczos'];
+  // The `fast` variants: the shipped pipeline, or one per Lanczos share of --mix.
+  const VARIANTS = mixes ? mixes.map((m) => ({ key: `fast${m}`, label: `\`fast\` (mix ${m})`, opts: { lanczosMix: m } })) : [{ key: 'fast', label: '`fast`', opts: undefined }];
+  const METHODS = [...VARIANTS.map((v) => v.key), 'lanczos'];
+  const labelOf = (k) => (k === 'lanczos' ? 'Lanczos' : VARIANTS.find((v) => v.key === k).label);
+  const ctlKey = (VARIANTS.find((v) => v.opts && v.opts.lanczosMix === 0.2) || VARIANTS[0]).key;
 
   // Both outputs of one input at one factor, as luma planes clipped to w x h, plus their size.
   const outputs = async (inp, factor) => {
-    const [fa, sa] = await _run(inp.data, inp.w * 3, factor);
-    const ow = sa / 3, oh = fa.length / sa;
+    const fas = {};
+    let ow, oh;
+    for (const v of VARIANTS) {
+      const [fa, sa] = v.opts ? await _run(inp.data, inp.w * 3, factor, v.opts) : await _run(inp.data, inp.w * 3, factor);
+      ow = sa / 3; oh = fa.length / sa;
+      fas[v.key] = Buffer.from(fa.buffer, fa.byteOffset, fa.length);
+    }
     const lz = await sharp(inp.data, { raw: { width: inp.w, height: inp.h, channels: 3 } }).resize(ow, oh, { kernel: 'lanczos3', fit: 'fill' }).raw().toBuffer();
-    return { ow, oh, fa: Buffer.from(fa.buffer, fa.byteOffset, fa.length), lz };
+    return { ow, oh, planes: { ...fas, lanczos: lz } };
   };
 
   const acc = {};
@@ -129,7 +143,8 @@ async function run(dir, files, size) {
       const w = Math.min(o.ow, rw), h = Math.min(o.oh, rh); // 1 px differences: the area both share, top-left aligned
       const ref = clipLuma(refRgb, rw, w, h);
       const features = thinFeatures(ref, w, h);
-      for (const [m, rgb] of [['fast', o.fa], ['lanczos', o.lz]]) {
+      for (const m of METHODS) {
+        const rgb = o.planes[m];
         const s = score(features, clipLuma(rgb, o.ow, w, h));
         const a = acc[`${factor}|${m}`];
         a.n += s.n; s.over.forEach((c, i) => { a.over[i] += c; }); a.max = Math.max(a.max, s.max);
@@ -141,7 +156,8 @@ async function run(dir, files, size) {
       for (const factor of factors) {
         const o = await outputs(p, factor);
         const c = {};
-        for (const [m, rgb] of [['fast', o.fa], ['lanczos', o.lz]]) {
+        for (const m of METHODS) {
+          const rgb = o.planes[m];
           const lum = lumaOf(rgb, o.ow * o.oh);
           const lx = (p.cx + 0.5) * (o.ow / p.w), y0 = Math.round(p.y0 * o.oh / p.h) + 40, y1 = Math.round(p.y1 * o.oh / p.h) - 40;
           let sum = 0, max = 0, rows = 0;
@@ -165,14 +181,15 @@ async function run(dir, files, size) {
   for (const f of factors) for (const m of METHODS) {
     const a = acc[`${f}|${m}`];
     const pct = (c) => (a.n ? `${(100 * c / a.n).toFixed(2)} % (${c})` : '-');
-    console.log(`| ${label(f)} | ${m === 'fast' ? '`fast`' : 'Lanczos'} | ${a.n} | ${pct(a.over[0])} | ${pct(a.over[1])} | ${pct(a.over[2])} | ${a.max.toFixed(1)} |`);
+    console.log(`| ${label(f)} | ${labelOf(m)} | ${a.n} | ${pct(a.over[0])} | ${pct(a.over[1])} | ${pct(a.over[2])} | ${a.max.toFixed(1)} |`);
   }
   console.log(`control (1 px line of 40 on 215 pasted into ${files[0]}): mean / max levels below 40 within 6 output px of the line`);
-  for (const f of factors) for (const m of METHODS) console.log(`  factor ${label(f)} ${m}: ${control[f][m].mean.toFixed(1)} / ${control[f][m].max.toFixed(1)}`);
-  const c = control[big].fast.mean;
+  for (const f of factors) for (const m of METHODS) console.log(`  factor ${label(f)} ${m === 'lanczos' ? m : labelOf(m).replace(/`/g, '')}: ${control[f][m].mean.toFixed(1)} / ${control[f][m].max.toFixed(1)}`);
+  const c = control[big][ctlKey].mean;
+  const who = ctlKey === 'fast' ? 'fast' : labelOf(ctlKey).replace(/`/g, '');
   console.log(c >= CONTROL_MIN
-    ? `control: fast reads ${c.toFixed(1)} levels below the dark level at factor ${label(big)}, at least ${CONTROL_MIN}: the real-photo numbers are a result`
-    : `control: fast reads ${c.toFixed(1)} levels below the dark level at factor ${label(big)}, under ${CONTROL_MIN}: the measure cannot see the undershoot of a 1 px line, so the real-photo result is INCONCLUSIVE`);
+    ? `control: ${who} reads ${c.toFixed(1)} levels below the dark level at factor ${label(big)}, at least ${CONTROL_MIN}: the real-photo numbers are a result`
+    : `control: ${who} reads ${c.toFixed(1)} levels below the dark level at factor ${label(big)}, under ${CONTROL_MIN}: the measure cannot see the undershoot of a 1 px line, so the real-photo result is INCONCLUSIVE`);
 }
 
 module.exports = { lumaOf, thinFeatures, score, pasteLine, clipLuma };
