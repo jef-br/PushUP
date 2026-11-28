@@ -37,7 +37,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            device: auto
+          # macOS: with `auto` the default call tries CoreML (Remacri `high`), whose output is not the CPU output the
+          # byte-exact and colour tests assume (BL77: tiled-vs-whole and colour-shift tests failed). Pinned to CPU.
+          - os: macos-latest
+            device: cpu
+    env:
+      PUSHUP_DEVICE: ${{ matrix.device }}
     steps:
       # Windows checks files out with CRLF by default; several tests read repo files and expect LF (as on Linux and in git).
       - run: git config --global core.autocrlf false
