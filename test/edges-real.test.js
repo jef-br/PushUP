@@ -128,3 +128,17 @@ test('overshoot9 with { half, cx, cy } scores a pixel against a window centred e
   // a window centred further left (cx = 8: x 2..14, only dark) judges the same pixel against 40..40 -> 175
   assert.strictEqual(overshoot9(out, ref, w, 13, 10, { half: 6, cx: 8, cy: 10 }), 175);
 });
+
+// BL82: a value flag as the last argument (checkFlags leaves it to the script) exits 1 with one line, no stack trace.
+{
+  const { spawnSync } = require('node:child_process');
+  const path = require('node:path');
+  for (const flag of ['--dir', '--limit']) {
+    test(`edges-real.js ${flag} with no value exits 1 with one stderr line`, () => {
+      const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'bench', 'edges-real.js'), flag], { encoding: 'utf8', timeout: 20000 });
+      assert.strictEqual(r.status, 1);
+      assert.strictEqual(r.stderr.trim(), `${flag} needs a value`);
+      assert.strictEqual(r.stdout, '');
+    });
+  }
+}

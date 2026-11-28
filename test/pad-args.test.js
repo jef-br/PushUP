@@ -86,3 +86,13 @@ test('pad.js --dir that is a file exits 1 with "<path> is not a directory"', () 
   assert.strictEqual(r.out, '');
   assert.ok(r.elapsed < 5000, `took ${r.elapsed} ms`);
 });
+
+// BL82: a value flag as the last argument (checkFlags leaves it to the script) exits 1 with one line, no stack trace.
+for (const flag of ['--dir', '--limit']) {
+  test(`pad.js ${flag} with no value exits 1 with one stderr line`, () => {
+    const r = spawnSync(process.execPath, [SCRIPT, flag], { encoding: 'utf8', timeout: 20000 });
+    assert.strictEqual(r.status, 1);
+    assert.strictEqual(r.stderr.trim(), `${flag} needs a value`);
+    assert.strictEqual(r.stdout, '');
+  });
+}
