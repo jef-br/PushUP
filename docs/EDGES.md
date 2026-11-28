@@ -169,3 +169,67 @@ Reading (2026-11-17, `node bench/edges-real.js`, about 20 s):
 - Factor 2.0, 400 px inputs, 20 images of `bench/out/sub20`. A measure that separates `fast` from Lanczos on the degraded
   step would need a different design (for example the signed lobe amplitude against a matched, un-degraded reference);
   thin features (hairlines, text) are still not measured.
+
+
+## Thin real features (BL78)
+
+Question: does `fast` undershoot thin dark features of real product photos (stitching, text strokes, chains, hair)
+the way it does the synthetic 1 px line (31 levels below the dark level at factor 2.5, table above)? Date: 2026-11-28.
+Script: `node bench/thin-real.js [--dir bench/out/sub20] [--limit 20] [--size 400|600|800]` (CPU, `fast` only, about 30 s per size).
+
+- **Data:** the 20 images of `bench/out/sub20`; reference = `bench/groundtruth.js` `loadGt` (1000 px longest side), input =
+  `inputAt(gt, size)` (cubic, JPEG q85, decoded), as `bench/bench.js` builds them. Two factors: 1.0 (reference = the 1000 px
+  reference resized to the input size, lanczos3) and 1000 / size (2.5 at 400 px, reference = the 1000 px reference). Methods: the shipped
+  `fast` pipeline (20 % Lanczos mix included) and plain sharp lanczos3 of the input to the same size. Reference and output
+  are clipped to the area they share (1 px differences), top-left aligned.
+- **Rule (stated before the run):** on the luma of the reference, a feature pixel is a pixel of a run of 1 to 3
+  consecutive pixels (horizontal or vertical) that are all at least 40 levels darker than **both** pixels 2 px beyond the
+  run's ends; the pixel between a run and each of those two is not compared with them (the edge's own blur), but must be at least 10 levels
+  lighter than the run's brightest pixel (a wider bar is not cut into thin runs). Dark level of a feature pixel = the
+  darkest pixel of its run. Undershoot = dark level − output luma (0 when not below).
+- **Positive control:** a 1 px vertical line of 40 on a 215 patch (21 × 200 px) pasted into the 400 px input of the first image
+  (the construction of `bench/edges.js`). It must read at least 15 levels below 40 for `fast` at the larger factor, else the result is
+  inconclusive. It reads **31.0** (mean over the line's rows; the same 31 as the synthetic table), Lanczos 0.0, so the measure can see the effect.
+
+400 px input (1.0 and 2.5):
+
+| factor | method | feature pixels | undershoot > 8 | > 16 | > 24 | largest (levels) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.0 | `fast` | 44455 | 5.57 % (2477) | 0.70 % (309) | 0.05 % (21) | 29.7 |
+| 1.0 | Lanczos | 44455 | 0.81 % (358) | 0.02 % (9) | 0.00 % (0) | 18.5 |
+| 2.5 | `fast` | 218178 | 5.80 % (12650) | 2.89 % (6295) | 1.38 % (3002) | 119.0 |
+| 2.5 | Lanczos | 218178 | 0.56 % (1214) | 0.32 % (692) | 0.17 % (381) | 74.2 |
+
+Other input sizes (same rule; the larger factor is 1000 / size):
+
+600 px input:
+
+| factor | method | feature pixels | undershoot > 8 | > 16 | > 24 | largest (levels) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.0 | `fast` | 92978 | 6.67 % (6202) | 1.05 % (978) | 0.08 % (76) | 34.6 |
+| 1.0 | Lanczos | 92978 | 0.86 % (795) | 0.02 % (23) | 0.00 % (0) | 23.0 |
+| 1.67 | `fast` | 218178 | 8.42 % (18370) | 3.57 % (7790) | 1.29 % (2805) | 82.3 |
+| 1.67 | Lanczos | 218178 | 1.05 % (2280) | 0.36 % (793) | 0.16 % (343) | 90.0 |
+
+800 px input:
+
+| factor | method | feature pixels | undershoot > 8 | > 16 | > 24 | largest (levels) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.0 | `fast` | 153541 | 6.89 % (10585) | 0.99 % (1517) | 0.08 % (116) | 47.8 |
+| 1.0 | Lanczos | 153541 | 0.83 % (1270) | 0.02 % (25) | 0.00 % (0) | 20.1 |
+| 1.25 | `fast` | 218178 | 7.63 % (16654) | 2.07 % (4511) | 0.42 % (920) | 66.9 |
+| 1.25 | Lanczos | 218178 | 2.65 % (5777) | 0.94 % (2056) | 0.46 % (996) | 79.8 |
+
+**Reading: yes, on real thin dark features `fast` goes below the reference's dark level much more often than plain Lanczos.**
+At 400 px and factor 2.5, 5.8 % of 218 178 feature pixels are more than 8 levels below the dark level for `fast` against 0.56 % for
+Lanczos, 2.9 % against 0.32 % are more than 16 below, and 1.4 % against 0.17 % more than 24 below. At factor 1.0 the same holds at
+smaller depth (5.6 % against 0.8 % above 8; 0.05 % against 0 above 24). The 600 and 800 px inputs agree on the share above 8 (8.4 % and 7.6 % against 1.1 % and 2.7 % at
+the larger factor); the deep tail (> 24) is about 1.3 % and 0.4 % for `fast` and about 0.2 % and 0.5 % for Lanczos, so at 800 px and
+factor 1.25 `fast` is not worse than Lanczos there. In levels, the effect is mostly 8 to 16 (a few percent of thin pixels) with a short
+tail; the largest values (119 at 400 px / 2.5, Lanczos 74) are single pixels, partly misalignment of a 1 px feature by a fraction of a pixel,
+which hits both methods.
+
+Limits: the reference is a lanczos3 downscale of the source, so a thin feature in it is already slightly soft and its dark level is
+that of the soft version (a reference with a sharper feature would be darker, which lowers the measured undershoot of both methods). The
+rule finds dark-on-light lines only (no light-on-dark), and the shares are over feature pixels pooled over images (images with many thin features,
+such as textured fabric, weigh more). No visual check of individual crops was made; T1a (text) is a separate, blocked task.
