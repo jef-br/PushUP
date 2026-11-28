@@ -160,8 +160,8 @@ Numbers: `docs/TEXTURE.md`.
   message on `\r` as well (Windows Python prints it). (b) On macOS arm64 with the default `PUSHUP_DEVICE=auto`, two
   tests failed: "tiled inference places every tile correctly (byte-identical to whole-frame)" and "output colours stay
   close to input (no shift)". With `PUSHUP_DEVICE=cpu` both pass. In `auto` the default call tries CoreML with the
-  `high` model (Remacri) first, so these tests then run a different model, on a different device, from the CPU `fast`
-  path they were written for. Not measured further: the runner has no GPU of its own and the log does not say what
+  `high` model (Remacri) first, these tests most likely then run a different model, on a different device, from the CPU `fast`
+  path they were written for (inferred from `resolveEngine`, not observed in the log). Not measured further: the runner has no GPU of its own and the log does not say what
   CoreML ran on. (c) Two device tests set only `PUSHUP_QUALITY` and inherited the device setting; they now set
   `PUSHUP_DEVICE: 'auto'` themselves (no assertion changed).
 - **Decision:** keep the Windows job on `auto` (it passes, and it exercises the DirectML attempt and its fallback); pin
