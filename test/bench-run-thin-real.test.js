@@ -52,7 +52,7 @@ test('pasteLine puts a 1 px line of 40 on a 215 patch and leaves the input untou
 });
 
 test('bad flags exit 1 with one stderr line before any model loads', () => {
-  for (const args of [['--size', '500'], ['--size', 'x'], ['--limit', '0'], ['--bogus', '1']]) {
+  for (const args of [['--size', '500'], ['--size', 'x'], ['--limit', '0'], ['--bogus', '1'], ['--dir'], ['--size'], ['--limit']]) {
     const r = run(args);
     assert.strictEqual(r.status, 1, `${args}: status ${r.status}`);
     assert.strictEqual(r.stderr.trim().split('\n').length, 1, `${args}: ${r.stderr}`);

@@ -84,6 +84,7 @@ function main() {
   const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
   const flagError = checkFlags(process.argv.slice(2), { values: ['--dir', '--limit', '--size'] });
   if (flagError) { console.error(flagError); process.exit(1); }
+  for (const f of ['--dir', '--limit', '--size']) { const i = process.argv.indexOf(f); if (i > 0 && i === process.argv.length - 1) { console.error(`${f} needs a value`); process.exit(1); } }
   const limit = Number(arg('limit', '20'));
   if (!Number.isInteger(limit) || limit < 1) { console.error('--limit must be a positive integer'); process.exit(1); }
   const size = Number(arg('size', '400'));
