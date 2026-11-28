@@ -90,6 +90,7 @@ async function main() {
   const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
   const flagError = checkFlags(process.argv.slice(2), { values: ['--dir', '--limit'] });
   if (flagError) { console.error(flagError); process.exit(1); }
+  for (const f of ['--dir', '--limit']) { if (process.argv.indexOf(f) === process.argv.length - 1) { console.error(`${f} needs a value`); process.exit(1); } } // a value flag with nothing after it (checkFlags leaves that to the script)
   const dir = path.resolve(arg('dir', path.join(__dirname, 'out', 'sub20')));
   const limit = Number(arg('limit', '20'));
   if (!Number.isInteger(limit) || limit < 1) { console.error('--limit must be a positive integer'); process.exit(1); }
