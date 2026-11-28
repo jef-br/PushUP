@@ -259,9 +259,9 @@ Positive control at factor 2.5 (mean levels below 40 of the pasted 1 px line): m
 **31.0**, mix 0.4 **22.0**, Lanczos 0.0; all at least 15, so the factor 2.5 rows are a result. At factor 1.0 the control reads 0.0 for every row, so those rows are
 inconclusive on their own (as above).
 
-**Reading (factor 2.5): the undershoot belongs to the model; the mix only dilutes it.** The model alone (mix 0) puts 9.9 % of the feature pixels more than 8
-levels below the dark level and 3.4 % more than 24 below, against 5.8 % and 1.4 % at the shipped 0.2 and 2.6 % and 0.5 % at 0.4; the share falls about in
-proportion to the model's weight (1 − mix), and the control line reads 40, 31 and 22. Even at mix 0.4 `fast` is still above Lanczos (0.56 % and 0.17 %). Factor 1.0 shows the same order
+**Reading (factor 2.5): the undershoot belongs to the model; the mix only dilutes it (and mix 0 is clearly worse than 0.2).** The model alone (mix 0) puts 9.9 % of the feature pixels more than 8
+levels below the dark level and 3.4 % more than 24 below, against 5.8 % and 1.4 % at the shipped 0.2 and 2.6 % and 0.5 % at 0.4; the shares fall faster than the model's weight (1 − mix) would give (the thresholds are fixed, so blending shrinks the depth of the undershoot and
+more pixels drop under them), while the control line's depth falls about in proportion (40, 31, 22; the 40 is a lower bound, the dark level is reached). Even at mix 0.4 `fast` is still above Lanczos (0.56 % and 0.17 %). Factor 1.0 shows the same order
 (8.9 %, 5.6 %, 3.0 % above 8 against Lanczos 0.8 %) but is not validated by the control. This measures one side only: a larger
 mix costs sharpness and quality scores (for example PSNR −0.17 dB and GMSD +0.0020 at 400 px for 0.4 against 0.2, [COLOR.md](COLOR.md) "Cost of a larger Lanczos mix"), and
 whether it is worth it is the owner's decision ([OWNER_DECISIONS.md](OWNER_DECISIONS.md) row 13). No change of the default is proposed here.
