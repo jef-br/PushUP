@@ -237,3 +237,31 @@ Limits: the reference is a lanczos3 downscale of the source, so a thin feature i
 that of the soft version (a reference with a sharper feature would be darker, which lowers the measured undershoot of both methods). The
 rule finds dark-on-light lines only (no light-on-dark), and the shares are over feature pixels pooled over images (images with many thin features,
 such as textured fabric, weigh more). No visual check of individual crops was made; T1a (text) is a separate, blocked task.
+
+### By Lanczos mix (BL80)
+
+Question: is the undershoot of `fast` a property of the model or of the 20 % Lanczos mix? Date: 2026-11-28.
+`node bench/thin-real.js --mix 0,0.2,0.4` runs `fast` once per Lanczos share through the `lanczosMix` option of `_run` (no change to `src/`;
+0.2 is the shipped share and reproduces the BL78 figures exactly). Same data, rule and control as above: `bench/out/sub20`, 400 px input, CPU.
+
+| factor | method | feature pixels | undershoot > 8 | > 16 | > 24 | largest (levels) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.0 | `fast` (mix 0) | 44455 | 8.86 % (3939) | 1.75 % (777) | 0.24 % (105) | 37.0 |
+| 1.0 | `fast` (mix 0.2) | 44455 | 5.57 % (2477) | 0.70 % (309) | 0.05 % (21) | 29.7 |
+| 1.0 | `fast` (mix 0.4) | 44455 | 3.02 % (1344) | 0.21 % (93) | 0.00 % (1) | 24.7 |
+| 1.0 | Lanczos | 44455 | 0.81 % (358) | 0.02 % (9) | 0.00 % (0) | 18.5 |
+| 2.5 | `fast` (mix 0) | 218178 | 9.94 % (21685) | 5.94 % (12960) | 3.38 % (7374) | 136.9 |
+| 2.5 | `fast` (mix 0.2) | 218178 | 5.80 % (12650) | 2.89 % (6295) | 1.38 % (3002) | 119.0 |
+| 2.5 | `fast` (mix 0.4) | 218178 | 2.64 % (5749) | 1.08 % (2364) | 0.49 % (1077) | 101.4 |
+| 2.5 | Lanczos | 218178 | 0.56 % (1214) | 0.32 % (692) | 0.17 % (381) | 74.2 |
+
+Positive control at factor 2.5 (mean levels below 40 of the pasted 1 px line): mix 0 **40.0** (the dark level is reached, so this is a lower bound), mix 0.2
+**31.0**, mix 0.4 **22.0**, Lanczos 0.0; all at least 15, so the factor 2.5 rows are a result. At factor 1.0 the control reads 0.0 for every row, so those rows are
+inconclusive on their own (as above).
+
+**Reading (factor 2.5): the undershoot belongs to the model; the mix only dilutes it (and mix 0 is clearly worse than 0.2).** The model alone (mix 0) puts 9.9 % of the feature pixels more than 8
+levels below the dark level and 3.4 % more than 24 below, against 5.8 % and 1.4 % at the shipped 0.2 and 2.6 % and 0.5 % at 0.4; the shares fall faster than the model's weight (1 − mix) would give (the thresholds are fixed, so blending shrinks the depth of the undershoot and
+more pixels drop under them), while the control line's depth falls about in proportion (40, 31, 22; the 40 is a lower bound, the dark level is reached). Even at mix 0.4 `fast` is still above Lanczos (0.56 % and 0.17 %). Factor 1.0 shows the same order
+(8.9 %, 5.6 %, 3.0 % above 8 against Lanczos 0.8 %) but is not validated by the control. This measures one side only: a larger
+mix costs sharpness and quality scores (for example PSNR −0.17 dB and GMSD +0.0020 at 400 px for 0.4 against 0.2, [COLOR.md](COLOR.md) "Cost of a larger Lanczos mix"), and
+whether it is worth it is the owner's decision ([OWNER_DECISIONS.md](OWNER_DECISIONS.md) row 13). No change of the default is proposed here.

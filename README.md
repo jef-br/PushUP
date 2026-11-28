@@ -334,7 +334,7 @@ node bench/white.js                   # does `fast` keep a pure white (255) back
 node bench/clean.js                  # how far does a factor-1 call move a clean (never JPEG-compressed) input? (needs bench/out/sub20; options --dir, --limit, --size 400..800 (default 600); results: docs/JPEG.md "Clean input at factor 1.0 (BL73)")
 node bench/pad.js                     # does mirror-padding the model input help at the image border? (needs bench/out/sub20)
 node bench/edges-real.js              # overshoot of `fast` vs plain Lanczos at the strongest edges of real photos (needs bench/out/sub20; results: docs/EDGES.md "Real photos (CV2)")
-node bench/thin-real.js               # does `fast` go below the dark level of thin real features (1 to 3 px lines) more than Lanczos? (needs bench/out/sub20; options --dir, --limit, --size 400|600|800; results: docs/EDGES.md "Thin real features (BL78)")
+node bench/thin-real.js               # does `fast` go below the dark level of thin real features (1 to 3 px lines) more than Lanczos? (needs bench/out/sub20; options --dir, --limit, --size 400|600|800, --mix 0,0.2,0.4; results: docs/EDGES.md "Thin real features (BL78)")
 node bench/eventloop.js               # is the event loop blocked during a call? (timer probe around `upscale` and a bare `session.run`; results: docs/PERF.md "Event loop")
 node bench/worker.js                  # cost of running `upscale` in a worker_threads worker: latency, cold start, memory, event loop (results: docs/PERF.md "Worker")
 ```

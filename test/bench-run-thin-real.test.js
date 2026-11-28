@@ -52,7 +52,7 @@ test('pasteLine puts a 1 px line of 40 on a 215 patch and leaves the input untou
 });
 
 test('bad flags exit 1 with one stderr line before any model loads', () => {
-  for (const args of [['--size', '500'], ['--size', 'x'], ['--limit', '0'], ['--bogus', '1'], ['--dir'], ['--size'], ['--limit']]) {
+  for (const args of [['--size', '500'], ['--size', 'x'], ['--limit', '0'], ['--bogus', '1'], ['--dir'], ['--size'], ['--limit'], ['--mix'], ['--mix', ''], ['--mix', 'x'], ['--mix', '1.5'], ['--mix', '-0.1'], ['--mix', '0.2,0.2'], ['--mix', '0,,1']]) {
     const r = run(args);
     assert.strictEqual(r.status, 1, `${args}: status ${r.status}`);
     assert.strictEqual(r.stderr.trim().split('\n').length, 1, `${args}: ${r.stderr}`);
@@ -85,4 +85,18 @@ test('a run on a generated image prints the table shape and the control verdict'
   assert.match(lines[lines.length - 1], /^control: fast reads \d+\.\d levels below the dark level at factor 2\.5, (at least 15: the real-photo numbers are a result|under 15: .*INCONCLUSIVE)$/);
   const fastRow = lines[5].split('|').map((c) => c.trim());
   assert.ok(Number(fastRow[3]) > 0, 'the generated lines are found as feature pixels');
+});
+
+test('--mix prints one `fast (mix N)` row per share and the control verdict names the 0.2 row; undershoot falls as the mix rises', async () => {
+  const dir = path.join(tmp, 'imgs-mix');
+  fs.mkdirSync(dir);
+  const w = 500, h = 400, d = Buffer.alloc(w * h * 3, 235);
+  for (let y = 0; y < h; y++) for (const x of [100, 101, 250, 251, 252]) d.fill(30, (y * w + x) * 3, (y * w + x) * 3 + 3);
+  await sharp(d, { raw: { width: w, height: h, channels: 3 } }).png().toFile(path.join(dir, 'a.png'));
+  const r = run(['--dir', dir, '--limit', '1', '--mix', '0.4,0.2']);
+  assert.strictEqual(r.status, 0, r.stderr);
+  const rows = r.stdout.split('\n').filter((l) => l.startsWith('| 2.5 |'));
+  assert.deepStrictEqual(rows.map((l) => l.split('|')[2].trim()), ['`fast` (mix 0.4)', '`fast` (mix 0.2)', 'Lanczos']);
+  assert.match(r.stdout, /control: fast \(mix 0\.2\) reads \d+\.\d levels/);
+  assert.match(r.stdout, /factor 2\.5 fast \(mix 0\.4\): \d+\.\d \/ \d+\.\d/);
 });
