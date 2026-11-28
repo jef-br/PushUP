@@ -1,9 +1,11 @@
 'use strict';
 // Does `fast` undershoot thin dark features of real photos? (BL78, docs/EDGES.md "Thin real features (BL78)")
-// Usage: node bench/thin-real.js [--dir bench/out/sub20] [--limit 20] [--size 400|600|800] [--mix 0,0.2,0.4]
+// Usage: node bench/thin-real.js [--dir bench/out/sub20] [--limit 20] [--size 400|600|800] [--mix 0,0.2,0.4] [--quality fast|high]
 //   Per image: reference = bench/groundtruth.js loadGt (1000 px longest side), input = inputAt(gt, size) (cubic, JPEG q85).
 //   Two factors: 1.0 (reference = gt lanczos3-resized to the input size) and 1000/size (2.5 at 400 px; reference = gt).
 //   Methods: the shipped `fast` pipeline (CPU) and plain sharp lanczos3 of the input to the same size.
+//   --quality high (BL81): measure the `high` pipeline (Remacri, 192 px tiles, no mix; CPU, about 15 s per image and factor) instead of
+//   `fast`; rows and the control read `high`; not combined with --mix. Default `fast`: output unchanged.
 //   --mix a,b,c (BL80): instead of the shipped `fast`, one `fast (mix N)` row per Lanczos share N (0 to 1) through the
 //   `lanczosMix` option of `_run`; the control verdict then uses the 0.2 row (the shipped share) if listed, else the first.
 //   Thin feature pixel (rule, on the luma of the reference): along the horizontal or the vertical axis, a run of k = 1..3
@@ -84,9 +86,9 @@ function pasteLine(inp) {
 
 function main() {
   const arg = (n, d) => { const i = process.argv.indexOf('--' + n); return i > 0 ? process.argv[i + 1] : d; };
-  const flagError = checkFlags(process.argv.slice(2), { values: ['--dir', '--limit', '--size', '--mix'] });
+  const flagError = checkFlags(process.argv.slice(2), { values: ['--dir', '--limit', '--size', '--mix', '--quality'] });
   if (flagError) { console.error(flagError); process.exit(1); }
-  for (const f of ['--dir', '--limit', '--size', '--mix']) { const i = process.argv.indexOf(f); if (i > 0 && i === process.argv.length - 1) { console.error(`${f} needs a value`); process.exit(1); } }
+  for (const f of ['--dir', '--limit', '--size', '--mix', '--quality']) { const i = process.argv.indexOf(f); if (i > 0 && i === process.argv.length - 1) { console.error(`${f} needs a value`); process.exit(1); } }
   const limit = Number(arg('limit', '20'));
   if (!Number.isInteger(limit) || limit < 1) { console.error('--limit must be a positive integer'); process.exit(1); }
   const size = Number(arg('size', '400'));
@@ -94,22 +96,25 @@ function main() {
   const mixArg = arg('mix', null);
   const mixes = mixArg === null ? null : String(mixArg).split(',').map((v) => (/^\d*\.?\d+$/.test(v.trim()) ? Number(v) : NaN));
   if (mixes && (mixes.some((m) => !(m >= 0 && m <= 1)) || new Set(mixes).size !== mixes.length)) { console.error('--mix must be a comma list of different numbers from 0 to 1'); process.exit(1); }
+  const quality = arg('quality', 'fast');
+  if (quality !== 'fast' && quality !== 'high') { console.error('--quality must be fast or high'); process.exit(1); }
+  if (quality === 'high' && mixes) { console.error('--mix applies to fast only; drop it with --quality high'); process.exit(1); }
   const dir = path.resolve(arg('dir', path.join(__dirname, 'out', 'sub20')));
   if (!fs.existsSync(dir)) { console.error(`${dir} does not exist; run bash bench/fetch_testset.sh`); process.exit(1); }
   if (!fs.statSync(dir).isDirectory()) { console.error(`${dir} is not a directory`); process.exit(1); }
   const files = fs.readdirSync(dir).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort().slice(0, limit);
   if (!files.length) { console.error(`no images in ${dir}`); process.exit(1); }
-  return run(dir, files, size, mixes).catch((e) => { console.error(e); process.exit(1); });
+  return run(dir, files, size, mixes, quality).catch((e) => { console.error(e); process.exit(1); });
 }
 
-async function run(dir, files, size, mixes) {
-  process.env.PUSHUP_QUALITY = 'fast';
+async function run(dir, files, size, mixes, quality) {
+  process.env.PUSHUP_QUALITY = quality;
   process.env.PUSHUP_DEVICE = 'cpu';
   const { _run } = require('../src/index.js');
   const big = 1000 / size;
   const factors = [1.0, big];
   // The `fast` variants: the shipped pipeline, or one per Lanczos share of --mix.
-  const VARIANTS = mixes ? mixes.map((m) => ({ key: `fast${m}`, label: `\`fast\` (mix ${m})`, opts: { lanczosMix: m } })) : [{ key: 'fast', label: '`fast`', opts: undefined }];
+  const VARIANTS = mixes ? mixes.map((m) => ({ key: `fast${m}`, label: `\`fast\` (mix ${m})`, opts: { lanczosMix: m } })) : [{ key: quality, label: `\`${quality}\``, opts: undefined }];
   const METHODS = [...VARIANTS.map((v) => v.key), 'lanczos'];
   const labelOf = (k) => (k === 'lanczos' ? 'Lanczos' : VARIANTS.find((v) => v.key === k).label);
   const ctlKey = (VARIANTS.find((v) => v.opts && v.opts.lanczosMix === 0.2) || VARIANTS[0]).key;
@@ -175,7 +180,7 @@ async function run(dir, files, size, mixes) {
   }
 
   const label = (f) => (f === 1.0 ? '1.0' : String(Number(f.toFixed(2))));
-  console.log(`images: ${files.length}; input ${size} px; rule: run of 1..${MAX_WIDTH} px at least ${MIN_DARKER} levels darker than both pixels 2 px beyond it (horizontal or vertical); dark level = darkest pixel of the run`);
+  console.log(`images: ${files.length}; input ${size} px;${quality === 'high' ? ' mode high;' : ''} rule: run of 1..${MAX_WIDTH} px at least ${MIN_DARKER} levels darker than both pixels 2 px beyond it (horizontal or vertical); dark level = darkest pixel of the run`);
   console.log('| factor | method | feature pixels | undershoot > 8 | > 16 | > 24 | largest (levels) |');
   console.log('| --- | --- | --- | --- | --- | --- | --- |');
   for (const f of factors) for (const m of METHODS) {
@@ -186,7 +191,7 @@ async function run(dir, files, size, mixes) {
   console.log(`control (1 px line of 40 on 215 pasted into ${files[0]}): mean / max levels below 40 within 6 output px of the line`);
   for (const f of factors) for (const m of METHODS) console.log(`  factor ${label(f)} ${m === 'lanczos' ? m : labelOf(m).replace(/`/g, '')}: ${control[f][m].mean.toFixed(1)} / ${control[f][m].max.toFixed(1)}`);
   const c = control[big][ctlKey].mean;
-  const who = ctlKey === 'fast' ? 'fast' : labelOf(ctlKey).replace(/`/g, '');
+  const who = labelOf(ctlKey).replace(/`/g, '');
   console.log(c >= CONTROL_MIN
     ? `control: ${who} reads ${c.toFixed(1)} levels below the dark level at factor ${label(big)}, at least ${CONTROL_MIN}: the real-photo numbers are a result`
     : `control: ${who} reads ${c.toFixed(1)} levels below the dark level at factor ${label(big)}, under ${CONTROL_MIN}: the measure cannot see the undershoot of a 1 px line, so the real-photo result is INCONCLUSIVE`);

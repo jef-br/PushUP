@@ -265,3 +265,30 @@ more pixels drop under them), while the control line's depth falls about in prop
 (8.9 %, 5.6 %, 3.0 % above 8 against Lanczos 0.8 %) but is not validated by the control. This measures one side only: a larger
 mix costs sharpness and quality scores (for example PSNR −0.17 dB and GMSD +0.0020 at 400 px for 0.4 against 0.2, [COLOR.md](COLOR.md) "Cost of a larger Lanczos mix"), and
 whether it is worth it is the owner's decision ([OWNER_DECISIONS.md](OWNER_DECISIONS.md) row 13). No change of the default is proposed here.
+
+
+### High mode (BL81)
+
+Question: does `high` (Remacri, 192 px tiles, no Lanczos mix) undershoot thin real features as much as `fast`? The synthetic 1 px line says it overshoots more
+([High mode (BK9)](#high-mode-bk9)); this is the real-photo counterpart. Date: 2026-11-28.
+`node bench/thin-real.js --quality high --limit 10` (CPU, `PUSHUP_QUALITY=high PUSHUP_DEVICE=cpu`; about 6 min for 10 images and both factors) and
+`node bench/thin-real.js --limit 10` for `fast` and Lanczos on the same images: the first 10 images of `bench/out/sub20` in file-name order, 400 px input,
+same rule and control as above (10 images, not 20, because of the run time of `high`; the `fast` rows therefore differ a little from the 20-image table above).
+
+| factor | method | feature pixels | undershoot > 8 | > 16 | > 24 | largest (levels) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1.0 | `fast` | 35629 | 5.60 % (1995) | 0.74 % (265) | 0.05 % (18) | 29.7 |
+| 1.0 | `high` | 35629 | 10.98 % (3912) | 1.94 % (692) | 0.22 % (78) | 38.7 |
+| 1.0 | Lanczos | 35629 | 0.88 % (314) | 0.02 % (8) | 0.00 % (0) | 18.5 |
+| 2.5 | `fast` | 190674 | 5.11 % (9750) | 2.62 % (5004) | 1.33 % (2529) | 119.0 |
+| 2.5 | `high` | 190674 | 14.29 % (27246) | 9.28 % (17690) | 5.80 % (11064) | 141.6 |
+| 2.5 | Lanczos | 190674 | 0.58 % (1104) | 0.33 % (623) | 0.18 % (346) | 74.2 |
+
+Positive control at factor 2.5 (mean levels below 40 of the pasted 1 px line): `high` **39.8** (the dark level is reached, so this is a lower bound), `fast` 31.0, Lanczos 0.0; all at least 15, so the factor 2.5 rows
+are a result. At factor 1.0 the control reads 0.0 for every row, so those rows are not validated by it (as above).
+
+**Reading (factor 2.5): yes, `high` goes below the dark level of thin real features clearly more often than `fast`, and far more often than Lanczos.** 14.3 % of
+190 674 feature pixels are more than 8 levels below the dark level for `high` against 5.1 % for `fast` and 0.58 % for Lanczos; more than 24 levels: 5.8 % against 1.3 % and 0.18 %; the largest values are 141.6, 119.0 and 74.2. The direction
+agrees with the synthetic line (BK9). Factor 1.0 shows the same order (11.0 % and 5.6 % above 8) but is not validated by the control. `fast` has the 20 % Lanczos mix and `high` has none, and
+BL80 found that the mix dilutes the undershoot, so part of the difference may come from the mix and not from the model; this was not separated here. On a GPU the default is `high`
+([README](../README.md#quality-modes-and-gpu)), so GPU users get the larger undershoot unless they set `PUSHUP_QUALITY=fast`. No change of a default is proposed here.
