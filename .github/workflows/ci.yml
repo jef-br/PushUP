@@ -29,6 +29,24 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  # BL77: the same tests on Windows and macOS (CPU runners, no GPU). `auto` + `fast` stays on CPU; this checks
+  # that the package installs and the tests pass there. npm does not download CUDA on these systems.
+  test-os:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
   # K1: the published package works once installed (only `files` + `dependencies`, no repo).
   pack-smoke:
     runs-on: ubuntu-latest
