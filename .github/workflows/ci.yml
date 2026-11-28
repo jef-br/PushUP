@@ -39,6 +39,8 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
     steps:
+      # Windows checks files out with CRLF by default; several tests read repo files and expect LF (as on Linux and in git).
+      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:

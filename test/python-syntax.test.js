@@ -17,7 +17,7 @@ const skip = hasPython ? false : 'python3 is not on the PATH (the Python tools a
 // Returns null when `file` parses, else the interpreter's message.
 function parseProblem(file) {
   const r = spawnSync('python3', ['-I', '-c', PARSE, file], { encoding: 'utf8', timeout: 20000 });
-  return r.status === 0 ? null : `${file}: ${(r.stderr || '').trim().split('\n').slice(-3).join(' | ') || `exit ${r.status}`}`;
+  return r.status === 0 ? null : `${file}: ${(r.stderr || '').trim().split(/\r\n|\r|\n/).slice(-3).join(' | ') || `exit ${r.status}`}`;
 }
 
 // Generated or vendored directories are not ours: bench/out (the test set, and the venv bench/fetch_testset.sh may create
